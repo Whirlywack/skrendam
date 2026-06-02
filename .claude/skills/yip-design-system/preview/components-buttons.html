@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:28px 32px;display:flex;flex-direction:column;gap:18px}
+  .row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-body);font-weight:600;font-size:15px;
+       border-radius:var(--radius-md);padding:12px 20px;border:none;cursor:pointer;line-height:1}
+  .btn svg{width:18px;height:18px}
+  .primary{background:var(--amber-500);color:var(--fg-on-amber);box-shadow:var(--shadow-amber)}
+  .secondary{background:var(--bg-surface);color:var(--fg-1);border:1.5px solid var(--line-strong)}
+  .sea{background:var(--sea-500);color:#fff}
+  .ghost{background:transparent;color:var(--sea-600);padding-left:8px;padding-right:8px}
+  .press{background:var(--amber-600);color:var(--fg-on-amber);transform:translateY(1px)}
+  .disabled{background:var(--sand-150);color:var(--sand-400);cursor:not-allowed}
+  .sm{padding:8px 14px;font-size:13px}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);width:100%}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div>
+    <div class="tag" style="margin-bottom:10px">Primary actions · amber</div>
+    <div class="row">
+      <button class="btn primary">See the deal <i data-lucide="arrow-right"></i></button>
+      <button class="btn primary">Get deals by email</button>
+      <button class="btn primary press">Pressed</button>
+      <button class="btn primary sm">Small</button>
+    </div>
+  </div>
+  <div>
+    <div class="tag" style="margin-bottom:10px">Secondary · ghost · accent · disabled</div>
+    <div class="row">
+      <button class="btn secondary"><i data-lucide="bookmark"></i> Save</button>
+      <button class="btn sea"><i data-lucide="mail"></i> Subscribe</button>
+      <button class="btn ghost">All deals <i data-lucide="arrow-right"></i></button>
+      <button class="btn disabled">Sold out</button>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

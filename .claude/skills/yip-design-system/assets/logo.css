@@ -1,0 +1,28 @@
+/* Yip wordmark — canonical CSS lockup (font-dependent, renders reliably in HTML).
+   Usage:  <span class="yip-logo">yıp</span>   (note the dotless ı, U+0131)
+   The amber bead is positioned as the tittle and scales with font-size (em units).
+   Sizes via font-size; pair with --logo-ink / --logo-bead to recolor. */
+
+.yip-logo {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  position: relative;
+  display: inline-block;
+  color: var(--logo-ink, #1C1813);
+  font-size: 40px; /* default; override per use */
+  -webkit-font-smoothing: antialiased;
+}
+.yip-logo::after {
+  content: "";
+  position: absolute;
+  width: 0.175em;
+  height: 0.175em;
+  border-radius: 50%;
+  background: var(--logo-bead, #E2820E);
+  left: 0.5em;   /* over the ı */
+  top: 0.015em;
+}
+/* On dark surfaces */
+.yip-logo--light { --logo-ink: #FBF6EC; }

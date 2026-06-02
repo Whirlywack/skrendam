@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip — imagery in the brand</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="assets/logo.css">
+<link rel="stylesheet" href="assets/imagery.css">
+<style>
+  html,body{margin:0;background:var(--bg-page);font-family:var(--font-body);color:var(--fg-1)}
+  .stage{max-width:760px;margin:0 auto;padding:34px 28px 56px}
+  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .head .eyebrow{font-family:var(--font-mono);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sea-600)}
+  h1{font-family:var(--font-display);font-weight:800;font-size:30px;letter-spacing:-.02em;margin:6px 0 4px}
+  .sub{color:var(--fg-2);font-size:15px;margin:0 0 22px;max-width:60ch;line-height:1.5}
+
+  /* treatment toggle */
+  .toggle{display:inline-flex;gap:4px;background:var(--bg-surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .toggle button{font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--fg-2);background:none;border:none;padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .toggle button.on{background:var(--sand-900);color:var(--sand-50)}
+
+  /* the hero — an image-slot the user fills */
+  .hero{height:400px;margin-bottom:14px}
+  .hero image-slot{width:100%;height:100%}
+  .hero .ph-cap{left:28px;bottom:26px;right:28px}
+  .hero .ph-eyebrow{font-size:12px}
+  .hero .ph-title{font-size:40px}
+  .hero .meta{font-family:var(--font-mono);font-size:12px;text-transform:uppercase;color:rgba(255,255,255,.9);margin-top:8px;display:block;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .hero .protect{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(28,24,19,.74) 0%,rgba(28,24,19,.30) 42%,rgba(28,24,19,0) 70%)}
+  .hero .ph-cap{z-index:4}
+  .hero .cta{position:absolute;right:28px;bottom:28px;z-index:4;display:inline-flex;align-items:center;gap:7px;
+    background:var(--amber-500);color:var(--fg-on-amber);font-weight:600;font-size:15px;border:none;border-radius:var(--radius-md);padding:12px 18px;box-shadow:var(--shadow-amber)}
+  .note{font-size:13px;color:var(--fg-3);line-height:1.5;background:var(--bg-surface);border:1px solid var(--line-soft);border-radius:var(--radius-md);padding:14px 16px}
+  .note b{color:var(--fg-1)}
+  .tip{font-size:13px;color:var(--fg-3);margin:0 0 18px;display:flex;align-items:center;gap:7px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="head">
+    <span class="eyebrow">Imagery in the brand</span>
+    <span class="yip-logo" style="font-size:26px">yıp</span>
+  </div>
+  <h1>Drop a destination photo →</h1>
+  <p class="sub">See exactly how a real (or generated) photo of palm trees, crystal water, or a city break sits inside Yip — selection, treatment, protection gradient, and brand type all working together. Toggle the treatment to compare.</p>
+
+  <p class="tip">↓ Drag any warm, sunny image onto the hero below (or click to browse).</p>
+
+  <div class="toggle" id="toggle" style="margin-bottom:14px">
+    <button data-t="natural" class="on">Natural + protection</button>
+    <button data-t="warm">Warm wash</button>
+    <button data-t="duotone">Amber duotone</button>
+  </div>
+
+  <div class="yip-photo hero" id="hero">
+    <image-slot id="yip-hero-demo" fit="cover" radius="20"
+      placeholder="Drop a destination photo (sun, sea, palms, city)"></image-slot>
+    <div class="protect"></div>
+    <div class="ph-cap">
+      <span class="ph-eyebrow">Last warm week · September sun</span>
+      <div class="ph-title">Larnaca, Cyprus</div>
+      <span class="meta">VNO → LCA · 14–21 Oct · Direct · from €59</span>
+    </div>
+    <button class="cta">See the deal →</button>
+  </div>
+
+  <div class="note">
+    <b>The recipe:</b> always start by <b>selecting warm imagery</b> — golden hour, sun, sea, warm
+    stone. Then apply <b>one treatment</b> so a feed of mixed sources still feels like one brand.
+    <b>Natural + protection</b> is the default for any photo carrying text. <b>Warm wash</b> nudges
+    cool photos toward the brand temperature. <b>Amber duotone</b> is the editorial option for section
+    headers. The amber CTA and white display type read cleanly on top because the protection gradient
+    guarantees contrast. Full rules live in <b>assets/imagery.css</b> and the README's IMAGERY section.
+  </div>
+</div>
+
+<script src="preview/image-slot.js"></script>
+<script>
+  const hero = document.getElementById('hero');
+  document.getElementById('toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    document.querySelectorAll('#toggle button').forEach(b => b.classList.toggle('on', b === btn));
+    hero.classList.remove('yip-photo--warm','yip-photo--duotone');
+    // protection gradient is an always-on child, so text stays legible under every treatment
+    if (btn.dataset.t !== 'natural') hero.classList.add('yip-photo--' + btn.dataset.t);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-page);font-family:var(--font-body);
+        padding:28px 32px;display:flex;align-items:center;gap:40px}
+  .panel{flex:1;display:flex;align-items:center;justify-content:center;padding:28px;border-radius:var(--radius-lg);height:140px;box-sizing:border-box}
+  .light{background:var(--bg-surface);border:1px solid var(--line)}
+  .dark{background:var(--bg-ink)}
+  .cream{background:var(--bg-page);border:1px solid var(--line)}
+  .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3);margin-top:10px;text-align:center}
+  .col{display:flex;flex-direction:column;align-items:center}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="col" style="flex:1">
+    <div class="panel cream"><span class="yip-logo" style="font-size:64px">yıp</span></div>
+    <div class="lbl">on paper · primary</div>
+  </div>
+  <div class="col" style="flex:1">
+    <div class="panel dark"><span class="yip-logo yip-logo--light" style="font-size:64px">yıp</span></div>
+    <div class="lbl">on ink · reversed</div>
+  </div>
+  <div class="col" style="flex:.7">
+    <div class="panel light"><span class="yip-logo" style="font-size:34px">yıp</span></div>
+    <div class="lbl">small / favicon</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:26px 32px}
+  .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .name{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--fg-1)}
+  .ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--sea-700);background:var(--sea-50);padding:4px 10px;border-radius:999px}
+  .row{display:flex;flex-direction:column;gap:13px}
+  .line{display:flex;align-items:baseline;gap:16px}
+  .tk{font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);width:70px;flex:none}
+  .glyphs{font-size:24px;color:var(--fg-1);letter-spacing:.04em}
+  .sent{font-size:16px;color:var(--fg-2)}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="top">
+    <div class="name">Lietuviškai — full diacritic support</div>
+    <div class="ok">✓ ą č ę ė į š ų ū ž</div>
+  </div>
+  <div class="row">
+    <div class="line"><span class="tk">Display</span><span class="glyphs" style="font-family:var(--font-display);font-weight:700">ąčęėįšųūž · ĄČĘĖĮŠŲŪŽ</span></div>
+    <div class="line"><span class="tk">Body</span><span class="sent" style="font-family:var(--font-body)">Mes randame geriausius pigius skrydžius už jus — iš Vilniaus, Kauno ir Rygos.</span></div>
+    <div class="line"><span class="tk">Mono</span><span class="glyphs" style="font-family:var(--font-mono);font-size:15px;text-transform:uppercase">RUGSĖJO SAULĖ · MAŽIAU ŽMONIŲ</span></div>
+  </div>
+</div>
+</body>
+</html>

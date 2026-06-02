@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/imagery.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:24px 28px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tile{display:flex;flex-direction:column;gap:9px}
+  .yip-photo{height:150px}
+  /* "photo" stand-ins: sky → sea → sand, so treatments read on a real range */
+  .scene{background:linear-gradient(180deg,#FCE3A8 0%,#86D2D2 30%,#2E93A0 60%,#123A44 100%)}
+  .lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-2)}
+  .desc{font-size:11.5px;color:var(--fg-3);line-height:1.35}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="grid">
+    <div class="tile">
+      <div class="yip-photo yip-photo--protect">
+        <div class="ph scene"></div>
+        <div class="ph-cap"><span class="ph-eyebrow">Last warm week</span><div class="ph-title" style="font-size:22px">Larnaca · €59</div></div>
+      </div>
+      <div class="lbl">Natural + protection</div>
+      <div class="desc">Default. Ink rises so white text + amber CTA stay legible. The FOMO hero.</div>
+    </div>
+    <div class="tile">
+      <div class="yip-photo yip-photo--warm">
+        <div class="ph scene"></div>
+      </div>
+      <div class="lbl">Warm wash</div>
+      <div class="desc">~14% amber multiply pulls any photo toward the brand temperature.</div>
+    </div>
+    <div class="tile">
+      <div class="yip-photo yip-photo--duotone">
+        <div class="ph scene"></div>
+      </div>
+      <div class="lbl">Amber duotone</div>
+      <div class="desc">Editorial. Maps any image to brand mono — for section headers.</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
