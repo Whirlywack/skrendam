@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:26px 30px}
+  .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .name{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--fg-1)}
+  .desc{font-size:13px;color:var(--fg-2)}
+  .row{display:flex;gap:8px}
+  .sw{flex:1;display:flex;flex-direction:column;gap:6px}
+  .chip{height:64px;border-radius:12px;border:1px solid rgba(28,24,19,.06)}
+  .k{font-family:var(--font-mono);font-size:10px;color:var(--fg-2);letter-spacing:.02em}
+  .h{font-family:var(--font-mono);font-size:10px;color:var(--fg-3)}
+  .star{position:absolute;top:6px;right:8px;font-size:13px;color:var(--fg-1)}
+  .chip.brand{position:relative;box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--amber-500)}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="top">
+    <div class="name">Amber — primary</div>
+    <div class="desc">Baltic amber &amp; late-summer sun. The brand fill. <code style="font-size:11px">--brand</code> = 500</div>
+  </div>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--amber-50)"></div><div class="k">50</div><div class="h">#FEF6E8</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-100)"></div><div class="k">100</div><div class="h">#FCE9C6</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-200)"></div><div class="k">200</div><div class="h">#F8D28A</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-300)"></div><div class="k">300</div><div class="h">#F3B84E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-400)"></div><div class="k">400</div><div class="h">#EFA227</div></div>
+    <div class="sw"><div class="chip brand" style="background:var(--amber-500)"><span class="star">★</span></div><div class="k">500</div><div class="h">#E2820E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-600)"></div><div class="k">600</div><div class="h">#C56A07</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-700)"></div><div class="k">700</div><div class="h">#9C520A</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-800)"></div><div class="k">800</div><div class="h">#7A410E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-900)"></div><div class="k">900</div><div class="h">#5C320F</div></div>
+  </div>
+</div>
+</body>
+</html>

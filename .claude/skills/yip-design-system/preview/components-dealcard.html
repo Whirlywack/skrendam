@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .wrap{width:700px;box-sizing:border-box;background:var(--bg-page);font-family:var(--font-body);padding:26px 30px}
+  .ticket{display:flex;background:var(--bg-surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);overflow:hidden;position:relative}
+  /* image */
+  .img{width:230px;flex:none;position:relative;background:
+        linear-gradient(150deg,#EFA227,#D63E22 70%,#9C520A);}
+  .img .ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(28,24,19,.55),transparent 55%)}
+  .img .eyebrow{position:absolute;top:14px;left:14px;color:#fff;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .img .place{position:absolute;bottom:12px;left:14px;color:#fff;font-family:var(--font-display);font-weight:700;font-size:22px;line-height:1.05;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .hot{position:absolute;top:12px;right:12px;background:var(--coral-500);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .hot svg{width:12px;height:12px}
+  /* perforation */
+  .perf{width:2px;flex:none;border-left:2px dashed var(--perforation);position:relative;margin:0 -1px;z-index:2}
+  .notch{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--bg-page);left:-9px}
+  .notch.t{top:-9px}.notch.b{bottom:-9px}
+  /* body */
+  .body{flex:1;padding:18px 22px;display:flex;flex-direction:column;gap:10px}
+  .meta{font-family:var(--font-mono);font-size:12px;text-transform:uppercase;color:var(--fg-2);letter-spacing:.02em}
+  h3{font-family:var(--font-display);font-weight:700;font-size:21px;line-height:1.1;margin:0;color:var(--fg-1)}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;white-space:nowrap}
+  .chip svg{width:13px;height:13px}
+  .good{background:var(--sea-50);color:var(--sea-700)}
+  .caveat{background:var(--sand-100);color:var(--sand-700)}
+  .foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:auto;padding-top:6px}
+  .price{font-family:var(--font-display);font-weight:800;font-size:34px;letter-spacing:-.03em;color:var(--fg-1)}
+  .price s{font-family:var(--font-body);font-weight:500;font-size:15px;color:var(--fg-3);margin-left:6px}
+  .cta{background:var(--amber-500);color:var(--fg-on-amber);border:none;border-radius:var(--radius-md);font-weight:600;font-size:14px;padding:11px 16px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:var(--shadow-amber)}
+  .cta svg{width:16px;height:16px}
+</style>
+</head>
+<body>
+<div class="wrap yip">
+  <div class="ticket">
+    <div class="img">
+      <div class="ov"></div>
+      <div class="eyebrow">Last warm week</div>
+      <div class="place">Larnaca,<br>Cyprus</div>
+      <span class="hot"><i data-lucide="flame"></i> Going fast</span>
+    </div>
+    <div class="perf"><span class="notch t"></span><span class="notch b"></span></div>
+    <div class="body">
+      <div class="meta">VNO → LCA · 14–21 Oct · Direct</div>
+      <h3>€59 return to Cyprus — sun's still out</h3>
+      <div class="chips">
+        <span class="chip good"><i data-lucide="trending-down"></i> 42% under usual</span>
+        <span class="chip good"><i data-lucide="plane"></i> Direct</span>
+        <span class="chip caveat"><i data-lucide="luggage"></i> Hand luggage</span>
+      </div>
+      <div class="foot">
+        <div class="price">€59<s>€102</s></div>
+        <button class="cta">See the deal <i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

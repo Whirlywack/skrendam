@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-page);font-family:var(--font-body);padding:26px 32px;display:flex;gap:30px}
+  .mot{flex:1;display:flex;flex-direction:column;gap:12px}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+  .stage{background:var(--bg-surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:22px;display:flex;align-items:center;justify-content:center;min-height:96px}
+  /* route line */
+  .route{display:flex;align-items:center;gap:0;width:100%}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--sea-500);flex:none}
+  .dot.amber{background:var(--amber-500)}
+  .line{flex:1;border-top:2px dashed var(--sand-300);position:relative;height:0;margin:0 4px}
+  .plane{color:var(--sea-500)}
+  .plane svg{width:18px;height:18px;display:block}
+  .cap{font-family:var(--font-mono);font-size:11px;color:var(--fg-2);text-transform:uppercase}
+  /* perforation */
+  .stub{display:flex;width:100%;height:64px}
+  .lft,.rgt{flex:1;background:var(--amber-100);}
+  .lft{border-radius:10px 0 0 10px}
+  .rgt{border-radius:0 10px 10px 0;flex:none;width:90px;background:var(--amber-500)}
+  .pf{width:0;border-left:2px dashed var(--bg-surface);position:relative}
+  .nt{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--bg-surface);left:-8px}
+  .nt.t{top:-7px}.nt.b{bottom:-7px}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="mot">
+    <div class="tag">Route line — origin → destination</div>
+    <div class="stage">
+      <div class="route">
+        <span class="dot amber"></span>
+        <span class="line"></span>
+        <span class="plane"><i data-lucide="plane"></i></span>
+        <span class="line"></span>
+        <span class="dot"></span>
+      </div>
+    </div>
+    <div class="cap" style="text-align:center">VNO ········ LCA</div>
+  </div>
+  <div class="mot">
+    <div class="tag">Ticket stub — perforated tear</div>
+    <div class="stage">
+      <div class="stub">
+        <span class="lft"></span>
+        <span class="pf"><span class="nt t"></span><span class="nt b"></span></span>
+        <span class="rgt"></span>
+      </div>
+    </div>
+    <div class="cap" style="text-align:center">deal · stub tears at price</div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

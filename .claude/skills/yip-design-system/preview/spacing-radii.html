@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-page);font-family:var(--font-body);padding:26px 30px}
+  .name{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--fg-1);margin-bottom:18px}
+  .row{display:flex;gap:16px;align-items:flex-end}
+  .col{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
+  .box{width:100%;height:74px;background:var(--bg-surface);border:1px solid var(--line);box-shadow:var(--shadow-sm)}
+  .k{font-family:var(--font-mono);font-size:10px;color:var(--fg-2)}
+  .px{font-family:var(--font-mono);font-size:9px;color:var(--fg-3)}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="name">Corner radii — soft &amp; friendly</div>
+  <div class="row">
+    <div class="col"><div class="box" style="border-radius:var(--radius-xs)"></div><div class="k">xs</div><div class="px">6 · tags</div></div>
+    <div class="col"><div class="box" style="border-radius:var(--radius-sm)"></div><div class="k">sm</div><div class="px">10 · inputs</div></div>
+    <div class="col"><div class="box" style="border-radius:var(--radius-md)"></div><div class="k">md</div><div class="px">14 · buttons</div></div>
+    <div class="col"><div class="box" style="border-radius:var(--radius-lg)"></div><div class="k">lg</div><div class="px">20 · cards</div></div>
+    <div class="col"><div class="box" style="border-radius:var(--radius-xl)"></div><div class="k">xl</div><div class="px">28 · panels</div></div>
+    <div class="col"><div class="box" style="border-radius:var(--radius-2xl)"></div><div class="k">2xl</div><div class="px">36 · hero</div></div>
+    <div class="col"><div class="box" style="border-radius:var(--radius-pill);height:42px;align-self:center"></div><div class="k">pill</div><div class="px">999 · chips</div></div>
+  </div>
+</div>
+</body>
+</html>

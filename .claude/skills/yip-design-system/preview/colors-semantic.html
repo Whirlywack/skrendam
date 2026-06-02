@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:26px 30px}
+  .name{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--fg-1);margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .cell{border-radius:12px;padding:12px 14px;height:74px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;border:1px solid rgba(28,24,19,.07)}
+  .t{font-weight:700;font-size:13px}
+  .v{font-family:var(--font-mono);font-size:10px;opacity:.8}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;align-self:flex-start}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="name">Semantic — states &amp; surfaces</div>
+  <div class="grid">
+    <div class="cell" style="background:var(--success-tint)"><span class="pill" style="background:var(--success);color:#fff">Success</span><span class="v" style="color:var(--sea-700)">--success · sea</span></div>
+    <div class="cell" style="background:var(--warning-tint)"><span class="pill" style="background:var(--warning);color:var(--sand-900)">Warning</span><span class="v" style="color:var(--amber-800)">--warning · amber</span></div>
+    <div class="cell" style="background:var(--danger-tint)"><span class="pill" style="background:var(--danger);color:#fff">Danger</span><span class="v" style="color:var(--coral-600)">--danger · coral</span></div>
+    <div class="cell" style="background:var(--info-tint)"><span class="pill" style="background:var(--info);color:#fff">Info</span><span class="v" style="color:var(--sea-700)">--info · sea</span></div>
+
+    <div class="cell" style="background:var(--bg-page)"><span class="t" style="color:var(--fg-1)">Page</span><span class="v" style="color:var(--fg-2)">--bg-page</span></div>
+    <div class="cell" style="background:var(--bg-surface)"><span class="t" style="color:var(--fg-1)">Surface</span><span class="v" style="color:var(--fg-2)">--bg-surface</span></div>
+    <div class="cell" style="background:var(--bg-sunken)"><span class="t" style="color:var(--fg-1)">Sunken</span><span class="v" style="color:var(--fg-2)">--bg-sunken</span></div>
+    <div class="cell" style="background:var(--bg-ink)"><span class="t" style="color:var(--fg-on-ink)">Ink</span><span class="v" style="color:var(--sand-300)">--bg-ink</span></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-page);font-family:var(--font-body);padding:34px 30px 30px}
+  .name{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--fg-1);margin-bottom:24px}
+  .row{display:flex;gap:24px;align-items:center}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px;flex:1}
+  .box{width:100%;height:60px;background:var(--bg-surface);border-radius:14px}
+  .k{font-family:var(--font-mono);font-size:10px;color:var(--fg-2)}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="name">Elevation — warm, soft, ink-tinted</div>
+  <div class="row">
+    <div class="col"><div class="box" style="box-shadow:var(--shadow-xs)"></div><div class="k">xs</div></div>
+    <div class="col"><div class="box" style="box-shadow:var(--shadow-sm)"></div><div class="k">sm</div></div>
+    <div class="col"><div class="box" style="box-shadow:var(--shadow-md)"></div><div class="k">md · cards</div></div>
+    <div class="col"><div class="box" style="box-shadow:var(--shadow-lg)"></div><div class="k">lg</div></div>
+    <div class="col"><div class="box" style="box-shadow:var(--shadow-xl)"></div><div class="k">xl</div></div>
+    <div class="col"><div class="box" style="background:var(--amber-500);box-shadow:var(--shadow-amber)"></div><div class="k">amber glow</div></div>
+  </div>
+</div>
+</body>
+</html>

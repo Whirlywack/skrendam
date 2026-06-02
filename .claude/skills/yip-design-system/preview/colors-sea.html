@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:26px 30px}
+  .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .name{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--fg-1)}
+  .desc{font-size:13px;color:var(--fg-2)}
+  .row{display:flex;gap:8px}
+  .sw{flex:1;display:flex;flex-direction:column;gap:6px}
+  .chip{height:64px;border-radius:12px;border:1px solid rgba(28,24,19,.06);position:relative}
+  .k{font-family:var(--font-mono);font-size:10px;color:var(--fg-2)}
+  .h{font-family:var(--font-mono);font-size:10px;color:var(--fg-3)}
+  .star{position:absolute;top:6px;right:8px;font-size:13px;color:#fff}
+  .brand{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--sea-500)}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="top">
+    <div class="name">Sea — accent</div>
+    <div class="desc">Baltic sea-teal: trust, links, the "club" accent, success. <code style="font-size:11px">--accent</code> = 500</div>
+  </div>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--sea-50)"></div><div class="k">50</div><div class="h">#E8F5F1</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-100)"></div><div class="k">100</div><div class="h">#C6E8DF</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-200)"></div><div class="k">200</div><div class="h">#8FD2C2</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-300)"></div><div class="k">300</div><div class="h">#54B7A2</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-400)"></div><div class="k">400</div><div class="h">#239A83</div></div>
+    <div class="sw"><div class="chip brand" style="background:var(--sea-500)"><span class="star">★</span></div><div class="k">500</div><div class="h">#0F7C68</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-600)"></div><div class="k">600</div><div class="h">#0A6354</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-700)"></div><div class="k">700</div><div class="h">#094E43</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-800)"></div><div class="k">800</div><div class="h">#093D36</div></div>
+    <div class="sw"><div class="chip" style="background:var(--sea-900)"></div><div class="k">900</div><div class="h">#08302B</div></div>
+  </div>
+</div>
+</body>
+</html>

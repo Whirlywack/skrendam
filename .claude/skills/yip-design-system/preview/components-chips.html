@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0}
+  .card{width:700px;box-sizing:border-box;background:var(--bg-surface);font-family:var(--font-body);padding:26px 32px;display:flex;flex-direction:column;gap:16px}
+  .grp{display:flex;flex-direction:column;gap:9px}
+  .tag{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;line-height:1}
+  .chip svg{width:14px;height:14px}
+  .good{background:var(--sea-50);color:var(--sea-700)}
+  .caveat{background:var(--sand-100);color:var(--sand-700)}
+  .hot{background:var(--coral-500);color:#fff}
+  .new{background:var(--amber-100);color:var(--amber-800)}
+  .pct{background:var(--sea-500);color:#fff;font-family:var(--font-mono);font-weight:700}
+</style>
+</head>
+<body>
+<div class="card yip">
+  <div class="grp">
+    <div class="tag">Why-good · sea (trust)</div>
+    <div class="row">
+      <span class="chip good"><i data-lucide="trending-down"></i> 42% under usual</span>
+      <span class="chip good"><i data-lucide="plane"></i> Direct flight</span>
+      <span class="chip good"><i data-lucide="sun"></i> 27°C in October</span>
+      <span class="chip pct">−42%</span>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="tag">Caveats · plain sand (honest, never hidden)</div>
+    <div class="row">
+      <span class="chip caveat"><i data-lucide="luggage"></i> Hand luggage only</span>
+      <span class="chip caveat"><i data-lucide="clock"></i> Lands 23:40</span>
+      <span class="chip caveat"><i data-lucide="bus"></i> Bus to airport</span>
+      <span class="chip caveat"><i data-lucide="repeat"></i> 1 stop · 2h</span>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="tag">Status · urgency &amp; new</div>
+    <div class="row">
+      <span class="chip hot"><i data-lucide="flame"></i> Going fast</span>
+      <span class="chip new">New today</span>
+      <span class="chip caveat"><i data-lucide="map-pin"></i> From Vilnius</span>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>
