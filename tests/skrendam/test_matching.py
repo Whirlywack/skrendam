@@ -50,3 +50,18 @@ def test_smaller_discount_allowed_under_psychological_price():
     tpl = _tpl(min_discount_pct=25, psychological_price_threshold_eur=40,
                allow_smaller_discount_if_under_price=True)
     assert match(_fare(price=39), tpl, BASE, _zone()) is not None
+
+
+def test_template_min_discount_below_20_is_respected():
+    # Fare at EUR83 vs median EUR100 = 17% discount.
+    # Template has min_discount_pct=15, no zone threshold, no psychological ceiling.
+    # Before fix: STRONG_ANOMALY_DISCOUNT=0.20 would veto this even though it cleared the gate.
+    # After fix: discount_floor = 0.15, so 0.17 >= 0.15 -> strong_anomaly=True -> match returned.
+    zone = models.Zone(zone="TEST", haul_type="short", threshold_price_eur=None,
+                       min_abs_savings_eur=0, min_discount_pct=None)
+    tpl = _tpl(min_discount_pct=15, max_stops=0,
+               psychological_price_threshold_eur=None, max_price_eur=None)
+    baseline = Baseline(minimum=80, median=100, decile=85, sample_size=20)
+    fare = _fare(price=83, stops=0)   # discount = (100-83)/100 = 0.17 = 17%
+    result = match(fare, tpl, baseline, zone)
+    assert result is not None, "17% fare under a min_discount_pct=15 template must match"

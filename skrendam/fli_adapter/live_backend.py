@@ -60,6 +60,8 @@ class LiveFliBackend:
         out = []
         for f in results:
             flight = f[0] if isinstance(f, tuple) else f
+            if not getattr(flight, "legs", None):
+                continue
             out.append({
                 "price": flight.price, "currency": getattr(flight, "currency", "EUR") or "EUR",
                 "stops": len(flight.legs) - 1,

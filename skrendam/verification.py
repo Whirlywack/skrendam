@@ -12,9 +12,10 @@ from skrendam.fli_adapter.errors import ScanError
 def recheck_candidate(session: Session, candidate: models.Candidate, adapter: FliAdapter,
                       now: datetime) -> models.VerificationCheck:
     available, price, currency, booking_url, notes, raw = False, None, None, None, None, None
+    cabin = (candidate.search_params or {}).get("cabin", "ECONOMY")
     try:
         fares = adapter.search_flights(candidate.origin, candidate.destination,
-                                       candidate.travel_date, candidate.return_date, "ECONOMY")
+                                       candidate.travel_date, candidate.return_date, cabin)
         if fares:
             fare = min(fares, key=lambda f: f.price)
             available, price, currency = True, fare.price, fare.currency

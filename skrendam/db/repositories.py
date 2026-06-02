@@ -9,7 +9,8 @@ from skrendam.db import models
 
 
 def upsert_candidate(session: Session, deal_group_key: str, fields: dict,
-                     now: datetime) -> models.Candidate:
+                     now: datetime) -> tuple[models.Candidate, bool]:
+    """Return (candidate, created) where created=True when a new row was inserted."""
     existing = session.scalar(
         select(models.Candidate).where(models.Candidate.deal_group_key == deal_group_key))
     if existing is None:
@@ -17,7 +18,7 @@ def upsert_candidate(session: Session, deal_group_key: str, fields: dict,
                                 last_seen_at=now, status="new", **fields)
         session.add(cand)
         session.flush()
-        return cand
+        return cand, True
     # Re-find: refresh price/last_seen only; never touch a curator decision.
     existing.price = fields["price"]
     existing.last_seen_at = now
@@ -25,8 +26,9 @@ def upsert_candidate(session: Session, deal_group_key: str, fields: dict,
         existing.baseline_price = fields.get("baseline_price", existing.baseline_price)
         existing.discount_pct = fields.get("discount_pct", existing.discount_pct)
         existing.itinerary_snapshot = fields.get("itinerary_snapshot", existing.itinerary_snapshot)
+        existing.expires_at = fields.get("expires_at", existing.expires_at)
     session.flush()
-    return existing
+    return existing, False
 
 
 def upsert_match(session: Session, candidate_id: int, template_id: int,

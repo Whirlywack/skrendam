@@ -50,7 +50,7 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
         select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True))))
     routes = list(session.scalars(select(models.Route)))
     zones = {z.zone: z for z in session.scalars(select(models.Zone))}
-    route_by_pair = {(r.origin, r.destination): r for r in routes}
+    route_by_pair = {(r.origin, r.destination): r for r in routes if r.enabled}
 
     aborted = False
     for tpl in templates:
@@ -142,10 +142,8 @@ def _persist_fare(session, run, route, zone, spec, point, fare, base, templates,
                   discount_pct=discount, itinerary_snapshot=fare.raw,
                   search_params={"cabin": spec.cabin}, scanner_version=scanner_version,
                   expires_at=now + timedelta(days=CANDIDATE_TTL_DAYS))
-    is_new = session.scalar(
-        select(models.Candidate.id).where(models.Candidate.deal_group_key == key)) is None
-    cand = repo.upsert_candidate(session, key, fields, now)
-    if is_new:
+    cand, created = repo.upsert_candidate(session, key, fields, now)
+    if created:
         summary.candidates_found += 1
 
     for tpl, result in matches:

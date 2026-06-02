@@ -74,7 +74,11 @@ def match(fare: FareItinerary, tpl: "models.DealTemplate", baseline: Baseline,
     score = (WEIGHTS["price_anomaly"] * s_anom + WEIGHTS["itinerary_quality"] * s_itin
              + WEIGHTS["bookability"] * s_book + WEIGHTS["urgency"] * s_urg)
 
-    strong_anomaly = discount >= STRONG_ANOMALY_DISCOUNT or under_psych or under_price
+    # A fare is a "strong" anomaly if it meets the template's own discount bar
+    # (when one is set, even below 20%), or is under an absolute/psychological
+    # ceiling. Fall back to STRONG_ANOMALY_DISCOUNT only when no min discount is set.
+    discount_floor = min_disc_frac if min_disc_frac > 0 else STRONG_ANOMALY_DISCOUNT
+    strong_anomaly = discount >= discount_floor or under_psych or under_price
     if score < SEND_THRESHOLD or not strong_anomaly:
         return None
 

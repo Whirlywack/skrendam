@@ -47,3 +47,17 @@ def test_seasonal_before_start_uses_this_year():
     specs = resolve(tpl, _routes(), today=date(2026, 6, 2))
     assert specs[0].window_start == date(2026, 12, 1)
     assert specs[0].window_end == date(2026, 12, 23)
+
+
+def test_seasonal_window_wraps_year_boundary():
+    """A Dec-01 -> Feb-28 season must produce window_start=2026-12-01, window_end=2027-02-28."""
+    routes = [models.Route(id=10, origin="VNO", destination="BCN", zone="MED", enabled=True)]
+    tpl = models.DealTemplate(
+        slug="winter", name="x", trip_type="oneway", date_window_type="seasonal",
+        season_start_mmdd="12-01", season_end_mmdd="02-28",
+        included_zones=["MED"])
+    specs = resolve(tpl, routes, today=date(2026, 6, 2))
+    assert specs, "Expected at least one SearchSpec for the wrapping season"
+    s = specs[0]
+    assert s.window_start == date(2026, 12, 1)
+    assert s.window_end == date(2027, 2, 28)

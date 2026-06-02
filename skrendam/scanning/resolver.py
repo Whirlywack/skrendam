@@ -15,11 +15,12 @@ def _window(tpl: "models.DealTemplate", today: date) -> tuple[date, date]:
     elif tpl.date_window_type == "seasonal":
         sm, sd = (int(x) for x in tpl.season_start_mmdd.split("-"))
         em, ed = (int(x) for x in tpl.season_end_mmdd.split("-"))
+        wraps = (em, ed) < (sm, sd)           # season crosses year-end (e.g. Dec -> Feb)
         start = date(today.year, sm, sd)
-        end = date(today.year, em, ed)
-        if end < today:                       # season already passed this year -> next year
-            start = date(today.year + 1, sm, sd)
-            end = date(today.year + 1, em, ed)
+        end = date(today.year + 1 if wraps else today.year, em, ed)
+        if end < today:                       # whole window already passed -> roll to next year
+            start = date(start.year + 1, sm, sd)
+            end = date(end.year + 1, em, ed)
         start = max(start, today)             # never scan the past
     elif tpl.date_window_type == "fixed":
         start, end = tpl.fixed_start_date, tpl.fixed_end_date
