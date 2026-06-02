@@ -119,4 +119,6 @@ def test_poll_loop_processes_one_batch_then_stops(session, monkeypatch):
         today_fn=lambda: date(2026, 6, 2),
         stop=stop,
     )
+    # poll_loop closes the (shared) session each iteration, but SQLAlchemy lets us
+    # re-query a closed session — it just re-acquires a connection on next use.
     assert session.query(models.ScanRequest).filter_by(status="done").count() == 1
