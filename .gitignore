@@ -167,3 +167,7 @@ cython_debug/
 
 # macOS
 .DS_Store
+
+# QA / Playwright artifacts
+.playwright-mcp/
+qa-*.png
