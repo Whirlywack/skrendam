@@ -4,13 +4,18 @@ this worker (polled by the scheduler) executes them via the Python fli stack."""
 from __future__ import annotations
 
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from skrendam.db import models
 from skrendam.scanning.orchestrator import run_scan
 from skrendam.verification import recheck_candidate
+
+
+def _utcnow() -> datetime:
+    """Naive UTC, matching the rest of the schema, without deprecated utcnow()."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def process_pending_requests(
@@ -21,6 +26,11 @@ def process_pending_requests(
 
     Returns the number processed. A single request's error is recorded on the row
     (status="error") and never aborts the batch.
+
+    V1 assumes a SINGLE worker process: the claim (SELECT queued -> UPDATE running)
+    is not atomic, so concurrent workers could double-claim, and a crash mid-batch
+    leaves a row stuck in "running" with no auto-recovery. A future version should
+    use SELECT ... FOR UPDATE SKIP LOCKED and/or a requeue-stuck sweep.
     """
     pending = (
         session.query(models.ScanRequest)
@@ -62,17 +72,16 @@ def process_pending_requests(
 
 def poll_loop(
     make_session, make_adapter, *, interval_seconds: float = 15.0,
-    scanner_version: str = "0.1.0", now_fn=datetime.utcnow, today_fn=date.today, stop=None,
+    scanner_version: str = "0.1.0", now_fn=_utcnow, today_fn=date.today, stop=None,
 ) -> None:
     """Run process_pending_requests forever (or until stop() is truthy)."""
     while not (stop and stop()):
         session = make_session()
         try:
             process_pending_requests(
-                session, make_adapter(), today=today_fn(), now=now_fn(), scanner_version=scanner_version,
+                session, make_adapter(), today=today_fn(), now=now_fn(),
+                scanner_version=scanner_version,
             )
         finally:
             session.close()
-        if stop and stop():
-            break
         time.sleep(interval_seconds)

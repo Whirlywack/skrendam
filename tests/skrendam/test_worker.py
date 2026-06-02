@@ -3,9 +3,9 @@ from datetime import date, datetime
 import pytest
 from sqlalchemy.exc import IntegrityError
 
+from skrendam import worker
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
-from skrendam import worker
 
 
 def test_scan_request_defaults(session):
@@ -28,7 +28,9 @@ def test_scan_request_requires_kind(session):
 
 class FakeBackend:
     """Mimics the live fli backend surface used by recheck/run_scan."""
+
     def __init__(self, fares=None):
+        """Initialise with an optional list of fare dicts; defaults to one cheap EUR fare."""
         self._fares = fares if fares is not None else [
             {"price": 41.0, "currency": "EUR", "booking_url": "https://x", "stops": 0}
         ]
@@ -36,15 +38,13 @@ class FakeBackend:
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
         return list(self._fares)
 
-    def search_dates(self, *a, **k):
-        return []
-
 
 def _adapter(fares=None):
     return FliAdapter(FakeBackend(fares), pace=lambda: None)
 
 
 def _seed_candidate(session):
+    session.add(models.Zone(zone="MED", haul_type="short"))
     session.add(models.Route(id=1, origin="VNO", destination="LCA", zone="MED"))
     cand = models.Candidate(
         id=1, route_id=1, origin="VNO", destination="LCA", zone="MED",
@@ -62,7 +62,9 @@ def test_recheck_request_runs_and_marks_done(session):
     req = models.ScanRequest(kind="recheck", candidate_id=cand.id)
     session.add(req)
     session.commit()
-    n = worker.process_pending_requests(session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0))
+    n = worker.process_pending_requests(
+        session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0)
+    )
     assert n == 1
     session.refresh(req)
     assert req.status == "done"
@@ -76,7 +78,9 @@ def test_recheck_missing_candidate_marks_error(session):
     req = models.ScanRequest(kind="recheck", candidate_id=999)
     session.add(req)
     session.commit()
-    worker.process_pending_requests(session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0))
+    worker.process_pending_requests(
+        session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0)
+    )
     session.refresh(req)
     assert req.status == "error"
     assert "999" in (req.error or "")
@@ -88,6 +92,8 @@ def test_only_queued_are_claimed_and_limit_respected(session):
         session.add(models.ScanRequest(kind="recheck", candidate_id=1))
     session.add(models.ScanRequest(kind="recheck", candidate_id=1, status="done"))
     session.commit()
-    n = worker.process_pending_requests(session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0), limit=2)
+    n = worker.process_pending_requests(
+        session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0), limit=2
+    )
     assert n == 2
     assert session.query(models.ScanRequest).filter_by(status="queued").count() == 1
