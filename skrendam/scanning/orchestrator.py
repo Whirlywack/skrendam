@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from skrendam.db import models, repositories as repo
 from skrendam.fli_adapter.adapter import FliAdapter
-from skrendam.fli_adapter.errors import ScanError
+from skrendam.fli_adapter.errors import RateLimitedError, ScanError
 from skrendam.fli_adapter.pacing import CircuitBreaker
 from skrendam.scanning import baseline as baseline_mod
 from skrendam.scanning import content as content_mod
@@ -26,19 +26,21 @@ class ScanSummary:
     candidates_found: int = 0
     matches_created: int = 0
     errors: int = 0
+    http_429s: int = 0
 
 
-def _flagged(points, baseline, zone):
-    cut = baseline.decile
-    if zone.threshold_price_eur is not None:
-        cut = max(cut, zone.threshold_price_eur)
-    return [p for p in points if p.price <= cut]
+def _flagged(points, baseline, _zone):
+    # Flag the window's relatively-cheap dates (<= 10th-percentile). This is the
+    # tier-2 trigger and is naturally bounded (~10% of the window). The absolute
+    # "interesting price" ceiling (zone.threshold_price_eur / template.max_price_eur)
+    # is enforced later in matching, not here, so tier-2 fetches stay bounded.
+    return [p for p in points if p.price <= baseline.decile]
 
 
 def run_scan(session: Session, today: date, adapter: FliAdapter,
              scanner_version: str = "0.1.0", circuit_breaker_threshold: int = 5) -> ScanSummary:
     now = datetime(today.year, today.month, today.day)
-    run = models.ScanRun(scanner_version=scanner_version, status="running")
+    run = models.ScanRun(scanner_version=scanner_version, status="running", started_at=now)
     session.add(run)
     session.flush()
     summary = ScanSummary()
@@ -60,8 +62,10 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
             try:
                 points = adapter.search_calendar(spec)
                 breaker.record_success()
-            except ScanError:
+            except ScanError as exc:
                 summary.errors += 1
+                if isinstance(exc, RateLimitedError):
+                    summary.http_429s += 1
                 breaker.record_failure()
                 if breaker.is_open():
                     aborted = True
@@ -82,8 +86,10 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
                     fares = adapter.search_flights(spec.origin, spec.destination,
                                                    p.travel_date, p.return_date, spec.cabin)
                     breaker.record_success()
-                except ScanError:
+                except ScanError as exc:
                     summary.errors += 1
+                    if isinstance(exc, RateLimitedError):
+                        summary.http_429s += 1
                     breaker.record_failure()
                     if breaker.is_open():
                         aborted = True
@@ -106,12 +112,26 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
     run.matches_created = summary.matches_created
     run.api_calls = adapter.api_calls
     run.errors = summary.errors
+    run.http_429s = summary.http_429s
     session.commit()
     return summary
 
 
 def _persist_fare(session, run, route, zone, spec, point, fare, base, templates,
                   now, scanner_version, summary):
+    # Evaluate against every applicable template FIRST (pure, no writes).
+    matches = []
+    for tpl in templates:
+        if tpl.trip_type != spec.trip_type:
+            continue
+        if not _fare_in_template_scope(tpl, route, point, today=now.date()):
+            continue
+        result = matching_mod.match(fare, tpl, base, zone)
+        if result is not None:
+            matches.append((tpl, result))
+    if not matches:
+        return  # no template matched -> not a candidate, don't persist an orphan
+
     discount = None if base.median <= 0 else round((base.median - fare.price) / base.median * 100, 1)
     key = deal_group_key(spec.origin, spec.destination, spec.trip_type,
                          point.travel_date, point.return_date, fare.price)
@@ -128,18 +148,11 @@ def _persist_fare(session, run, route, zone, spec, point, fare, base, templates,
     if is_new:
         summary.candidates_found += 1
 
-    # Evaluate this fare against EVERY applicable template (not just the one that fetched it).
-    for tpl in templates:
-        if tpl.trip_type != spec.trip_type:
-            continue
-        if not _fare_in_template_scope(tpl, route, point, today=now.date()):
-            continue
-        result = matching_mod.match(fare, tpl, base, zone)
-        if result is None:
-            continue
-        repo.upsert_match(session, cand.id, tpl.id, result.match_score,
-                          result.reason_text, result.gate_results)
-        summary.matches_created += 1
+    for tpl, result in matches:
+        _match, created = repo.upsert_match(session, cand.id, tpl.id, result.match_score,
+                                            result.reason_text, result.gate_results)
+        if created:
+            summary.matches_created += 1
         draft = content_mod.build_content_draft(spec.origin, spec.destination, fare.price,
                                                 base.median, point.travel_date, tpl)
         repo.ensure_content_draft(session, cand.id, tpl.id, draft)

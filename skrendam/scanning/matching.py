@@ -1,4 +1,13 @@
-"""Per-template gates + weighted match score. Pure: template + zone + fare in, MatchResult out."""
+"""Per-template gates + weighted match score. Pure: template + zone + fare in, MatchResult out.
+
+# v1 itinerary-gate limitation: only max_stops, max_total_duration_minutes,
+# self_transfer and mixed_cabin are enforced. allow_airport_change /
+# allow_overnight_layover are accepted but currently always-False (live_backend
+# does not yet populate them), and family_friendly_times_only / latest_arrival_hour
+# / earliest_departure_hour / min_layover_minutes / max_layover_minutes are not yet
+# evaluated (FareItinerary does not yet capture per-leg times/layovers). These are
+# tracked follow-ups; the gate over-includes rather than misbehaves.
+"""
 
 from skrendam.db import models
 from skrendam.scanning.types import Baseline, FareItinerary, MatchResult
@@ -22,7 +31,7 @@ def match(fare: FareItinerary, tpl: "models.DealTemplate", baseline: Baseline,
     abs_savings = max(0.0, baseline.median - fare.price)
 
     # Gate 1: price anomaly (hard)
-    max_price = _eff(tpl, zone, "max_price_eur")
+    max_price = tpl.max_price_eur if tpl.max_price_eur is not None else zone.threshold_price_eur
     min_disc = _eff(tpl, zone, "min_discount_pct")
     min_disc_frac = (min_disc / 100.0) if min_disc else 0.0
     under_price = max_price is not None and fare.price <= max_price

@@ -30,7 +30,9 @@ def upsert_candidate(session: Session, deal_group_key: str, fields: dict,
 
 
 def upsert_match(session: Session, candidate_id: int, template_id: int,
-                 match_score: float, reason_text: str, gate_results: dict) -> models.CandidateTemplateMatch:
+                 match_score: float, reason_text: str,
+                 gate_results: dict) -> tuple[models.CandidateTemplateMatch, bool]:
+    """Return (match, created) where created=True when a new row was inserted."""
     existing = session.scalar(
         select(models.CandidateTemplateMatch).where(
             models.CandidateTemplateMatch.candidate_id == candidate_id,
@@ -41,12 +43,12 @@ def upsert_match(session: Session, candidate_id: int, template_id: int,
                                           gate_results=gate_results)
         session.add(m)
         session.flush()
-        return m
+        return m, True
     existing.match_score = match_score
     existing.reason_text = reason_text
     existing.gate_results = gate_results
     session.flush()
-    return existing
+    return existing, False
 
 
 def ensure_content_draft(session: Session, candidate_id: int, template_id: int,
