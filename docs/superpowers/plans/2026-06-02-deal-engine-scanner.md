@@ -145,12 +145,15 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from skrendam.db.base import Base
-from skrendam.db import models  # noqa: F401 — register all tables on Base.metadata
-
 
 @pytest.fixture
 def session():
+    # Imported INSIDE the fixture so this conftest doesn't break collection before
+    # skrendam.db exists (Task 2). Tests that don't use `session` (e.g. test_config)
+    # stay green; tests that use it only run from Task 2 onward.
+    from skrendam.db.base import Base
+    from skrendam.db import models  # noqa: F401 — register all tables on Base.metadata
+
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
@@ -160,8 +163,6 @@ def session():
     finally:
         s.close()
 ```
-
-(The import targets land in Task 2; this file will error until then — that's expected and fixed by Task 2.)
 
 - [ ] **Step 7: Commit**
 
@@ -609,7 +610,7 @@ def test_price_band_buckets_by_5_eur():
 
 def test_oneway_key_is_stable_and_excludes_template():
     k1 = deal_group_key("VNO", "BCN", "oneway", date(2026, 7, 29), None, 30.0)
-    k2 = deal_group_key("VNO", "BCN", "oneway", date(2026, 7, 29), None, 31.0)  # same band
+    k2 = deal_group_key("VNO", "BCN", "oneway", date(2026, 7, 29), None, 29.0)  # same band (ceil→30)
     assert k1 == k2 == "VNO|BCN|oneway|2026-07-29|30"
 
 
@@ -2078,7 +2079,9 @@ def _get_or_create(session, model, defaults, **key):
     obj = session.scalar(select(model).filter_by(**key))
     if obj:
         return obj
-    obj = model(**key, **defaults)
+    # Filter any key fields out of defaults so a key that also appears in
+    # defaults (e.g. slug) doesn't raise "multiple values for keyword".
+    obj = model(**key, **{k: v for k, v in defaults.items() if k not in key})
     session.add(obj)
     session.flush()
     return obj
@@ -2120,7 +2123,8 @@ def seed_all(session: Session) -> None:
              newsletter_tag="last_warm", content_angle="One last sun trip before winter"),
         dict(slug="christmas-markets", name="Christmas markets",
              audience="city_break", moment="xmas_markets", trip_type="roundtrip",
-             date_window_type="fixed", included_zones=["CITY_BREAKS", "WESTERN_EUROPE"],
+             date_window_type="seasonal", season_start_mmdd="12-01", season_end_mmdd="12-23",
+             included_zones=["CITY_BREAKS", "WESTERN_EUROPE"],
              trip_len_min_days=2, trip_len_max_days=4, max_stops=1, prefer_direct=True,
              public_label="Christmas markets", newsletter_tag="xmas",
              content_angle="Cheap Christmas-market weekends"),
