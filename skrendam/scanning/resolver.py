@@ -9,10 +9,14 @@ MAX_FUTURE_DAYS = 305  # fli's ceiling
 
 
 def _window(tpl: "models.DealTemplate", today: date) -> tuple[date, date]:
+    start: date
+    end: date
     if tpl.date_window_type == "relative":
         start = today + timedelta(days=tpl.rel_offset_start_days or 0)
         end = today + timedelta(days=tpl.rel_offset_end_days or 0)
     elif tpl.date_window_type == "seasonal":
+        if tpl.season_start_mmdd is None or tpl.season_end_mmdd is None:
+            raise ValueError("seasonal template missing season_start_mmdd / season_end_mmdd")
         sm, sd = (int(x) for x in tpl.season_start_mmdd.split("-"))
         em, ed = (int(x) for x in tpl.season_end_mmdd.split("-"))
         wraps = (em, ed) < (sm, sd)           # season crosses year-end (e.g. Dec -> Feb)
@@ -23,10 +27,11 @@ def _window(tpl: "models.DealTemplate", today: date) -> tuple[date, date]:
             end = date(end.year + 1, em, ed)
         start = max(start, today)             # never scan the past
     elif tpl.date_window_type == "fixed":
-        start, end = tpl.fixed_start_date, tpl.fixed_end_date
-        if start is None or end is None:
+        fixed_start, fixed_end = tpl.fixed_start_date, tpl.fixed_end_date
+        if fixed_start is None or fixed_end is None:
             return (today, today - timedelta(days=1))  # empty window – no fixed dates set
-        start = max(start, today)
+        start = max(fixed_start, today)
+        end = fixed_end
     else:
         raise ValueError(f"unknown date_window_type {tpl.date_window_type!r}")
     horizon = today + timedelta(days=MAX_FUTURE_DAYS)

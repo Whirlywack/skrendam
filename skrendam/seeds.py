@@ -110,8 +110,8 @@ def seed_all(session: Session) -> None:
              newsletter_tag="plan_summer", content_angle="Book summer early when the fare is good"),
     ]
     for t in templates:
-        a, m = aud[t.pop("audience")], mom[t.pop("moment")]
+        a, m = aud[str(t.pop("audience"))], mom[str(t.pop("moment"))]
         _get_or_create(session, models.DealTemplate,
                        dict(audience_segment_id=a.id, travel_moment_id=m.id, enabled=True, **t),
-                       slug=t.pop("slug"))
+                       slug=str(t.pop("slug")))
     session.commit()

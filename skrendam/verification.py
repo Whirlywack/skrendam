@@ -29,7 +29,7 @@ def recheck_candidate(session: Session, candidate: models.Candidate, adapter: Fl
                                      price=price, currency=currency, booking_url=booking_url,
                                      available=available, notes=notes, raw_snapshot=raw)
     session.add(check)
-    if available:
+    if available and price is not None:
         candidate.verified_at = now
         candidate.price = price
         candidate.last_seen_at = now
