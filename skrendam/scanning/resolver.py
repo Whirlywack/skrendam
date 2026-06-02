@@ -23,6 +23,8 @@ def _window(tpl: "models.DealTemplate", today: date) -> tuple[date, date]:
         start = max(start, today)             # never scan the past
     elif tpl.date_window_type == "fixed":
         start, end = tpl.fixed_start_date, tpl.fixed_end_date
+        if start is None or end is None:
+            return (today, today - timedelta(days=1))  # empty window – no fixed dates set
         start = max(start, today)
     else:
         raise ValueError(f"unknown date_window_type {tpl.date_window_type!r}")

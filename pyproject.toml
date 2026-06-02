@@ -66,6 +66,8 @@ dev = [
 fli = "fli.cli:cli"
 fli-mcp = "fli.mcp._entry:run"
 fli-mcp-http = "fli.mcp._entry:run_http"
+skrendam = "skrendam.cli:main"
+skrendam-scheduler = "skrendam.scheduler:start"
 
 [project.urls]
 Homepage = "https://github.com/punitarani/fli"
