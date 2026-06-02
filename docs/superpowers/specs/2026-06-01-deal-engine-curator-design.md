@@ -1,6 +1,6 @@
 # Spec 1 — Internal Deal Engine + Curator (Design)
 
-- **Status:** Proposed — awaiting review (v3 — Structured Deal Templates, Approach B)
+- **Status:** Proposed — awaiting review (v4 — Structured Deal Templates + curator UI flow)
 - **Date:** 2026-06-01 · **Revised:** 2026-06-02
 - **Project:** Skrendam (Lithuanian/Baltic flight deals; grow a travel-deal email audience)
 - **Related:** [`docs/research/2026-06-01-deal-engine-v1-review-brief.md`](../../research/2026-06-01-deal-engine-v1-review-brief.md)
@@ -47,6 +47,8 @@ Done when:
 
 **Out of scope (later):** public website + deals showcase + email capture (Spec 2); accounts, billing, premium gating, segmented newsletter delivery, paid tiers, affiliate (Spec 3+); push/SMS alerts; mobile app.
 
+**Design handoff included:** even though the public funnel is Spec 2, this spec includes a **frontend page map** for the internal Deal Desk and a lightweight Spec 2 handoff so the UI can be designed coherently around the eventual flow: candidate → approved deal → public deal page → newsletter signup.
+
 **Hard rule:** internal-only. No end-user access to search, templates, or the candidate queue. Externally users see only curator-selected `published_deals` + a newsletter CTA.
 
 ---
@@ -68,7 +70,8 @@ Done when:
         │ Postgres (Neon) — Alembic = schema source of truth │
         │ zones · routes · audience_segments · travel_moments │
         │ deal_templates · scan_runs · price_log              │
-        │ candidates · candidate_template_matches · published_deals │
+        │ candidates · candidate_template_matches · verification_checks │
+        │ content_drafts · published_deals                    │
         └────────┬───────────────────────────────────────┘
                  │ reads queue (grouped by template) · writes published_deals + candidate.status
                  ▼
@@ -98,13 +101,13 @@ Turns a `deal_template` into concrete searches: resolves the **date window** (`r
 `compute_baseline(calendar)`; `match(candidate, template, baseline, zone) -> Match | None` — runs the gates with the **template's** filter rules (fallback to zone defaults), computes a **match_score** (template-specific) + `reason_text` + `gate_results`. No I/O → fixture-tested.
 
 ### 5.6 Scanner orchestrator
-Runs the 10-step pass (§7): per template → resolve → tier-1 → flag → tier-2 → upsert one candidate/fare → match vs all applicable templates → write `candidate_template_matches` → metrics.
+Runs the 11-step pass (§7): per template → resolve → tier-1 → flag → tier-2 → upsert one candidate/fare → match vs all applicable templates → write `candidate_template_matches` → create initial `content_drafts` → metrics.
 
 ### 5.7 Persistence (repositories)
-Read/write all pipeline tables; SQLAlchemy + Alembic.
+Read/write all pipeline tables; SQLAlchemy + Alembic. Keeps scanner facts (`candidates`, `verification_checks`) separate from editorial output (`content_drafts`, `published_deals`).
 
 ### 5.8 Curator admin (internal Next.js)
-Auth-gated single-user UI; template-grouped queue + rich candidate detail (§10). Reads candidates/matches/scan_runs; writes published_deals + candidate.status.
+Auth-gated single-user UI; template-grouped queue + rich candidate detail (§10). Reads candidates/matches/scan_runs; writes `verification_checks`, `content_drafts`, `published_deals`, and candidate status.
 
 ### 5.9 Calibration script
 One-off re-runnable pass seeding `zones` thresholds from real data.
@@ -132,9 +135,11 @@ Alembic owns the schema. The Next.js app reads via Drizzle types from `drizzle-k
 **Pipeline**
 - **`scan_runs`** — `id`, `started_at`, `finished_at`, `scanner_version`, `templates_scanned`, `routes_scanned`, `api_calls`, `http_429s`, `candidates_found`, `matches_created`, `errors`, `status` (`running|completed|failed`).
 - **`price_log`** — `id`, `run_id` (fk), `route_id` (fk), `trip_type`, `travel_date` (date), `return_date` (date, null), `price`, `currency`, `scanner_version`, `scanned_at`. Index `(route_id, trip_type, travel_date)`, `(scanned_at)`. (Lean tier-1 points; template-agnostic.)
-- **`candidates`** — **one row per real fare**: `id`, `run_id` (fk), `route_id` (fk), `origin`, `destination`, `zone`, `trip_type`, `travel_date` (date), `return_date` (date, null), `price`, `currency`, `baseline_price`, `discount_pct`, `itinerary_snapshot` (jsonb, tier-2), `search_params` (jsonb), `status` (enum `new|seen|approved|edited|rejected|expired`), `rejection_reason` (text, null), `first_seen_at`, `last_seen_at`, `expires_at`, `scanner_version`. **Unique `deal_group_key`** = `origin+dest+trip_type+travel_date(+return_date)+price-band` (fare identity; upsert key — **not** template-based). On re-find update `last_seen_at`/`price` only; `approved`/`rejected` keep their status.
+- **`candidates`** — **one row per real fare**: `id`, `run_id` (fk), `route_id` (fk), `origin`, `destination`, `zone`, `trip_type`, `travel_date` (date), `return_date` (date, null), `price`, `currency`, `baseline_price`, `discount_pct`, `itinerary_snapshot` (jsonb, tier-2), `search_params` (jsonb), `status` (enum `new|seen|maybe|approved|edited|rejected|expired`), `rejection_reason` (text, null), `first_seen_at`, `last_seen_at`, `verified_at` (timestamp, null), `expires_at`, `scanner_version`. **Unique `deal_group_key`** = `origin+dest+trip_type+travel_date(+return_date)+price-band` (fare identity; upsert key — **not** template-based). On re-find update `last_seen_at`/`price` only; `approved`/`rejected` keep their status.
 - **`candidate_template_matches`** — `id`, `candidate_id` (fk), `deal_template_id` (fk), `match_score` (numeric), `reason_text`, `gate_results` (jsonb), `created_at`. Unique `(candidate_id, deal_template_id)`. (This is what makes "one fare → many templates" work and powers the template-grouped queue + "matched N templates.")
-- **`published_deals`** — `id`, `candidate_id` (fk), `deal_template_id` (fk), `public_label` / `newsletter_tag` (denormalized from template), `headline`, `body` (null), `tiktok_hook` (null), `origin`/`destination`/`zone`, `trip_type`, `travel_date`/`return_date`, `price`/`baseline_price`/`discount_pct`, `booking_url`, `valid_until` (null), `last_seen_at`, `tier` (default `free`), `status` (`live|expired|unpublished`), `published_at`. A candidate may be published under more than one template (one row each).
+- **`verification_checks`** — `id`, `candidate_id` (fk), `checked_at`, `provider` (`fli|manual_google_flights|airline|ota`), `price`, `currency`, `booking_url`, `available` (bool), `notes`, `raw_snapshot` (jsonb, null). Each recheck appends a row; `candidates.verified_at` is the latest successful availability check. Public publishing requires a recent successful check.
+- **`content_drafts`** — `id`, `candidate_id` (fk), `deal_template_id` (fk), `headline`, `body` (null), `tiktok_hook` (null), `newsletter_snippet` (null), `cta_text` (null), `status` (`draft|used|discarded`), `created_by` (`system|curator|ai_future`), `created_at`, `updated_at`. This supports save-before-publish and later AI drafting without giving an agent publish rights.
+- **`published_deals`** — `id`, `candidate_id` (fk), `deal_template_id` (fk), `content_draft_id` (fk, null), `public_label` / `newsletter_tag` (denormalized from template), `headline`, `body` (null), `tiktok_hook` (null), `origin`/`destination`/`zone`, `trip_type`, `travel_date`/`return_date`, `price`/`baseline_price`/`discount_pct`, `booking_url`, `valid_until` (null), `last_seen_at`, `tier` (default `free`), `status` (`live|expired|unpublished`), `published_at`. A candidate may be published under more than one template (one row each).
 
 ---
 
@@ -151,7 +156,8 @@ For each scan pass (`run_scan`), open a `scan_runs` row, then:
 7. **Create or update one `candidate`** per real fare (upsert on `deal_group_key`).
 8. **Evaluate** that candidate against **every applicable template** (same `trip_type`; fare's date inside the template's window; origin/zone/destination in scope) — not only the template that fetched it.
 9. **Insert/refresh `candidate_template_matches`** (match_score, reason_text, gate_results) for each template it passes.
-10. Record metrics; on `ScanError` increment `errors`, log, **continue**.
+10. **Create or refresh a `content_draft`** for new high-scoring matches using the template's headline/TikTok/newsletter snippets; preserve curator-edited drafts.
+11. Record metrics; on `ScanError` increment `errors`, log, **continue**.
 
 Close `scan_runs` (counts incl. `templates_scanned`, `matches_created`). Expire stale candidates (`expired`).
 
@@ -191,17 +197,40 @@ Each `candidate_template_matches` row is produced by `match(candidate, template,
 ## 10. Curator admin (internal Next.js)
 
 - **Stack:** Next.js (App Router) + TypeScript on Vercel; Postgres via Drizzle (`drizzle-kit pull`); Auth.js Credentials, single admin from env.
+- **Primary workflow:** `scan → suggested candidates → review/recheck → approve/publish → reuse copy for TikTok/email`.
 - **Views:**
-  - **Queue, grouped by template** — one section per template (`public_label`, audience, moment); candidates sorted by `match_score`. Filters: origin, trip_type, status, min score.
-  - **Candidate detail** — price vs baseline + score; **who this is for** (audience_segment); **why it matched** (`reason_text` per matched template — "matched 3 templates"); **what's bad about it** (itinerary warnings: stops, long layover, bad times); full itinerary + `booking_url`; **suggested headline** (from `suggested_headline_template`) and **suggested TikTok hook** (`tiktok_hook_template`), both editable.
-  - **Actions** — ✓ Approve & Publish (under one or more matched templates → `published_deals`), ✕ Reject (+ `rejection_reason`), ♻ Recheck (re-fetch this itinerary to confirm it's still live + refresh price), ✎ Save edits.
-  - **Config CRUD** — audience_segments, travel_moments, deal_templates, routes, zones.
-  - **Scan-health header** — last run, templates/routes scanned, candidates, matches, 429s.
+  - **Today dashboard** — command center showing new high-score candidates, candidates needing recheck, live deals expiring soon, last scan health, and shortcuts: Review top deals / Run scan / Recheck live deals.
+  - **Deal queue, grouped by template** — one section per template (`public_label`, audience, moment); candidates sorted by `match_score`. Filters: origin, trip_type, status, min score. Rows show route, price, date/window, matched template, score, top reason, red flags, last verified time, and quick actions.
+  - **Candidate detail / review room** — price vs baseline + score; **who this is for** (audience_segment); **why it matched** (`reason_text` per matched template — "matched 3 templates"); **what's bad about it** (itinerary warnings: stops, long layover, bad times); full itinerary + `booking_url`; `verified_at` / recheck status; suggested headline, TikTok hook, and newsletter snippet, all editable.
+  - **Publish deal panel** — converts the candidate into a `published_deal`: headline, summary/body, public slug placeholder for Spec 2, booking URL, valid_until, selected template, public/newsletter/future-premium intent, TikTok hook, newsletter snippet.
+  - **Published deals** — live/draft/expired/unpublished tabs; edit, recheck, expire, republish, and copy TikTok/email text.
+  - **Deal templates** — list + editor for Approach B templates. The editor is framed editorially: Who is this for? When are they travelling? Where should we look? What counts as cheap? What itinerary pain is acceptable? What is the content angle?
+  - **Audience segments** — manage reusable buyer profiles (families, couples, flexible adults, budget travelers, city-break travelers) and their default itinerary tolerance.
+  - **Travel moments calendar** — manage seasonal/relative/fixed moments (school holidays, long weekends, September sun, last warm days, Christmas markets, plan-ahead summer).
+  - **Routes / destinations / zones** — manage origins, destination list, zone assignment, route enabled state, and zone thresholds.
+  - **Scan health** — last run, API calls, duration, 429s, errors, failed templates/routes, candidates found, matches created.
+  - **AI suggestions / drafts (future-ready placeholder)** — optional later page/section for proposed headlines, TikTok hooks, email snippets, similar-deal grouping, and suggested template tuning. The AI may suggest and draft; the founder remains the approval gate.
+- **Key statuses:** candidate status starts as `new`, can move through `seen` / `maybe` / `approved` / `edited` / `rejected` / `expired`; verification is represented by `verification_checks` + `verified_at`; publication is represented by `published_deals.status`.
+- **AI-agent-friendly boundaries:** keep curation actions object-based and explicit: `candidate`, `candidate_template_match`, `verification_check`, `content_draft`, `published_deal`. Future agents can propose edits or drafts against those objects without directly publishing.
 - **Permissions:** internal single user; read candidates/matches/scan_runs, write published_deals + candidate.status + config. No deletes of pipeline data.
 
 ---
 
-## 11. Configuration, seed data & calibration
+## 11. Spec 2 public funnel handoff (not built in Spec 1)
+
+The public side is deferred, but the internal admin should publish data cleanly enough that Spec 2 can be a small, direct reader of `published_deals`.
+
+**Public pages to design/build in Spec 2:**
+- **Home / landing** — clear promise ("Curated cheap flights from Lithuania and nearby airports"), email signup above the fold, newest approved deals, trust copy ("manually checked; no public search engine"), CTA.
+- **Deals listing** — approved public deals only; grouped/filterable by `public_label`, origin, sun/city/family/last-minute, month/season.
+- **Deal detail** — one approved deal: route, price, travel date/window, why it is good, caveats, booking link, valid_until, and newsletter signup CTA.
+- **Newsletter signup / thank you** — minimal email capture first; later preference capture (origins, family trips, sun trips, city breaks, premium alerts).
+
+**Public rule:** users consume curated output only. There is no search box, no raw `fli` results, and no user-triggered flight lookup.
+
+---
+
+## 12. Configuration, seed data & calibration
 
 - **Origins:** VNO, KUN, RIX from day one; PLQ optional/bonus; WAW easy to add (`nearby_origins_allowed`).
 - **Destinations:** ~60–120 curated Lithuanian/Baltic destinations, zone-tagged; editable.
@@ -221,7 +250,7 @@ Each `candidate_template_matches` row is produced by `match(candidate, template,
 
 ---
 
-## 12. Tech stack & deployment
+## 13. Tech stack & deployment
 
 | Layer | Choice |
 |---|---|
@@ -234,13 +263,13 @@ Each `candidate_template_matches` row is produced by `match(candidate, template,
 
 ---
 
-## 13. Error handling & observability
+## 14. Error handling & observability
 
 Typed `ScanError`s; a failing template/route increments `scan_runs.errors` and is logged — never silently swallowed, never aborts the run. 429s/timeouts counted to tune pacing. Structured logs; admin scan-health header.
 
 ---
 
-## 14. Testing
+## 15. Testing
 
 - **Resolver / baseline / matching:** unit tests with recorded fixtures (sample `SearchDates`/`SearchFlights` JSON; resolution against a fixed "today"; one-way *and* round-trip) — deterministic, no network.
 - **Adapter/pacing:** `fli` mocked — pacing, backoff, circuit-breaker, within-run cache, error mapping, round-trip path.
@@ -249,21 +278,24 @@ Typed `ScanError`s; a failing template/route increments `scan_runs.errors` and i
 
 ---
 
-## 15. Build sequence (milestones)
+## 16. Build sequence (milestones)
 
 1. Schema + Alembic migrations + seed zones/routes/audience_segments/travel_moments/deal_templates.
 2. `fli` adapter (one-way + round-trip) + pacing/backoff + within-run cache.
 3. Template resolver.
 4. Tier-1 scan + `price_log` + baseline.
-5. Matching module + tier-2 + `candidates` (upsert) + `candidate_template_matches`.
+5. Matching module + tier-2 + `candidates` (upsert) + `candidate_template_matches` + initial `content_drafts`.
 6. `scan_runs` metrics + APScheduler.
 7. Calibration + first real calibration.
-8. Internal curator admin: template-grouped queue → rich detail → approve/publish/reject/recheck + config CRUD + auth.
-9. End-to-end dry run on real data; tune thresholds & weights.
+8. Internal curator admin shell: Today dashboard + template-grouped queue + scan-health header.
+9. Candidate detail / review room + recheck + reject reasons.
+10. Publish deal panel + published deals management + copy outputs for TikTok/newsletter.
+11. Config CRUD: templates, audience segments, travel moments, routes, zones.
+12. End-to-end dry run on real data; tune thresholds & weights.
 
 ---
 
-## 16. Risks & mitigations
+## 17. Risks & mitigations
 
 (Full analysis in the review brief.)
 
@@ -276,6 +308,6 @@ Typed `ScanError`s; a failing template/route increments `scan_runs.errors` and i
 | **R4 cold-start baseline** | Window-relative + calibrated zone thresholds; SerpApi `price_insights` flagged as optional. |
 | **Timeouts / 429** | Live-tested clean; warm worker + pacing/backoff/circuit-breaker + within-run cache + `scan_runs`. |
 
-## 17. Deferred (not blocking the build)
+## 18. Deferred (not blocking the build)
 
 Public site + showcase + email capture (Spec 2); monetization — segmented newsletters, paid tiers, affiliate (Spec 3+); production/affiliate data source (R1); intra-day cadence; SerpApi baseline (R4); multi-duration round-trip scanning; everything in §3 "out of scope".
