@@ -171,3 +171,11 @@ cython_debug/
 # QA / Playwright artifacts
 .playwright-mcp/
 qa-*.png
+
+# Next.js curator admin (web/)
+web/node_modules/
+web/.next/
+web/out/
+web/.env*.local
+web/playwright-report/
+web/test-results/
