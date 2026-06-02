@@ -238,3 +238,20 @@ class PublishedDeal(Base):
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class ScanRequest(Base):
+    __tablename__ = "scan_requests"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String)  # "full_scan" | "recheck"
+    candidate_id: Mapped[int | None] = mapped_column(
+        ForeignKey("candidates.id"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String, default="queued", index=True)
+    requested_by: Mapped[str] = mapped_column(String, default="curator")
+    params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    result_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
