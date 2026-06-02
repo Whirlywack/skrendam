@@ -179,6 +179,8 @@ Each `candidate_template_matches` row is produced by `match(candidate, template,
 
 > **Bookability in v1 is derived from the itinerary** (`self_transfer=false`, single known carrier, `mixed_cabin=false`), **not `get_booking_options`** (empty server-side). The per-flight `booking_url` deep link is always attached.
 
+> **v1 itinerary-gate limitation (known, tracked):** only `max_stops`, `max_total_duration_minutes`, `self_transfer`, and `mixed_cabin` are enforced today. `allow_airport_change` / `allow_overnight_layover` are accepted but currently always-false (the live backend does not yet populate them), and `family_friendly_times_only` / `latest_arrival_hour` / `earliest_departure_hour` / `min_layover_minutes` / `max_layover_minutes` are not yet evaluated (the `FareItinerary` snapshot does not yet capture per-leg times/layovers). The gate **over-includes rather than misbehaves**; capturing those fields in the live backend + implementing the remaining checks is a fast-follow.
+
 **Match rule:** keep the match if `match_score > threshold` **AND** price-anomaly strong on its own **AND** itinerary clears the template's floor.
 
 **Weights are seeds.** Approve/reject is labelled training data; `gate_results` + `search_params` persisted so matches can be re-scored / weights refit later.
