@@ -1,4 +1,5 @@
-from datetime import datetime
+import pytest
+from sqlalchemy.exc import IntegrityError
 
 from skrendam.db import models
 
@@ -12,3 +13,10 @@ def test_scan_request_defaults(session):
     assert req.requested_by == "curator"
     assert req.created_at is not None
     assert req.candidate_id is None
+
+
+def test_scan_request_requires_kind(session):
+    session.add(models.ScanRequest())
+    with pytest.raises(IntegrityError):
+        session.commit()
+    session.rollback()
