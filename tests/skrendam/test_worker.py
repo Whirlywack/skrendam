@@ -97,3 +97,26 @@ def test_only_queued_are_claimed_and_limit_respected(session):
     )
     assert n == 2
     assert session.query(models.ScanRequest).filter_by(status="queued").count() == 1
+
+
+def test_poll_loop_processes_one_batch_then_stops(session, monkeypatch):
+    _seed_candidate(session)
+    session.add(models.ScanRequest(kind="recheck", candidate_id=1))
+    session.commit()
+
+    monkeypatch.setattr(worker.time, "sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def stop():
+        calls["n"] += 1
+        return calls["n"] > 1  # allow exactly one iteration
+
+    worker.poll_loop(
+        make_session=lambda: session,
+        make_adapter=_adapter,
+        interval_seconds=0,
+        now_fn=lambda: datetime(2026, 6, 2, 8, 0),
+        today_fn=lambda: date(2026, 6, 2),
+        stop=stop,
+    )
+    assert session.query(models.ScanRequest).filter_by(status="done").count() == 1
