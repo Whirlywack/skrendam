@@ -31,10 +31,12 @@ def _update_published_for_candidate(session: Session, candidate_id: int, availab
 def recheck_candidate(session: Session, candidate: models.Candidate, adapter: FliAdapter,
                       now: datetime) -> models.VerificationCheck:
     available, price, currency, booking_url, notes, raw = False, None, None, None, None, None
+    responded = False
     cabin = (candidate.search_params or {}).get("cabin", "ECONOMY")
     try:
         fares = adapter.search_flights(candidate.origin, candidate.destination,
                                        candidate.travel_date, candidate.return_date, cabin)
+        responded = True
         if fares:
             fare = min(fares, key=lambda f: f.price)
             available, price, currency = True, fare.price, fare.currency
@@ -52,6 +54,7 @@ def recheck_candidate(session: Session, candidate: models.Candidate, adapter: Fl
         candidate.verified_at = now
         candidate.price = price
         candidate.last_seen_at = now
-    _update_published_for_candidate(session, candidate.id, available, price, now)
+    if responded:
+        _update_published_for_candidate(session, candidate.id, available, price, now)
     session.commit()
     return check
