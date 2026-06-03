@@ -2,7 +2,7 @@
 
 Things deliberately deferred during the Plan 1 (deal engine) build + QA gauntlet. "Remembered and marked" so nothing is silently lost. Each item notes *why* it's deferred and *when/where* it should be picked up.
 
-_Last updated: 2026-06-03, after the Plan 2 (curator admin) build + QA._
+_Last updated: 2026-06-03, after Plan 2 milestone 2 (config editors + engine tuning) shipped (PR #3) + JFC research captured for Spec 2 (§6)._
 
 ---
 
@@ -18,7 +18,7 @@ Plan 1 is the **headless Python engine**. The design-system UI kits (`.claude/sk
 
 ## 2. Engine follow-ups surfaced by review (non-blocking)
 
-- **Per-trip-type calibration (review C5):** `calibrate.py` scans **one-way** only, but `zone.threshold_price_eur` is used as the absolute price ceiling for **round-trip** templates too → round-trip fares (naturally higher) can only pass via discount. Calibrate per trip-type, or scope the zone ceiling to one-way. **Tie this to the live-tuning dry-run.**
+- ~~**Per-trip-type calibration (review C5):**~~ **RESOLVED (milestone 2, PR #3)** — `matching.py` now scopes the zone ceiling to one-way templates; round-trips must clear their own `max_price_eur` or a discount. The live-tuning dry-run is also done: `skrendam analyze` over 246 real matches set `GREAT_THRESHOLD`=88 + tightened a loose template (see `docs/research/2026-06-03-tuning-analysis.md`).
 - ~~**Live `booking_url` for round-trips (review C2):**~~ **RESOLVED** — verified against `fli/search/flights.py`: `build_flight_booking_url(flight: FlightResult | tuple[FlightResult, ...])` accepts both shapes and never raises (falls back to a generic URL on bad input). Passing the raw `f` is correct; passing `f[0]` would have produced outbound-only URLs for round-trips. No change needed.
 - **Live-network dry-run + threshold tuning:** run `skrendam calibrate` then `skrendam run-scan --seed` against a throwaway DB on **real fares**, inspect candidate volume/quality, and tune `SEND_THRESHOLD` / `STRONG_ANOMALY_DISCOUNT` / zone thresholds **before relying on queue volume**. (Engine is live-validated for fetching; thresholds are seeded estimates.)
 - **Full itinerary gates (v1 documented limitation):** only `max_stops`, `max_total_duration_minutes`, `self_transfer`, `mixed_cabin` are enforced. `allow_airport_change` / `allow_overnight_layover` are always-false (live backend doesn't populate them) and `family_friendly_times_only` / `latest_arrival_hour` / `earliest_departure_hour` / layover bounds are **not yet evaluated** (the `FareItinerary` snapshot lacks per-leg times/layovers). Capture those in `live_backend._to_itinerary` + implement the gates.
@@ -41,10 +41,11 @@ Tracked in `docs/research/2026-06-01-deal-engine-v1-review-brief.md`:
 
 _Added 2026-06-03. The internal Deal Desk is built in `web/` and wired to real Neon data (158 candidates); login → review → publish verified end-to-end (Playwright). Branch `feat/curator-admin`._
 
-**Deferred to a Plan 2 "milestone 2" (core curate→publish loop shipped first — locked scope decision):**
-- **Config CRUD editors** — Spec §10 views for `deal_templates`, `audience_segments`, `travel_moments`, `routes`/destinations, `zones`. Until built, edit config via `skrendam seed` / direct DB.
-- **AI suggestions / drafts** placeholder page (Spec §10).
-- **Public site + newsletter** (Spec 2) — separate app; the admin already writes clean `published_deals` for it.
+**Plan 2 "milestone 2" — SHIPPED (2026-06-03, PR #3):**
+- ✅ **Config CRUD editors** — all 5 (`zones`, `deal_templates`, `audience_segments`, `travel_moments`, `routes`) built under `web/src/app/(app)/config/`; edit + soft-disable; QA'd (code-review high + security-review + Playwright). They double as the tuning cockpit.
+- ✅ **Engine tuning** — `skrendam analyze` + tiered queue (great/maybe) + the C5 fix; tuned from real data (`docs/research/2026-06-03-tuning-analysis.md`).
+- ⏳ **AI suggestions / drafts** placeholder page (Spec §10) — still deferred.
+- ⏳ **Public site + newsletter** (Spec 2) — still deferred; the admin writes clean `published_deals` for it. **See §6 for locked Spec 2 design inputs (JFC research).**
 
 **Verification gaps:**
 - **Recheck / run-scan via the queue** — `scan_requests` enqueue + the Python worker poll loop are built + unit-tested + verified manually, but NOT in the automated Playwright journey (needs the live `fli` worker). Add an E2E with a fake-backend worker toggle.
@@ -59,3 +60,22 @@ _Added 2026-06-03. The internal Deal Desk is built in `web/` and wired to real N
 - **Worker queue is single-worker v1** — non-atomic claim (SELECT queued → UPDATE running); a crash leaves a row stuck `running`. Use `SELECT … FOR UPDATE SKIP LOCKED` + a stuck-row requeue before multi-worker.
 - **`skrendam/**` not in ruff `include`** (only `fli/**`, `tests/**`, `examples/**`, `scripts/**`) — engine escapes ruff; consider adding (will surface pre-existing style issues).
 - **`datetime.utcnow()` deprecation** — `models._now()` + engine use it (removed in 3.14; handoff pins Python ≤3.13). Migrate to `datetime.now(UTC)` engine-wide (`worker.py` already uses a tz-safe `_utcnow`).
+
+## 6. Spec 2 (Yip homepage / public site) — locked design inputs
+
+_Added 2026-06-03 from founder research on Jack's Flight Club. Full notes:
+`docs/research/2026-06-03-jfc-competitive-notes.md`. These are **inputs to the Spec 2
+brainstorm**, not a build spec._
+
+JFC validates Yip's model (curated, not search; scan + human verify; info, not booking). Three
+delivery-layer lessons to design in from day one:
+1. **Data-driven "expected availability window"** — surface a credible "act by ~X / still
+   live" signal, *estimated* from `price_log` history + the `scan_requests` recheck cadence
+   (not a blunt `valid_until` TTL). The fields (`valid_until` / `last_seen_at`) already exist.
+2. **Tiered / segmented release** — access-timing logic (who sees a deal, when), built on the
+   existing `tier` (great/maybe) + `audience_segments`. Likely a `publish_at`-per-tier schedule.
+3. **Speed = the premium product** — if Yip charges, notification speed is the spine; model
+   publish as a schedule across tiers/channels from the start, not a single instant publish.
+
+Inputs 1 + 2 are likely the **first `published_deals` schema additions since milestone 2** (a
+release schedule; possibly an availability-estimate field) — design them deliberately.
