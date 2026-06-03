@@ -3,6 +3,7 @@ import { city, country } from './airports';
 import { formatDates, timeAgo } from './format';
 import { gradientForZone } from './gradients';
 import { toDisplayStatus } from './status';
+import { tierForScore } from './tiers';
 
 type QueueRow = Awaited<ReturnType<typeof import('./queries').getQueueRows>>[number];
 
@@ -28,9 +29,11 @@ export function toCandidateView(r: QueueRow): CandidateView {
   if ((c.itinerarySnapshot as { self_transfer?: boolean } | null)?.self_transfer) {
     flags.push('Self-transfer');
   }
+  const score = Math.round(Number(r.score) * 100);
   return {
     id: `m${r.matchId}`, candidateId: c.id, templateId: r.templateId, matchId: r.matchId,
-    score: Math.round(Number(r.score) * 100),
+    score,
+    tier: tierForScore(score),
     status: toDisplayStatus(c.status, r.publishedId != null),
     place: city(c.destination), country: country(c.destination), origin: city(c.origin),
     from: c.origin, to: c.destination,

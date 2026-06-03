@@ -65,3 +65,32 @@ def test_template_min_discount_below_20_is_respected():
     fare = _fare(price=83, stops=0)   # discount = (100-83)/100 = 0.17 = 17%
     result = match(fare, tpl, baseline, zone)
     assert result is not None, "17% fare under a min_discount_pct=15 template must match"
+
+
+# C5: zone ceiling scoped to one-way only
+def test_roundtrip_template_ignores_oneway_zone_ceiling():
+    # fare=149, median=200 (25% discount), min_discount_pct=30 on template.
+    # 25% < 30% → fails the discount gate; no psychological threshold.
+    # zone ceiling=150 → under_price=True would normally rescue it for one-way.
+    # With trip_type="roundtrip" the zone ceiling must NOT apply → price_anomaly=False → None.
+    zone = models.Zone(zone="MED", haul_type="short", threshold_price_eur=150.0,
+                       min_abs_savings_eur=0, min_discount_pct=None)
+    tpl = _tpl(trip_type="roundtrip", max_price_eur=None, min_discount_pct=30)
+    baseline = Baseline(minimum=130.0, median=200.0, decile=160.0, sample_size=30)
+    fare = _fare(price=149.0, stops=0, dur=240)
+    assert match(fare, tpl, baseline, zone) is None, (
+        "RT template must NOT pass on the one-way zone ceiling alone"
+    )
+
+
+def test_oneway_template_still_uses_zone_ceiling():
+    # Same setup but trip_type="oneway" — zone ceiling rescues the sub-threshold fare.
+    # 25% discount < 30% min required, but fare=149 <= ceiling=150 → under_price=True → passes.
+    zone = models.Zone(zone="MED", haul_type="short", threshold_price_eur=150.0,
+                       min_abs_savings_eur=0, min_discount_pct=None)
+    tpl = _tpl(trip_type="oneway", max_price_eur=None, min_discount_pct=30)
+    baseline = Baseline(minimum=130.0, median=200.0, decile=160.0, sample_size=30)
+    fare = _fare(price=149.0, stops=0, dur=240)
+    assert match(fare, tpl, baseline, zone) is not None, (
+        "one-way template must still pass via the zone ceiling"
+    )

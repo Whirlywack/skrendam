@@ -31,7 +31,12 @@ def match(fare: FareItinerary, tpl: "models.DealTemplate", baseline: Baseline,
     abs_savings = max(0.0, baseline.median - fare.price)
 
     # Gate 1: price anomaly (hard)
-    max_price = tpl.max_price_eur if tpl.max_price_eur is not None else zone.threshold_price_eur
+    # C5: zone.threshold_price_eur is calibrated from ONE-WAY scans, so only use it
+    # as a fallback ceiling for one-way templates. Round-trips must set their own max_price_eur.
+    if tpl.trip_type == "oneway":
+        max_price = tpl.max_price_eur if tpl.max_price_eur is not None else zone.threshold_price_eur
+    else:
+        max_price = tpl.max_price_eur
     min_disc = _eff(tpl, zone, "min_discount_pct")
     min_disc_frac = (min_disc / 100.0) if min_disc else 0.0
     under_price = max_price is not None and fare.price <= max_price

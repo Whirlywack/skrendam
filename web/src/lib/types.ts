@@ -1,3 +1,6 @@
+import type { Tier } from './tiers';
+export type { Tier };
+
 export type DisplayStatus = 'suggested' | 'review' | 'rejected' | 'published' | 'expired';
 
 export interface CandidateView {
@@ -6,6 +9,7 @@ export interface CandidateView {
   templateId: number;
   matchId: number;
   score: number;            // 0–100
+  tier: Tier;
   status: DisplayStatus;
   place: string; country: string; origin: string;
   from: string; to: string;

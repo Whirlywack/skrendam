@@ -122,6 +122,20 @@ button { font-family: inherit; cursor: pointer; }
 .btn-ghost:hover { background: var(--coral-50); }
 .flex1 { flex: 1; }
 
+/* ---------- Tier ---------- */
+.tier-chip { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; padding: 3px 7px; border-radius: 999px; white-space: nowrap; flex: none; }
+.tier-chip.great { background: var(--sea-50); color: var(--sea-700); border: 1px solid var(--sea-200); }
+.tier-chip.maybe { background: var(--sand-100); color: var(--sand-500); border: 1px solid var(--sand-200); }
+
+/* ---------- Maybe subheading ---------- */
+.maybe-toggle { display: flex; align-items: center; gap: 6px; background: none; border: none; padding: 4px 14px 6px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fg-3); cursor: pointer; }
+.maybe-toggle:hover { color: var(--fg-2); }
+.maybe-toggle .chevron { transition: transform var(--dur-fast); display: inline-flex; }
+.maybe-toggle .chevron.open { transform: rotate(180deg); }
+
 /* toast */
 .toast { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 50;
   background: var(--sand-900); color: var(--sand-50); padding: 13px 20px; border-radius: var(--radius-md);

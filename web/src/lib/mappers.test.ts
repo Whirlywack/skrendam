@@ -99,6 +99,16 @@ describe('toCandidateView', () => {
     const row = makeRow({ publishedId: 7, cOverrides: { status: 'new' } });
     expect(toCandidateView(row).status).toBe('published');
   });
+
+  it('score 0.92 → tier "great"', () => {
+    const row = makeRow({ score: '0.92' });
+    expect(toCandidateView(row).tier).toBe('great');
+  });
+
+  it('score 0.60 → tier "maybe"', () => {
+    const row = makeRow({ score: '0.60' });
+    expect(toCandidateView(row).tier).toBe('maybe');
+  });
 });
 
 describe('groupByTemplate', () => {
