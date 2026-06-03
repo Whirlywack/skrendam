@@ -38,8 +38,11 @@ export async function upsertZone(form: FormData): Promise<void> {
   if (!zone) throw new Error('zone is required');
 
   const now = new Date().toISOString();
+  const haulType = (form.get('haul_type') ?? 'short').toString();
+  if (!['short', 'medium', 'long'].includes(haulType)) throw new Error(`invalid haul_type: ${haulType}`);
+
   const editableValues = {
-    haulType: (form.get('haul_type') ?? 'short').toString(),
+    haulType,
     thresholdPriceEur: numOrNull(form.get('threshold_price_eur')),
     minAbsSavingsEur: numOrNull(form.get('min_abs_savings_eur')),
     minDiscountPct: numOrNull(form.get('min_discount_pct')),
@@ -71,11 +74,15 @@ export async function upsertRoute(form: FormData): Promise<void> {
   const id = numOrNull(form.get('id'));
   const now = new Date().toISOString();
 
+  const cabin = (form.get('cabin') ?? 'ECONOMY').toString();
+  if (!['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS', 'FIRST'].includes(cabin))
+    throw new Error(`invalid cabin: ${cabin}`);
+
   const editableValues = {
     origin: (form.get('origin') ?? '').toString().trim().toUpperCase(),
     destination: (form.get('destination') ?? '').toString().trim().toUpperCase(),
     zone: (form.get('zone') ?? '').toString().trim(),
-    cabin: (form.get('cabin') ?? 'ECONOMY').toString(),
+    cabin,
   };
 
   if (!editableValues.origin || !editableValues.destination || !editableValues.zone) {
@@ -102,7 +109,8 @@ export async function upsertRoute(form: FormData): Promise<void> {
 
 export async function toggleRouteEnabled(form: FormData): Promise<void> {
   await requireAdmin();
-  const id = Number(form.get('id'));
+  const id = numOrNull(form.get('id'));
+  if (!id) throw new Error('id required');
   const enabled = form.get('enabled') === 'true';
   await db.update(routes).set({ enabled: !enabled }).where(eq(routes.id, id));
   revalidatePath('/config/routes');
@@ -113,7 +121,8 @@ export async function toggleRouteEnabled(form: FormData): Promise<void> {
 // ---------------------------------------------------------------------------
 export async function toggleTemplateEnabled(form: FormData): Promise<void> {
   await requireAdmin();
-  const id = Number(form.get('id'));
+  const id = numOrNull(form.get('id'));
+  if (!id) throw new Error('id required');
   const enabled = form.get('enabled') === 'true';
   await db.update(dealTemplates).set({ enabled: !enabled }).where(eq(dealTemplates.id, id));
   revalidatePath('/config/templates');
@@ -124,11 +133,16 @@ export async function upsertDealTemplate(form: FormData): Promise<void> {
   const id = numOrNull(form.get('id'));
   const now = new Date().toISOString();
 
+  const audienceSegmentId = numOrNull(form.get('audience_segment_id'));
+  const travelMomentId = numOrNull(form.get('travel_moment_id'));
+  if (audienceSegmentId === null || travelMomentId === null)
+    throw new Error('audience_segment_id and travel_moment_id are required');
+
   const editableValues = {
     slug: (form.get('slug') ?? '').toString().trim(),
     name: (form.get('name') ?? '').toString().trim(),
-    audienceSegmentId: Number(form.get('audience_segment_id')),
-    travelMomentId: Number(form.get('travel_moment_id')),
+    audienceSegmentId,
+    travelMomentId,
     tripType: (form.get('trip_type') ?? 'roundtrip').toString(),
     priority: numOrNull(form.get('priority')) ?? 0,
     publicLabel: strOrNull(form.get('public_label')),
