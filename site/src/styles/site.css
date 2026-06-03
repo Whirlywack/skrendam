@@ -153,7 +153,7 @@
 .yip-site .tab .ct {
   font-family: 'Space Mono', monospace;
   font-size: 12px;
-  color: var(--fg3);
+  color: var(--fg2); /* bumped from fg3: 12 px small text needs ≥ 4.5:1; fg3 (#877860) scores ~3.87:1 on cream */
   margin-left: 5px;
 }
 
@@ -307,7 +307,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-top: 9px;
-  color: var(--fg3);
+  color: var(--fg2); /* bumped from fg3: 10 px small text needs ≥ 4.5:1; fg3 (#877860) scores ~3.87:1 on cream */
 }
 
 .yip-site .st-fast { color: var(--coral-ink); }
@@ -752,4 +752,19 @@
 
 .yip-site .col-lbl b {
   color: var(--sea-ink);
+}
+
+
+/* =========================================================================
+   ACCESSIBILITY — keyboard focus ring
+   Applied globally within .yip-site so interactive elements are always
+   visible to keyboard users. --focus = var(--sea-400) = #239A83.
+   ========================================================================= */
+
+.yip-site a:focus-visible,
+.yip-site button:focus-visible,
+.yip-site input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

@@ -1,11 +1,11 @@
 export function Header() {
   return (
-    <div className="hbar">
+    <header className="hbar">
       <span className="wm">yıp</span>
-      <div className="hbar-right">
+      <nav className="hbar-right" aria-label="Site">
         <span className="airports">From VNO · KUN · RIX</span>
         <span className="hlink">Get deals by email</span>
-      </div>
-    </div>
+      </nav>
+    </header>
   );
 }

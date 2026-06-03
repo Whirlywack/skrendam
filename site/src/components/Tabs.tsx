@@ -15,9 +15,11 @@ export function Tabs({ bookNow, inspiration }: TabsProps) {
 
   return (
     <>
-      <div className="tabs">
+      <div className="tabs" role="tablist" aria-label="Deal tabs">
         <button
           type="button"
+          role="tab"
+          aria-selected={active === 'book'}
           className={`tab${active === 'book' ? ' on' : ''}`}
           onClick={() => setActive('book')}
         >
@@ -25,6 +27,8 @@ export function Tabs({ bookNow, inspiration }: TabsProps) {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={active === 'inspiration'}
           className={`tab${active === 'inspiration' ? ' on' : ''}`}
           onClick={() => setActive('inspiration')}
         >
@@ -33,7 +37,7 @@ export function Tabs({ bookNow, inspiration }: TabsProps) {
       </div>
 
       {deals.length === 0 ? (
-        <div className="grid">
+        <div className="grid" role="tabpanel">
           <p className="subtitle" style={{ gridColumn: '1 / -1' }}>
             {active === 'book'
               ? 'No live deals right now — check back soon.'
@@ -41,7 +45,7 @@ export function Tabs({ bookNow, inspiration }: TabsProps) {
           </p>
         </div>
       ) : (
-        <div className="grid">
+        <div className="grid" role="tabpanel">
           {deals.map((deal) => (
             <BrowseCard key={deal.id} deal={deal} />
           ))}
