@@ -52,6 +52,7 @@ def main():
     sub.add_parser("seed")
     sub.add_parser("calibrate")
     sub.add_parser("worker")
+    sub.add_parser("analyze")
     args = parser.parse_args()
 
     if args.cmd == "run-scan":
@@ -67,6 +68,10 @@ def main():
         calibrate()
     elif args.cmd == "worker":
         worker_command()
+    elif args.cmd == "analyze":
+        from skrendam import analyze
+        session = make_sessionmaker()()
+        print(analyze.format_report(analyze.analyze(session)))
 
 
 if __name__ == "__main__":
