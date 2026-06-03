@@ -49,7 +49,9 @@ def _percentile(values: list[float], pct: float) -> float:
     return round(s[k], 1)
 
 
-def analyze(session: Session, great_threshold: float = 0.8) -> AnalysisReport:
+# Keep great_threshold in sync with the web UI's GREAT_THRESHOLD (web/src/lib/tiers.ts,
+# 0–100 scale → 0.88 here). Tuned 2026-06-03; see docs/research/2026-06-03-tuning-analysis.md.
+def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
     discounts = [d for (d,) in session.execute(
         select(models.Candidate.discount_pct).where(models.Candidate.discount_pct.is_not(None))
     )]
