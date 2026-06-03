@@ -20,7 +20,12 @@ async function requireAdmin() {
 // ---------------------------------------------------------------------------
 const numOrNull = (v: FormDataEntryValue | null): number | null => {
   const s = (v ?? '').toString().trim();
-  return s === '' ? null : Number(s);
+  if (s === '') return null;
+  const n = Number(s);
+  // A non-numeric string must read as null (unset), not NaN — otherwise NaN
+  // slips past the `=== null` FK guards and the `!== null` create-vs-update
+  // routing, turning a create into a silent no-op UPDATE WHERE id = NaN.
+  return Number.isNaN(n) ? null : n;
 };
 
 const strOrNull = (v: FormDataEntryValue | null): string | null => {
