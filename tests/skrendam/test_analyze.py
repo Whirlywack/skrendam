@@ -39,3 +39,4 @@ def test_format_report_is_nonempty_string(session):
     rep = analyze.analyze(session, great_threshold=0.8)
     out = analyze.format_report(rep)
     assert "candidates" in out.lower() and "September sun" in out
+    assert "MED" in out  # per-zone section renders the zone code

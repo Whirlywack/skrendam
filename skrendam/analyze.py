@@ -17,6 +17,12 @@ class TemplateVolume:
 
 
 @dataclass
+class ZoneVolume:
+    zone: str
+    count: int
+
+
+@dataclass
 class TierPreview:
     great: int
     maybe: int
@@ -31,7 +37,7 @@ class AnalysisReport:
     discount_p50: float
     discount_p90: float
     per_template: list[TemplateVolume] = field(default_factory=list)
-    per_zone: list[TemplateVolume] = field(default_factory=list)
+    per_zone: list[ZoneVolume] = field(default_factory=list)
     tier_preview: TierPreview = field(default_factory=lambda: TierPreview(0, 0))
 
 
@@ -69,7 +75,7 @@ def analyze(session: Session, great_threshold: float = 0.8) -> AnalysisReport:
         discount_p50=_percentile(discounts, 50),
         discount_p90=_percentile(discounts, 90),
         per_template=[TemplateVolume(t, c) for (t, c) in per_tmpl],
-        per_zone=[TemplateVolume(z, c) for (z, c) in per_zone],
+        per_zone=[ZoneVolume(z, c) for (z, c) in per_zone],
         tier_preview=TierPreview(great=great, maybe=len(scores) - great),
     )
 
@@ -83,6 +89,6 @@ def format_report(rep: AnalysisReport) -> str:
         "-- candidates per template --",
         *[f"  {t.template}: {t.count}" for t in rep.per_template],
         "-- candidates per zone --",
-        *[f"  {z.template}: {z.count}" for z in rep.per_zone],
+        *[f"  {z.zone}: {z.count}" for z in rep.per_zone],
     ]
     return "\n".join(lines)
