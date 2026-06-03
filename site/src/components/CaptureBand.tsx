@@ -22,7 +22,7 @@ export function CaptureBand() {
   }
 
   return (
-    <div className="cap">
+    <div className="cap" id="capture">
       <div>
         <h3>{done ? "You're in — check your inbox." : 'Never miss a rare fare.'}</h3>
         <p>

@@ -17,3 +17,7 @@ test('airline kind + null vendor → google fallback (v1 spec)', () => {
   const c = bookingCta('https://airline.com/x', null, 'airline');
   expect(c.kind).toBe('google');
 });
+test('rejects javascript: url → google fallback', () => {
+  const c = bookingCta('javascript:alert(document.cookie)');
+  expect(c.url).toBe('https://www.google.com/travel/flights');
+});

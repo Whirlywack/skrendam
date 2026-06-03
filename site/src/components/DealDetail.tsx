@@ -4,6 +4,7 @@ import type { PriceStats } from '@/lib/priceContext';
 import { PriceSparkline } from './PriceSparkline';
 import { Itinerary } from './Itinerary';
 import { BookingCta } from './BookingCta';
+import { StatusLine } from './StatusLine';
 
 interface DealDetailProps {
   deal: PublicDeal;
@@ -30,9 +31,7 @@ export function DealDetail({ deal, stats, snapshot }: DealDetailProps) {
           <div className="why">{deal.why}</div>
           {deal.catchLine && <div className="catch-sm">{deal.catchLine}</div>}
           <BookingCta booking={deal.booking} />
-          <div className={`st${deal.status.kind === 'going_fast' ? ' st-fast' : ''}`}>
-            {deal.status.kind === 'going_fast' ? '▲ ' : ''}{deal.status.label}
-          </div>
+          <StatusLine status={deal.status} />
         </div>
 
         {/* RIGHT — proof */}

@@ -8,7 +8,9 @@ type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 
 function legs(snapshot: unknown): { stops: number; airline: string } {
   const s = (snapshot ?? {}) as Record<string, unknown>;
-  return { stops: Number(s.stops ?? 0), airline: String(s.airline ?? '—') };
+  const legsArr = s.legs as Array<{ airline?: { code?: string } }> | undefined;
+  const airline = legsArr?.[0]?.airline?.code ?? String(s.airline ?? '—');
+  return { stops: Number(s.stops ?? 0), airline };
 }
 
 export function toPublicDeal(r: Row, now: Date): PublicDeal {
