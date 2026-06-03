@@ -12,7 +12,7 @@ export default async function Home() {
   const live = (await getLiveDeals()).map((r) => toPublicDeal(r, now));
   const inspiration = (await getInspirationDeals()).map((r) => toPublicDeal(r, now));
   return (
-    <main className="home">
+    <main>
       <Header />
       <Hero newCount={live.length} />
       <Tabs bookNow={live} inspiration={inspiration} />

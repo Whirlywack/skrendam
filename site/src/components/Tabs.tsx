@@ -16,18 +16,20 @@ export function Tabs({ bookNow, inspiration }: TabsProps) {
   return (
     <>
       <div className="tabs">
-        <div
+        <button
+          type="button"
           className={`tab${active === 'book' ? ' on' : ''}`}
           onClick={() => setActive('book')}
         >
           Book now <span className="ct">{bookNow.length}</span>
-        </div>
-        <div
+        </button>
+        <button
+          type="button"
           className={`tab${active === 'inspiration' ? ' on' : ''}`}
           onClick={() => setActive('inspiration')}
         >
           Inspiration
-        </div>
+        </button>
       </div>
 
       {deals.length === 0 ? (

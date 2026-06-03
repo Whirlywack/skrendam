@@ -11,7 +11,7 @@ export function BrowseCard({ deal }: { deal: PublicDeal }) {
       <div className="rt">{deal.route} · {deal.tripType === 'roundtrip' ? 'ret' : 'one-way'} · {deal.dates}</div>
       <div className="pr">€{deal.price} <small>{deal.tripType === 'roundtrip' ? 'return' : 'one-way'}</small></div>
       <div className="why">{deal.why}</div>
-      {deal.catchLine && <div className="catch">{deal.catchLine}</div>}
+      <div className="catch">{deal.catchLine ?? 'No catch — clean itinerary'}</div>
       <StatusLine status={deal.status} />
       <Link className="see" href={`/deal/${deal.id}`}>See the deal →</Link>
     </div>
