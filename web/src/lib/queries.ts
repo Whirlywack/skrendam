@@ -5,7 +5,10 @@ import {
   publishedDeals, scanRuns, scanRequests,
 } from '@/db/generated/schema';
 
-export async function getQueueRows() {
+// ---------------------------------------------------------------------------
+// Private base builder — select + joins shared by queue and point-lookup.
+// ---------------------------------------------------------------------------
+function queueBase() {
   return db
     .select({
       matchId: candidateTemplateMatches.id,
@@ -28,13 +31,26 @@ export async function getQueueRows() {
       eq(contentDrafts.candidateId, candidates.id),
       eq(contentDrafts.dealTemplateId, dealTemplates.id),
     ))
-    .leftJoin(publishedDeals, eq(publishedDeals.candidateId, candidates.id))
-    .orderBy(desc(candidateTemplateMatches.matchScore));
+    .leftJoin(publishedDeals, eq(publishedDeals.candidateId, candidates.id));
+}
+
+export async function getQueueRows() {
+  const rows = await queueBase().orderBy(desc(candidateTemplateMatches.matchScore));
+  // A candidate with multiple published_deals rows fans out the same matchId.
+  // Keep only the first occurrence per matchId.
+  const seen = new Set<number>();
+  return rows.filter((r) => {
+    if (seen.has(r.matchId)) return false;
+    seen.add(r.matchId);
+    return true;
+  });
 }
 
 export async function getCandidateRow(matchId: number) {
-  const rows = await getQueueRows();
-  return rows.find((r) => r.matchId === matchId) ?? null;
+  const rows = await queueBase()
+    .where(eq(candidateTemplateMatches.id, matchId))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 export async function getLatestScanRun() {

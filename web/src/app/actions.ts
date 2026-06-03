@@ -43,7 +43,7 @@ export async function setCandidateStatus(
     .set({ status })
     .where(eq(candidates.id, candidateId));
   revalidatePath('/queue');
-  revalidatePath(`/candidates/m${candidateId}`);
+  revalidatePath('/candidates/[id]', 'page');
 }
 
 // ---------------------------------------------------------------------------
@@ -92,7 +92,7 @@ export async function saveContentDraft(input: {
     });
   }
 
-  revalidatePath(`/candidates/m${input.candidateId}`);
+  revalidatePath('/candidates/[id]', 'page');
 }
 
 // ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ export async function enqueueRecheck(candidateId: number): Promise<void> {
     status: 'queued',
     requestedBy: 'curator',
   });
-  revalidatePath(`/candidates/m${candidateId}`);
+  revalidatePath('/candidates/[id]', 'page');
   revalidatePath('/scans');
 }
 
@@ -201,5 +201,19 @@ export async function enqueueScan(): Promise<void> {
     status: 'queued',
     requestedBy: 'curator',
   });
+  revalidatePath('/scans');
+}
+
+export async function enqueueRecheckLive(): Promise<void> {
+  await requireAdmin();
+  const live = await db
+    .select({ candidateId: publishedDeals.candidateId })
+    .from(publishedDeals)
+    .where(eq(publishedDeals.status, 'live'));
+  if (live.length > 0) {
+    await db.insert(scanRequests).values(
+      live.map((d) => ({ kind: 'recheck', candidateId: d.candidateId, status: 'queued', requestedBy: 'curator' })),
+    );
+  }
   revalidatePath('/scans');
 }

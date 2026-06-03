@@ -1,6 +1,6 @@
 import type { CandidateView, ScanView, TemplateGroup } from './types';
 import { city, country } from './airports';
-import { formatDates, pct, timeAgo } from './format';
+import { formatDates, timeAgo } from './format';
 import { gradientForZone } from './gradients';
 import { toDisplayStatus } from './status';
 
@@ -17,7 +17,7 @@ function legsFrom(snapshot: unknown): { legs: string; airline: string; stops: nu
 export function toCandidateView(r: QueueRow): CandidateView {
   const c = r.c;
   const { legs, airline, stops } = legsFrom(c.itinerarySnapshot);
-  const drop = pct(c.discountPct);
+  const drop = Math.round(Number(c.discountPct ?? 0));
   const signals = [
     ...(r.reason ? [r.reason] : []),
     ...(drop ? [`${drop}% below baseline`] : []),

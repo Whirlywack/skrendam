@@ -72,7 +72,7 @@ function DealRow({ deal }: { deal: Deal }) {
           </span>
           {deal.discountPct != null && (
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' }}>
-              −{Math.round(Number(deal.discountPct) * 100)}%
+              −{Math.round(Number(deal.discountPct ?? 0))}%
             </span>
           )}
           {deal.travelDate && (

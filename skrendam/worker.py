@@ -3,6 +3,7 @@ this worker (polled by the scheduler) executes them via the Python fli stack."""
 
 from __future__ import annotations
 
+import logging
 import time
 from datetime import date, datetime, timezone
 
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 from skrendam.db import models
 from skrendam.scanning.orchestrator import run_scan
 from skrendam.verification import recheck_candidate
+
+_log = logging.getLogger(__name__)
 
 
 def _utcnow() -> datetime:
@@ -64,7 +67,7 @@ def process_pending_requests(
             req.status = "error"
             req.error = str(exc)
         finally:
-            req.finished_at = now
+            req.finished_at = _utcnow()
             session.commit()
         processed += 1
     return processed
@@ -76,12 +79,17 @@ def poll_loop(
 ) -> None:
     """Run process_pending_requests forever (or until stop() is truthy)."""
     while not (stop and stop()):
-        session = make_session()
         try:
-            process_pending_requests(
-                session, make_adapter(), today=today_fn(), now=now_fn(),
-                scanner_version=scanner_version,
-            )
-        finally:
-            session.close()
+            session = make_session()
+            try:
+                process_pending_requests(
+                    session, make_adapter(), today=today_fn(), now=now_fn(),
+                    scanner_version=scanner_version,
+                )
+            finally:
+                session.close()
+        except Exception as exc:  # noqa: BLE001 — transient DB/network; log and keep polling
+            _log.warning("poll iteration failed: %s", exc)
+        if stop and stop():
+            break
         time.sleep(interval_seconds)

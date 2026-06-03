@@ -1,18 +1,29 @@
 'use client';
 
 import { useTransition, useState } from 'react';
-import { enqueueScan } from '@/app/actions';
+import { enqueueScan, enqueueRecheckLive } from '@/app/actions';
 import { Icon } from '@/components/Icon';
 
 export function ScanButtons() {
-  const [isPending, startTransition] = useTransition();
-  const [queued, setQueued] = useState(false);
+  const [isScanPending, startScanTransition] = useTransition();
+  const [scanQueued, setScanQueued] = useState(false);
+
+  const [isRecheckPending, startRecheckTransition] = useTransition();
+  const [recheckQueued, setRecheckQueued] = useState(false);
 
   function handleRunScan() {
-    startTransition(async () => {
+    startScanTransition(async () => {
       await enqueueScan();
-      setQueued(true);
-      setTimeout(() => setQueued(false), 4000);
+      setScanQueued(true);
+      setTimeout(() => setScanQueued(false), 4000);
+    });
+  }
+
+  function handleRecheckLive() {
+    startRecheckTransition(async () => {
+      await enqueueRecheckLive();
+      setRecheckQueued(true);
+      setTimeout(() => setRecheckQueued(false), 4000);
     });
   }
 
@@ -21,14 +32,14 @@ export function ScanButtons() {
       <button
         className="btn btn-outline"
         onClick={handleRunScan}
-        disabled={isPending}
-        style={isPending ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+        disabled={isScanPending}
+        style={isScanPending ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
       >
-        {isPending ? (
+        {isScanPending ? (
           <>
             <Icon name="Loader" size={16} /> Queuing…
           </>
-        ) : queued ? (
+        ) : scanQueued ? (
           <>
             <Icon name="CheckCircle" size={16} /> Scan queued
           </>
@@ -37,15 +48,23 @@ export function ScanButtons() {
         )}
       </button>
 
-      {/* "Recheck live deals" also enqueues a full scan — the Python worker
-          re-evaluates all pending candidates in a single pass. */}
       <button
         className="btn btn-outline"
-        onClick={handleRunScan}
-        disabled={isPending}
-        style={isPending ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
+        onClick={handleRecheckLive}
+        disabled={isRecheckPending}
+        style={isRecheckPending ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
       >
-        Recheck live deals
+        {isRecheckPending ? (
+          <>
+            <Icon name="Loader" size={16} /> Queuing…
+          </>
+        ) : recheckQueued ? (
+          <>
+            <Icon name="CheckCircle" size={16} /> Recheck queued
+          </>
+        ) : (
+          'Recheck live deals'
+        )}
       </button>
     </>
   );
