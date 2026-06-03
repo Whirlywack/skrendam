@@ -25,7 +25,9 @@ export function toCandidateView(r: QueueRow): CandidateView {
   ];
   const flags: string[] = [];
   if (stops >= 2) flags.push('2+ stops');
-  if ((c.itinerarySnapshot as any)?.self_transfer) flags.push('Self-transfer');
+  if ((c.itinerarySnapshot as { self_transfer?: boolean } | null)?.self_transfer) {
+    flags.push('Self-transfer');
+  }
   return {
     id: `m${r.matchId}`, candidateId: c.id, templateId: r.templateId, matchId: r.matchId,
     score: Math.round(Number(r.score) * 100),
@@ -53,7 +55,15 @@ export function groupByTemplate(rows: QueueRow[]): TemplateGroup[] {
   return [...map.values()];
 }
 
-export function toScanView(run: any | null): ScanView {
+type ScanRunish = {
+  apiCalls?: number | null;
+  routesScanned?: number | null;
+  startedAt?: string | Date | null;
+  candidatesFound?: number | null;
+  status?: string | null;
+};
+
+export function toScanView(run: ScanRunish | null): ScanView {
   if (!run) return { fares: '0', airports: 0, ago: '—', newToday: 0, status: 'never run' };
   return {
     fares: String(run.apiCalls ?? 0), airports: run.routesScanned ?? 0,
