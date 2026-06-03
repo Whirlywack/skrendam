@@ -2,22 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Inbox, Send, LayoutTemplate, Users, BarChart3, Settings } from 'lucide-react';
+import { Inbox, Send, BarChart3, Settings, LayoutTemplate, Users, Map, CalendarDays, Plane } from 'lucide-react';
 import { Wordmark } from './Wordmark';
 
 type NavItem = {
   label: string;
-  href: string | null;
+  href: string;
   icon: React.ReactNode;
+  /** Use exact pathname match only (no startsWith). */
+  exact?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { label: 'Queue', href: '/queue', icon: <Inbox size={18} /> },
-  { label: 'Published', href: '/published', icon: <Send size={18} /> },
-  { label: 'Templates', href: null, icon: <LayoutTemplate size={18} /> },
-  { label: 'Audience', href: null, icon: <Users size={18} /> },
-  { label: 'Insights', href: '/scans', icon: <BarChart3 size={18} /> },
-  { label: 'Settings', href: null, icon: <Settings size={18} /> },
+  { label: 'Queue', href: '/queue', icon: <Inbox size={18} />, exact: true },
+  { label: 'Published', href: '/published', icon: <Send size={18} />, exact: true },
+  { label: 'Insights', href: '/scans', icon: <BarChart3 size={18} />, exact: true },
+  // Config section
+  { label: 'Settings', href: '/config', icon: <Settings size={18} />, exact: true },
+  { label: 'Templates', href: '/config/templates', icon: <LayoutTemplate size={18} /> },
+  { label: 'Zones', href: '/config/zones', icon: <Map size={18} /> },
+  { label: 'Audiences', href: '/config/audiences', icon: <Users size={18} /> },
+  { label: 'Moments', href: '/config/moments', icon: <CalendarDays size={18} /> },
+  { label: 'Routes', href: '/config/routes', icon: <Plane size={18} /> },
 ];
 
 export function Sidebar() {
@@ -30,21 +36,10 @@ export function Sidebar() {
         <span className="tag">Curator</span>
       </div>
       <nav>
-        {navItems.map(({ label, href, icon }) => {
-          const isActive = href !== null && pathname === href;
-          if (href === null) {
-            return (
-              <span
-                key={label}
-                className="navi"
-                aria-disabled="true"
-                style={{ opacity: 0.45, cursor: 'default', textDecoration: 'none' }}
-              >
-                {icon}
-                {label}
-              </span>
-            );
-          }
+        {navItems.map(({ label, href, icon, exact }) => {
+          const isActive = exact
+            ? pathname === href
+            : pathname === href || pathname.startsWith(href + '/');
           return (
             <Link
               key={label}
