@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getQueueRows, getLatestScanRun, getPublishedDeals } from '@/lib/queries';
 import { toCandidateView, toScanView } from '@/lib/mappers';
 import { DashboardCards } from '@/components/DashboardCards';
+import { ScanButtons } from '@/components/ScanButtons';
 
 export default async function Dashboard() {
   const [rows, run, published] = await Promise.all([
@@ -67,49 +68,7 @@ export default async function Dashboard() {
           Review top deals
         </Link>
 
-        {/* TODO Task 17: wire enqueueScan/enqueueRecheck */}
-        <button
-          className="btn btn-outline"
-          disabled
-          title="Available in Task 17"
-          style={{ opacity: 0.55, cursor: 'not-allowed', position: 'relative' }}
-        >
-          Run scan
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 9,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--fg-3)',
-              marginLeft: 4,
-            }}
-          >
-            soon
-          </span>
-        </button>
-
-        {/* TODO Task 17: wire enqueueScan/enqueueRecheck */}
-        <button
-          className="btn btn-outline"
-          disabled
-          title="Available in Task 17"
-          style={{ opacity: 0.55, cursor: 'not-allowed' }}
-        >
-          Recheck live deals
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 9,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--fg-3)',
-              marginLeft: 4,
-            }}
-          >
-            soon
-          </span>
-        </button>
+        <ScanButtons />
       </div>
     </div>
   );

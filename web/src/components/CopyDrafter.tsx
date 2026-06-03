@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import type { CandidateView } from '@/lib/types';
 import { Icon } from '@/components/Icon';
+import { saveContentDraft } from '@/app/actions';
 
 type Tab = 'headline' | 'hook' | 'news';
 
@@ -11,6 +12,22 @@ export function CopyDrafter({ c }: { c: CandidateView }) {
   const [headline, setHeadline] = useState(c.copy.headline);
   const [hook, setHook] = useState(c.copy.hook);
   const [news, setNews] = useState(c.copy.news);
+  const [saved, setSaved] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSave() {
+    startTransition(async () => {
+      await saveContentDraft({
+        candidateId: c.candidateId,
+        templateId: c.templateId,
+        headline,
+        hook,
+        news,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    });
+  }
 
   return (
     <div className="sec">
@@ -75,19 +92,21 @@ export function CopyDrafter({ c }: { c: CandidateView }) {
           )}
         </div>
 
-        <div style={{ padding: '0 16px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* TODO Task 14: saveContentDraft */}
+        <div style={{ padding: '0 16px 14px', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
           <button
             className="btn btn-outline"
-            disabled
-            title="Saving copy drafts lands in Task 14"
-            style={{ opacity: 0.45, cursor: 'not-allowed' }}
+            onClick={handleSave}
+            disabled={isPending}
+            style={isPending ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
           >
-            Save copy
+            {isPending ? 'Saving…' : 'Save copy'}
           </button>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' }}>
-            (persistence coming soon)
-          </span>
+          {saved && (
+            <div className="toast" style={{ bottom: 56 }}>
+              <span className="ic"><Icon name="CheckCircle" size={18} /></span>
+              Copy draft saved
+            </div>
+          )}
         </div>
       </div>
     </div>

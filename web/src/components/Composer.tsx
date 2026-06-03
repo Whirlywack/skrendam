@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useTransition, useState } from 'react';
 import type { CandidateView } from '@/lib/types';
 import { Icon } from '@/components/Icon';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { StatusPill } from '@/components/StatusPill';
 import { CopyDrafter } from '@/components/CopyDrafter';
 import { timeAgo } from '@/lib/format';
+import {
+  setCandidateStatus,
+  publishDeal,
+  enqueueRecheck,
+} from '@/app/actions';
 
 interface ComposerProps {
   c: CandidateView;
@@ -16,6 +21,50 @@ interface ComposerProps {
 }
 
 export function Composer({ c, onClose, inline = false }: ComposerProps) {
+  const [isPending, startTransition] = useTransition();
+  const [toast, setToast] = useState<string | null>(null);
+  const [recheckQueued, setRecheckQueued] = useState(false);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2800);
+  }
+
+  function handleReject() {
+    startTransition(async () => {
+      await setCandidateStatus(c.candidateId, 'rejected');
+      onClose();
+    });
+  }
+
+  function handleSchedule() {
+    startTransition(async () => {
+      await setCandidateStatus(c.candidateId, 'maybe');
+      onClose();
+    });
+  }
+
+  function handlePublish() {
+    startTransition(async () => {
+      await publishDeal({
+        candidateId: c.candidateId,
+        templateId: c.templateId,
+        headline: c.copy.headline,
+        tiktokHook: c.copy.hook,
+      });
+      showToast(`${c.place}, ${c.country} is live`);
+      setTimeout(() => onClose(), 1200);
+    });
+  }
+
+  function handleRecheck() {
+    startTransition(async () => {
+      await enqueueRecheck(c.candidateId);
+      setRecheckQueued(true);
+      showToast('Recheck queued');
+    });
+  }
+
   useEffect(() => {
     if (inline) return;
     const onKey = (e: KeyboardEvent) => {
@@ -118,41 +167,47 @@ export function Composer({ c, onClose, inline = false }: ComposerProps) {
         <CopyDrafter c={c} />
       </div>
 
-      {/* Publish bar — actions land in Tasks 14/15/17 */}
-      <div className="pubbar">
-        {/* TODO Task 15/14: publishDeal / setCandidateStatus */}
+      {/* Publish bar */}
+      <div className="pubbar" style={{ position: 'relative' }}>
         <button
           className="btn btn-ghost"
-          disabled
-          style={{ opacity: 0.45, cursor: 'not-allowed' }}
+          onClick={handleReject}
+          disabled={isPending}
+          style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
           <Icon name="X" size={16} /> Reject
         </button>
         <span className="flex1" />
-        {/* TODO Task 15/14: setCandidateStatus */}
         <button
           className="btn btn-outline"
-          disabled
-          style={{ opacity: 0.45, cursor: 'not-allowed' }}
+          onClick={handleSchedule}
+          disabled={isPending}
+          style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
           <Icon name="Clock" size={16} /> Schedule
         </button>
-        {/* TODO Task 15/14: publishDeal */}
         <button
           className="btn btn-primary"
-          disabled
-          style={{ opacity: 0.45, cursor: 'not-allowed' }}
+          onClick={handlePublish}
+          disabled={isPending}
+          style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
           <Icon name="Check" size={16} /> Approve &amp; publish
         </button>
-        {/* TODO Task 17: enqueueRecheck */}
         <button
           className="btn btn-outline"
-          disabled
-          style={{ opacity: 0.45, cursor: 'not-allowed', marginLeft: 4 }}
+          onClick={handleRecheck}
+          disabled={isPending || recheckQueued}
+          style={(isPending || recheckQueued) ? { opacity: 0.5, cursor: 'not-allowed', marginLeft: 4 } : { marginLeft: 4 }}
         >
-          Recheck
+          {recheckQueued ? 'Recheck queued' : 'Recheck'}
         </button>
+        {toast && (
+          <div className="toast">
+            <span className="ic"><Icon name="CheckCircle" size={18} /></span>
+            {toast}
+          </div>
+        )}
       </div>
     </div>
   );
