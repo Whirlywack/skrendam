@@ -28,4 +28,8 @@ describe('toPublicDeal', () => {
     expect(d.status.kind).toBe('going_fast');
     expect(d.status.label).toBe('Going fast');
   });
+  it('non-stop → no catch line', () => {
+    const d = toPublicDeal(row({ snapshot: { stops: 0, duration_minutes: 120, airline: 'FR' } }), new Date('2026-06-03T12:00:00Z'));
+    expect(d.catchLine).toBeNull();
+  });
 });

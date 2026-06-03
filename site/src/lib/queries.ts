@@ -2,6 +2,10 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { publishedDeals, candidates, candidateTemplateMatches } from '@/db/generated/schema';
 
+// Dedup guard: candidate_template_matches has no composite unique constraint on
+// (candidate_id, deal_template_id) yet — proper fix is a deferred migration (out-of-scope §2).
+const INSPIRATION_LIMIT = 12;
+
 function dealBase() {
   return db.select({
     pd: publishedDeals,
@@ -16,12 +20,21 @@ function dealBase() {
       eq(candidateTemplateMatches.dealTemplateId, publishedDeals.dealTemplateId)));
 }
 
-export async function getLiveDeals() {
-  return dealBase().where(eq(publishedDeals.status, 'live')).orderBy(desc(publishedDeals.publishedAt));
+function dedupeById<T extends { pd: { id: number } }>(rows: T[]): T[] {
+  const seen = new Set<number>();
+  return rows.filter((r) => {
+    if (seen.has(r.pd.id)) return false;
+    seen.add(r.pd.id);
+    return true;
+  });
 }
 
-export async function getInspirationDeals(limit = 12) {
-  return dealBase().where(eq(publishedDeals.status, 'expired')).orderBy(desc(publishedDeals.publishedAt)).limit(limit);
+export async function getLiveDeals() {
+  return dedupeById(await dealBase().where(eq(publishedDeals.status, 'live')).orderBy(desc(publishedDeals.publishedAt)));
+}
+
+export async function getInspirationDeals(limit = INSPIRATION_LIMIT) {
+  return dedupeById(await dealBase().where(eq(publishedDeals.status, 'expired')).orderBy(desc(publishedDeals.publishedAt)).limit(limit));
 }
 
 export async function getDeal(id: number) {

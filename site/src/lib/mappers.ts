@@ -21,7 +21,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     ? { kind: 'going_fast' as const, label: 'Going fast' }
     : { kind: 'fresh' as const, label: fresh ? `Checked ${timeAgo(String(fresh))}` : 'Checked recently' };
 
-  // Suppress unused-parameter lint for `now` — reserved for future relative-time rendering.
+  // reserved for Task 8 — will be threaded into timeAgo() for the detail page's relative time
   void now;
 
   return {
