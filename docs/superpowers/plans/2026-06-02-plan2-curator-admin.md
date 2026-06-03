@@ -203,28 +203,28 @@ class ScanRequest(Base):
 Run: `uv run pytest tests/skrendam/test_worker.py::test_scan_request_defaults -v`
 Expected: PASS.
 
-- [ ] **Step 5: Generate the Alembic migration**
+- [ ] **Step 5: Generate the Alembic migration** (autogenerate against a DB **already at head**, so only the new table diffs — otherwise autogenerate emits CREATE for all 13 tables)
 
-Run (against any reachable DB; SQLite default is fine for autogenerate of a new table):
 ```bash
+export SKRENDAM_DATABASE_URL='sqlite+pysqlite:///./_mig.db'
+uv run alembic upgrade head     # apply 0001 to _mig.db (the 12 existing tables now exist)
 uv run alembic revision --autogenerate -m "add scan_requests queue table"
 ```
-Then **rename** the generated file to match the repo convention → `alembic/versions/0002_scan_requests.py`, and confirm inside it:
+Open the generated file under `alembic/versions/`. Its `upgrade()` must contain **only** `op.create_table("scan_requests", ...)` (+ its indexes) — if autogenerate emitted ops for any other table, the base DB wasn't at head; delete those ops. Confirm the columns match the model (id PK, kind, candidate_id FK→candidates.id nullable, status, requested_by, params JSON, result_summary JSON, error Text, created_at, started_at, finished_at). Then **rename** the file to `alembic/versions/0002_scan_requests.py` (match the `NNNN_slug.py` convention) and confirm:
 ```python
-revision = "<generated-hex>"
 down_revision = "2d77c318383b"
 ```
-The `upgrade()` must `op.create_table("scan_requests", ...)` with the columns above (id PK, kind, candidate_id FK→candidates.id nullable, status indexed, requested_by, params JSON, result_summary JSON, error Text, created_at indexed, started_at, finished_at). `downgrade()` drops the table and its indexes. Verify autogenerate captured the two indexes (`status`, `created_at`); add `op.create_index(...)` manually if missing.
+Ensure the two indexes (`status`, `created_at`) are created in `upgrade()` and dropped in `downgrade()` — SQLite autogenerate sometimes omits indexes, so add `op.create_index("ix_scan_requests_status", "scan_requests", ["status"])` / `op.create_index("ix_scan_requests_created_at", "scan_requests", ["created_at"])` (and matching `op.drop_index`) by hand if missing. `downgrade()` must `op.drop_table("scan_requests")`.
 
-- [ ] **Step 6: Verify the migration applies cleanly**
+- [ ] **Step 6: Verify the migration applies + reverses cleanly**
 
-Run:
 ```bash
-SKRENDAM_DATABASE_URL='sqlite+pysqlite:///tmp_mig_check.db' uv run alembic upgrade head
-SKRENDAM_DATABASE_URL='sqlite+pysqlite:///tmp_mig_check.db' uv run alembic downgrade -1
-rm -f tmp_mig_check.db
+uv run alembic upgrade head      # applies 0002 to _mig.db
+uv run alembic downgrade -1      # reverses only 0002
+rm -f _mig.db
+unset SKRENDAM_DATABASE_URL
 ```
-Expected: upgrade then downgrade with no errors.
+Expected: both succeed with no errors.
 
 - [ ] **Step 7: Commit**
 ```bash
