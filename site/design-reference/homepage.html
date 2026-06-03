@@ -1,0 +1,97 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .home{ --amber:#E2820E; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A;
+         --sea:#0F7C68; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+         --coral:#D63E22; --coral-tint:#FDECE8; --coral-ink:#B53017; --coral-line:#F4A797;
+         --paper:#FFFFFF; --cream:#FBF6EC; --sunken:#F4ECDD; --ink:#1C1813; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA;
+         background:var(--cream); border:1px solid var(--line); border-radius:18px; overflow:hidden;
+         font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); max-width:1000px; margin:0 auto; }
+
+  /* header */
+  .hbar{ display:flex; align-items:center; justify-content:space-between; padding:16px 26px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.5); }
+  .wm{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px; letter-spacing:-.02em; color:var(--amber); }
+  .hbar-right{ display:flex; align-items:center; gap:18px; }
+  .airports{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.06em; color:var(--fg2); text-transform:uppercase; }
+  .hlink{ font-size:13px; font-weight:700; color:var(--sea-ink); }
+
+  /* hero */
+  .hero{ padding:30px 26px 18px; }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--sea-ink); }
+  .hero h1{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:34px; letter-spacing:-.02em; line-height:1.05; margin:8px 0 0; max-width:620px; }
+  .hero p{ font-size:15px; color:var(--fg2); margin:10px 0 0; max-width:560px; line-height:1.5; }
+
+  /* tabs */
+  .tabs{ display:flex; gap:26px; padding:0 26px; border-bottom:1px solid var(--line); margin-top:18px; }
+  .tab{ padding:12px 2px; font-weight:700; font-size:15px; color:var(--fg3); border-bottom:2.5px solid transparent; cursor:pointer; }
+  .tab.on{ color:var(--ink); border-bottom-color:var(--amber); }
+  .tab .ct{ font-family:'Space Mono',monospace; font-size:12px; color:var(--fg3); margin-left:5px; }
+
+  /* grid */
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:22px 26px 8px; }
+  .bc{ background:#fff; border:1px solid var(--line); border-radius:15px; padding:15px 16px; box-shadow:0 2px 8px rgba(28,24,19,.06); display:flex; flex-direction:column; }
+  .tag{ align-self:flex-start; font-family:'Space Mono',monospace; font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+  .tag-rare{ background:var(--amber-tint); color:var(--amber-ink); border:1px solid var(--amber-line); }
+  .tag-great{ background:var(--sea-tint); color:var(--sea-ink); border:1px solid var(--sea-line); }
+  .dest{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:23px; letter-spacing:-.01em; margin-top:9px; }
+  .rt{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.03em; color:var(--fg2); text-transform:uppercase; margin-top:3px; }
+  .pr{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:30px; letter-spacing:-.02em; margin-top:10px; }
+  .pr small{ font-size:12px; font-weight:600; color:var(--fg2); }
+  .why{ color:var(--sea-ink); font-weight:700; font-size:12.5px; margin-top:8px; }
+  .catch{ color:var(--fg2); font-size:12px; margin-top:4px; }
+  .st{ font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-top:9px; color:var(--fg3); }
+  .st-fast{ color:var(--coral-ink); }
+  .see{ margin-top:13px; text-align:center; font-weight:700; font-size:12.5px; padding:9px; border-radius:9px; background:transparent; color:var(--sea-ink); border:1px solid var(--line); }
+
+  /* capture */
+  .cap{ margin:18px 26px 26px; background:var(--ink); color:#FBF6EC; border-radius:14px; padding:22px 24px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  .cap h3{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:19px; margin:0; }
+  .cap p{ font-size:13px; color:#C8B79C; margin:4px 0 0; }
+  .capform{ display:flex; gap:8px; }
+  .capform input{ border:none; border-radius:9px; padding:11px 13px; font-size:13px; width:210px; font-family:'Hanken Grotesk',sans-serif; }
+  .capbtn{ background:var(--amber); color:#1C1813; font-weight:700; font-size:13px; border-radius:9px; padding:11px 16px; }
+</style>
+
+<h2>Homepage · the opportunity inbox</h2>
+<p class="subtitle">Calm triage: a hand-checked feed you scan, with the quality tag + freshness telling you what to act on. "See the deal" opens the decision card. Email capture present, not shouting.</p>
+
+<div class="home">
+  <div class="hbar">
+    <span class="wm">yıp</span>
+    <div class="hbar-right">
+      <span class="airports">From VNO · KUN · RIX</span>
+      <span class="hlink">Get deals by email</span>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="eyebrow">Found &amp; checked by hand · 3 new today</div>
+    <h1>This week's best fares from the Baltics.</h1>
+    <p>We find the cheap ones, check they're real, and tell you why each is good — and the catch. You book direct.</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on">Book now <span class="ct">6</span></div>
+    <div class="tab">Inspiration</div>
+  </div>
+
+  <div class="grid">
+    <div class="bc"><span class="tag tag-rare">Rare deal</span><div class="dest">Barcelona</div><div class="rt">VNO → BCN · ret · Sep 12–19</div><div class="pr">€96 <small>return</small></div><div class="why">36% below typical</div><div class="catch">Catch: 3h Riga layover</div><div class="st">Checked 2h ago</div><div class="see">See the deal →</div></div>
+
+    <div class="bc"><span class="tag tag-great">Great deal</span><div class="dest">Málaga</div><div class="rt">KUN → AGP · ret · Oct 3–10</div><div class="pr">€78 <small>return</small></div><div class="why">41% below typical</div><div class="catch">Catch: overnight return leg</div><div class="st">Checked 4h ago</div><div class="see">See the deal →</div></div>
+
+    <div class="bc"><span class="tag tag-rare">Rare deal</span><div class="dest">Tenerife</div><div class="rt">RIX → TFS · ret · Nov 5–14</div><div class="pr">€119 <small>return</small></div><div class="why">38% below typical</div><div class="catch">Catch: 1 stop in Madrid</div><div class="st">Checked 1h ago</div><div class="see">See the deal →</div></div>
+
+    <div class="bc"><span class="tag tag-great">Great deal</span><div class="dest">Vienna</div><div class="rt">VNO → VIE · ret · Sep 20–24</div><div class="pr">€44 <small>return</small></div><div class="why">33% below typical · direct</div><div class="catch">No catch — clean itinerary</div><div class="st st-fast">▲ Going fast</div><div class="see">See the deal →</div></div>
+
+    <div class="bc"><span class="tag tag-great">Great deal</span><div class="dest">Milan</div><div class="rt">VNO → BGY · ret · Oct 17–21</div><div class="pr">€59 <small>return</small></div><div class="why">29% below typical · direct</div><div class="catch">No catch — clean itinerary</div><div class="st">Checked 3h ago</div><div class="see">See the deal →</div></div>
+
+    <div class="bc"><span class="tag tag-rare">Rare deal</span><div class="dest">Faro</div><div class="rt">KUN → FAO · ret · Sep 26–Oct 3</div><div class="pr">€88 <small>return</small></div><div class="why">45% below typical</div><div class="catch">Catch: long layover in Porto</div><div class="st st-fast">▲ Going fast</div><div class="see">See the deal →</div></div>
+  </div>
+
+  <div class="cap">
+    <div><h3>Never miss a rare fare.</h3><p>The best deals go in one calm weekly email. No spam, unsubscribe anytime.</p></div>
+    <div class="capform"><input placeholder="you@email.com"><span class="capbtn">Get deals</span></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px;">Notes: tag = how good (<strong>amber Rare</strong> / <strong>sea Great</strong>), status line = freshness or <strong>coral "Going fast"</strong> for the volatile ones — that's your triage language. Built text-only per your card; I can drop subtle destination photos into these cards if you want more travel-feel. <strong>Open Qs:</strong> (1) does the "Going fast" coral state earn its place here, or too noisy? (2) is the dark email band right after the feed, or should capture be lighter / higher up?</p>

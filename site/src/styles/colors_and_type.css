@@ -1,0 +1,299 @@
+/* =========================================================================
+   YIP DESIGN SYSTEM — colors_and_type.css
+   The smart local travel club. Baltic-amber warmth + boarding-pass clarity.
+
+   Fonts are loaded from Google Fonts (free, open licence):
+   - Bricolage Grotesque  → display / headlines / hooks
+   - Hanken Grotesk       → body / UI
+   - Space Mono           → ticket metadata, prices, codes, route legs
+   If you need offline TTFs, see /fonts (flag to user — currently CDN-linked).
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:ital,wght@0,400..800;1,400..600&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  /* ---------------------------------------------------------------------
+     1. CORE PALETTE  (raw scales — do not use directly in product;
+        reach for the semantic tokens below)
+     --------------------------------------------------------------------- */
+
+  /* Amber — primary. Baltic amber + late-summer sun. Warm, treasured, "found". */
+  --amber-50:  #FEF6E8;
+  --amber-100: #FCE9C6;
+  --amber-200: #F8D28A;
+  --amber-300: #F3B84E;
+  --amber-400: #EFA227;
+  --amber-500: #E2820E;  /* brand amber */
+  --amber-600: #C56A07;
+  --amber-700: #9C520A;
+  --amber-800: #7A410E;
+  --amber-900: #5C320F;
+
+  /* Sea — Baltic sea-teal. Trust, travel, calm. The "club" accent. */
+  --sea-50:  #E8F5F1;
+  --sea-100: #C6E8DF;
+  --sea-200: #8FD2C2;
+  --sea-300: #54B7A2;
+  --sea-400: #239A83;
+  --sea-500: #0F7C68;  /* brand sea */
+  --sea-600: #0A6354;
+  --sea-700: #094E43;
+  --sea-800: #093D36;
+  --sea-900: #08302B;
+
+  /* Coral — deal heat / urgency / "going fast". Use sparingly. */
+  --coral-50:  #FDECE8;
+  --coral-100: #FAD4CB;
+  --coral-200: #F4A797;
+  --coral-300: #ED7660;
+  --coral-400: #E55438;
+  --coral-500: #D63E22;  /* brand coral */
+  --coral-600: #B53017;
+
+  /* Sand — warm neutral ramp (greys are warmed, never cold/blue). */
+  --sand-0:   #FFFFFF;
+  --sand-50:  #FBF6EC;  /* paper */
+  --sand-100: #F4ECDD;
+  --sand-150: #ECE1CD;
+  --sand-200: #E0D2BA;
+  --sand-300: #C8B79C;
+  --sand-400: #A8967A;
+  --sand-500: #877860;
+  --sand-600: #685B47;
+  --sand-700: #4A4034;
+  --sand-800: #2F2922;
+  --sand-900: #1C1813;  /* ink */
+
+  /* ---------------------------------------------------------------------
+     2. SEMANTIC COLOR TOKENS
+     --------------------------------------------------------------------- */
+
+  /* Surfaces / backgrounds */
+  --bg-page:     var(--sand-50);   /* warm cream — the default canvas */
+  --bg-surface:  var(--sand-0);    /* cards, panels */
+  --bg-sunken:   var(--sand-100);  /* wells, inset fields */
+  --bg-ink:      var(--sand-900);  /* dark sections / footer */
+  --bg-ink-soft: var(--sand-800);
+
+  /* Text / foreground */
+  --fg-1: var(--sand-900);  /* primary text */
+  --fg-2: var(--sand-600);  /* secondary text, captions */
+  --fg-3: var(--sand-500);  /* tertiary, metadata, placeholders */
+  --fg-on-amber: var(--sand-900);  /* text on amber fills (dark for contrast) */
+  --fg-on-sea:   #FFFFFF;          /* text on sea fills */
+  --fg-on-ink:   var(--sand-50);   /* text on dark sections */
+  --fg-inverse:  #FFFFFF;
+
+  /* Brand */
+  --brand:        var(--amber-500);
+  --brand-press:  var(--amber-600);
+  --brand-tint:   var(--amber-50);
+  --accent:       var(--sea-500);
+  --accent-press: var(--sea-600);
+  --accent-tint:  var(--sea-50);
+
+  /* Lines & borders (warm, low contrast) */
+  --line:        var(--sand-200);
+  --line-soft:   var(--sand-150);
+  --line-strong: var(--sand-300);
+  --line-ink:    rgba(28, 24, 19, 0.10);
+  --perforation: var(--sand-300);  /* ticket-stub dashed edge */
+
+  /* Semantic states */
+  --success:      var(--sea-500);
+  --success-tint: var(--sea-50);
+  --warning:      var(--amber-500);
+  --warning-tint: var(--amber-50);
+  --danger:       var(--coral-500);
+  --danger-tint:  var(--coral-50);
+  --info:         var(--sea-500);
+  --info-tint:    var(--sea-50);
+
+  /* Focus ring */
+  --focus: var(--sea-400);
+  --focus-ring: 0 0 0 3px rgba(35, 154, 131, 0.35);
+
+  /* ---------------------------------------------------------------------
+     3. TYPOGRAPHY
+     --------------------------------------------------------------------- */
+  --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', system-ui, sans-serif;
+  --font-body:    'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Space Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Type scale (1.20 minor-third-ish, tuned) */
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+  --text-md:   18px;
+  --text-lg:   21px;
+  --text-xl:   26px;
+  --text-2xl:  32px;
+  --text-3xl:  40px;
+  --text-4xl:  52px;
+  --text-5xl:  66px;
+  --text-6xl:  84px;
+
+  --leading-tight:  1.05;
+  --leading-snug:   1.18;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight:  -0.02em;
+  --tracking-snug:   -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-caps:   0.12em;  /* eyebrows / overlines */
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-extra:    800;
+
+  /* ---------------------------------------------------------------------
+     4. SPACING  (4px base grid)
+     --------------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ---------------------------------------------------------------------
+     5. RADII — soft, rounded, friendly (a travel club, not a bank)
+     --------------------------------------------------------------------- */
+  --radius-xs:  6px;
+  --radius-sm:  10px;
+  --radius-md:  14px;
+  --radius-lg:  20px;
+  --radius-xl:  28px;
+  --radius-2xl: 36px;
+  --radius-pill: 999px;
+
+  /* ---------------------------------------------------------------------
+     6. SHADOWS — warm, soft, low. Tinted with sand-900, never pure black.
+     --------------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(28, 24, 19, 0.06);
+  --shadow-sm: 0 2px 6px rgba(28, 24, 19, 0.07);
+  --shadow-md: 0 6px 18px rgba(28, 24, 19, 0.09);
+  --shadow-lg: 0 14px 38px rgba(28, 24, 19, 0.12);
+  --shadow-xl: 0 28px 64px rgba(28, 24, 19, 0.16);
+  --shadow-amber: 0 10px 28px rgba(226, 130, 14, 0.28);  /* glow under amber CTAs */
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 360ms;
+}
+
+/* =========================================================================
+   7. SEMANTIC ELEMENT STYLES — opt in by adding the .yip class scope,
+      or copy these rules into your component sheet.
+   ========================================================================= */
+.yip {
+  font-family: var(--font-body);
+  color: var(--fg-1);
+  background: var(--bg-page);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.yip h1, .yip .h1 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-5xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+}
+.yip h2, .yip .h2 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-snug);
+  margin: 0;
+}
+.yip h3, .yip .h3 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-snug);
+  margin: 0;
+}
+.yip h4, .yip .h4 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+  margin: 0;
+}
+.yip p, .yip .body {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--fg-1);
+  margin: 0;
+  text-wrap: pretty;
+}
+.yip .lead {
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+  color: var(--fg-2);
+}
+.yip small, .yip .caption {
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+  line-height: var(--leading-normal);
+}
+
+/* Eyebrow / overline — used above headers, often in sea or amber */
+.yip .eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--accent-press);
+}
+
+/* Price — tabular, confident */
+.yip .price {
+  font-family: var(--font-display);
+  font-weight: var(--weight-extra);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+/* Mono metadata — route legs, dates, deal codes (boarding-pass flavour) */
+.yip .meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.01em;
+  color: var(--fg-2);
+  text-transform: uppercase;
+}
+
+.yip a { color: var(--accent-press); text-decoration: none; }
+.yip a:hover { text-decoration: underline; }
+.yip code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--bg-sunken);
+  padding: 0.1em 0.4em;
+  border-radius: var(--radius-xs);
+}
