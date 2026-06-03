@@ -237,6 +237,7 @@ class PublishedDeal(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
+    going_fast: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
