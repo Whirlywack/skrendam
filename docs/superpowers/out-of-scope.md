@@ -85,3 +85,18 @@ delivery-layer lessons to design in from day one:
 
 Inputs 1 + 2 are likely the **first `published_deals` schema additions since milestone 2** (a
 release schedule; possibly an availability-estimate field) — design them deliberately.
+
+## 7. Spec 2 (public site `site/`) — SHIPPED + v1 known-limitations
+
+_Added 2026-06-03. The public "opportunity inbox" is built in `site/` (separate read-only Next.js app on the dev branch); homepage → browse card → deal detail → book, plus email capture. QA'd (Playwright journeys + final code-review + security-review). Branch `feat/opportunity-inbox`._
+
+**Deferred / known v1 limitations (non-blocking — caught by the gauntlet, accepted for v1):**
+- **Vendor-direct booking** — v1 ships the Google-Flights handoff ("Open in Google Flights"); `booking.ts` is built for all 3 CTA variants, but airline-direct/OTA ("Book with airBaltic") needs the engine to resolve + persist the best vendor via `get_booking_options` (a worker step + `published_deals` columns). **The intended fast-follow.**
+- **Per-leg itinerary detail** — the detail page shows a summary + fare-health flags, not per-leg times/airports, because `itinerary_snapshot` doesn't capture them (the same v1 itinerary-gate limitation as §2). Add the row rendering once the engine stores per-leg data.
+- **"Checked N ago" staleness under ISR** — `timeAgo()` uses `Date.now()` at render/revalidate, and `toPublicDeal`'s `now` param is currently unused (`void now`), so the freshness label can be up to the 5-min `revalidate` window stale. Acceptable for v1; thread `now` through `timeAgo` (or `force-dynamic`) if exact freshness is needed.
+- **Sparkline today double-count** — `PriceSparkline` appends an amber "today" bar after the last 14 history bars; if today's price is already the most recent `price_log` row, it shows twice (cosmetic).
+- **`generateMetadata` why-copy** — the OG/meta description uses the generic "X% below typical" (not the median-specific line the page renders); benign SEO cosmetic.
+- **A11y tail** — non-critical `--fg-3` text (`.rangelbl`, `.col-lbl`, `.bookmeta`) left at ~3.9:1 contrast (the critical small mono text was bumped to `--fg-2`); revisit if a full WCAG-AA audit is wanted.
+- **Demo seed** — `scripts/seed_demo_published_deals.py` seeds live deals into the dev DB for the homepage; not for production.
+
+**Security (verified clean by the security-review):** the public app writes ONLY `subscribers` (zod-validated, parameterized, idempotent); booking `href`s are scheme-allowlisted (no `javascript:` XSS); no `dangerouslySetInnerHTML`; no secrets committed.
