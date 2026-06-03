@@ -13,3 +13,7 @@ test('airline-direct upgrade (fast-follow data)', () => {
 test('ota', () => {
   expect(bookingCta('https://ota/x', null, 'ota').button).toBe('Open booking partner');
 });
+test('airline kind + null vendor → google fallback (v1 spec)', () => {
+  const c = bookingCta('https://airline.com/x', null, 'airline');
+  expect(c.kind).toBe('google');
+});
