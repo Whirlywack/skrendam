@@ -2,7 +2,7 @@
 
 Things deliberately deferred during the Plan 1 (deal engine) build + QA gauntlet. "Remembered and marked" so nothing is silently lost. Each item notes *why* it's deferred and *when/where* it should be picked up.
 
-_Last updated: 2026-06-03, after the Plan 2 (curator admin) build + QA._
+_Last updated: 2026-06-03, after Plan 2 milestone 2 (config editors + engine tuning) shipped (PR #3) + JFC research captured for Spec 2 (§6)._
 
 ---
 
@@ -18,7 +18,7 @@ Plan 1 is the **headless Python engine**. The design-system UI kits (`.claude/sk
 
 ## 2. Engine follow-ups surfaced by review (non-blocking)
 
-- **Per-trip-type calibration (review C5):** `calibrate.py` scans **one-way** only, but `zone.threshold_price_eur` is used as the absolute price ceiling for **round-trip** templates too → round-trip fares (naturally higher) can only pass via discount. Calibrate per trip-type, or scope the zone ceiling to one-way. **Tie this to the live-tuning dry-run.**
+- ~~**Per-trip-type calibration (review C5):**~~ **RESOLVED (milestone 2, PR #3)** — `matching.py` now scopes the zone ceiling to one-way templates; round-trips must clear their own `max_price_eur` or a discount. The live-tuning dry-run is also done: `skrendam analyze` over 246 real matches set `GREAT_THRESHOLD`=88 + tightened a loose template (see `docs/research/2026-06-03-tuning-analysis.md`).
 - ~~**Live `booking_url` for round-trips (review C2):**~~ **RESOLVED** — verified against `fli/search/flights.py`: `build_flight_booking_url(flight: FlightResult | tuple[FlightResult, ...])` accepts both shapes and never raises (falls back to a generic URL on bad input). Passing the raw `f` is correct; passing `f[0]` would have produced outbound-only URLs for round-trips. No change needed.
 - **Live-network dry-run + threshold tuning:** run `skrendam calibrate` then `skrendam run-scan --seed` against a throwaway DB on **real fares**, inspect candidate volume/quality, and tune `SEND_THRESHOLD` / `STRONG_ANOMALY_DISCOUNT` / zone thresholds **before relying on queue volume**. (Engine is live-validated for fetching; thresholds are seeded estimates.)
 - **Full itinerary gates (v1 documented limitation):** only `max_stops`, `max_total_duration_minutes`, `self_transfer`, `mixed_cabin` are enforced. `allow_airport_change` / `allow_overnight_layover` are always-false (live backend doesn't populate them) and `family_friendly_times_only` / `latest_arrival_hour` / `earliest_departure_hour` / layover bounds are **not yet evaluated** (the `FareItinerary` snapshot lacks per-leg times/layovers). Capture those in `live_backend._to_itinerary` + implement the gates.
@@ -41,10 +41,11 @@ Tracked in `docs/research/2026-06-01-deal-engine-v1-review-brief.md`:
 
 _Added 2026-06-03. The internal Deal Desk is built in `web/` and wired to real Neon data (158 candidates); login → review → publish verified end-to-end (Playwright). Branch `feat/curator-admin`._
 
-**Deferred to a Plan 2 "milestone 2" (core curate→publish loop shipped first — locked scope decision):**
-- **Config CRUD editors** — Spec §10 views for `deal_templates`, `audience_segments`, `travel_moments`, `routes`/destinations, `zones`. Until built, edit config via `skrendam seed` / direct DB.
-- **AI suggestions / drafts** placeholder page (Spec §10).
-- **Public site + newsletter** (Spec 2) — separate app; the admin already writes clean `published_deals` for it.
+**Plan 2 "milestone 2" — SHIPPED (2026-06-03, PR #3):**
+- ✅ **Config CRUD editors** — all 5 (`zones`, `deal_templates`, `audience_segments`, `travel_moments`, `routes`) built under `web/src/app/(app)/config/`; edit + soft-disable; QA'd (code-review high + security-review + Playwright). They double as the tuning cockpit.
+- ✅ **Engine tuning** — `skrendam analyze` + tiered queue (great/maybe) + the C5 fix; tuned from real data (`docs/research/2026-06-03-tuning-analysis.md`).
+- ⏳ **AI suggestions / drafts** placeholder page (Spec §10) — still deferred.
+- ⏳ **Public site + newsletter** (Spec 2) — still deferred; the admin writes clean `published_deals` for it. **See §6 for locked Spec 2 design inputs (JFC research).**
 
 **Verification gaps:**
 - **Recheck / run-scan via the queue** — `scan_requests` enqueue + the Python worker poll loop are built + unit-tested + verified manually, but NOT in the automated Playwright journey (needs the live `fli` worker). Add an E2E with a fake-backend worker toggle.
@@ -59,3 +60,43 @@ _Added 2026-06-03. The internal Deal Desk is built in `web/` and wired to real N
 - **Worker queue is single-worker v1** — non-atomic claim (SELECT queued → UPDATE running); a crash leaves a row stuck `running`. Use `SELECT … FOR UPDATE SKIP LOCKED` + a stuck-row requeue before multi-worker.
 - **`skrendam/**` not in ruff `include`** (only `fli/**`, `tests/**`, `examples/**`, `scripts/**`) — engine escapes ruff; consider adding (will surface pre-existing style issues).
 - **`datetime.utcnow()` deprecation** — `models._now()` + engine use it (removed in 3.14; handoff pins Python ≤3.13). Migrate to `datetime.now(UTC)` engine-wide (`worker.py` already uses a tz-safe `_utcnow`).
+
+**Milestone-2 (config editors + tuning) code-review leftovers — non-blocking, deferred:**
+- **Config-editor DRY pass** — the 5 forms (`Zone`/`Template`/`Audience`/`Moment`/`Route`Form) copy-paste the `'use client'` submit/toast boilerplate, the label/input style constants, and the enable/disable toggle. Extract a `useConfigForm` hook + shared form-styles + an `<EnabledToggle>` next time they're touched.
+- **`skrendam analyze` counts all-time matches** — `tier_preview` + per-template/zone counts include historical/rejected/published rows, not just the active queue. Accurate on today's clean DB; will skew as history accumulates → add an active-status filter then.
+- **Config toggle stale-state** — `toggleRouteEnabled`/`toggleTemplateEnabled` flip the client-sent `enabled` snapshot, not the live DB value. Harmless for a single admin (revalidate refreshes); read-then-flip server-side if multi-curator ever lands.
+- **Spec 2 backend dependency:** the status/availability engine (Spec 2) leans on the recheck path + `last_seen_at`, so the **recheck E2E gap** + **worker single-worker atomicity** (both in §5) should be revisited *as part of* Spec 2's backend, not after.
+
+## 6. Spec 2 (Yip homepage / public site) — locked design inputs
+
+_Added 2026-06-03 from founder research on Jack's Flight Club. Full notes:
+`docs/research/2026-06-03-jfc-competitive-notes.md`. These are **inputs to the Spec 2
+brainstorm**, not a build spec._
+
+JFC validates Yip's model (curated, not search; scan + human verify; info, not booking). Three
+delivery-layer lessons to design in from day one:
+1. **Data-driven "expected availability window"** — surface a credible "act by ~X / still
+   live" signal, *estimated* from `price_log` history + the `scan_requests` recheck cadence
+   (not a blunt `valid_until` TTL). The fields (`valid_until` / `last_seen_at`) already exist.
+2. **Tiered / segmented release** — access-timing logic (who sees a deal, when), built on the
+   existing `tier` (great/maybe) + `audience_segments`. Likely a `publish_at`-per-tier schedule.
+3. **Speed = the premium product** — if Yip charges, notification speed is the spine; model
+   publish as a schedule across tiers/channels from the start, not a single instant publish.
+
+Inputs 1 + 2 are likely the **first `published_deals` schema additions since milestone 2** (a
+release schedule; possibly an availability-estimate field) — design them deliberately.
+
+## 7. Spec 2 (public site `site/`) — SHIPPED + v1 known-limitations
+
+_Added 2026-06-03. The public "opportunity inbox" is built in `site/` (separate read-only Next.js app on the dev branch); homepage → browse card → deal detail → book, plus email capture. QA'd (Playwright journeys + final code-review + security-review). Branch `feat/opportunity-inbox`._
+
+**Deferred / known v1 limitations (non-blocking — caught by the gauntlet, accepted for v1):**
+- **Vendor-direct booking** — v1 ships the Google-Flights handoff ("Open in Google Flights"); `booking.ts` is built for all 3 CTA variants, but airline-direct/OTA ("Book with airBaltic") needs the engine to resolve + persist the best vendor via `get_booking_options` (a worker step + `published_deals` columns). **The intended fast-follow.**
+- **Per-leg itinerary detail** — the detail page shows a summary + fare-health flags, not per-leg times/airports, because `itinerary_snapshot` doesn't capture them (the same v1 itinerary-gate limitation as §2). Add the row rendering once the engine stores per-leg data.
+- **"Checked N ago" staleness under ISR** — `timeAgo()` uses `Date.now()` at render/revalidate, and `toPublicDeal`'s `now` param is currently unused (`void now`), so the freshness label can be up to the 5-min `revalidate` window stale. Acceptable for v1; thread `now` through `timeAgo` (or `force-dynamic`) if exact freshness is needed.
+- **Sparkline today double-count** — `PriceSparkline` appends an amber "today" bar after the last 14 history bars; if today's price is already the most recent `price_log` row, it shows twice (cosmetic).
+- **`generateMetadata` why-copy** — the OG/meta description uses the generic "X% below typical" (not the median-specific line the page renders); benign SEO cosmetic.
+- **A11y tail** — non-critical `--fg-3` text (`.rangelbl`, `.col-lbl`, `.bookmeta`) left at ~3.9:1 contrast (the critical small mono text was bumped to `--fg-2`); revisit if a full WCAG-AA audit is wanted.
+- **Demo seed** — `scripts/seed_demo_published_deals.py` seeds live deals into the dev DB for the homepage; not for production.
+
+**Security (verified clean by the security-review):** the public app writes ONLY `subscribers` (zod-validated, parameterized, idempotent); booking `href`s are scheme-allowlisted (no `javascript:` XSS); no `dangerouslySetInnerHTML`; no secrets committed.

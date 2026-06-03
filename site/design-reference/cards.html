@@ -1,0 +1,73 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .tw{ --amber:#E2820E; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A;
+       --sea:#0F7C68; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+       --coral:#D63E22; --paper:#FFFFFF; --cream:#FBF6EC; --ink:#1C1813; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA; }
+  .stage{ display:flex; gap:40px; align-items:flex-start; flex-wrap:wrap; justify-content:center; }
+  .col{ font-family:'Hanken Grotesk',system-ui,sans-serif; }
+  .col-lbl{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--fg3); text-align:center; margin-bottom:12px; }
+  .col-lbl b{ color:var(--sea-ink); }
+
+  /* shared bits */
+  .chip,.tag{ display:inline-flex; align-items:center; font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; padding:4px 10px; border-radius:999px; background:var(--amber-tint); color:var(--amber-ink); border:1px solid var(--amber-line); }
+  .route{ font-family:'Space Mono',monospace; font-size:11.5px; letter-spacing:.04em; color:var(--fg2); text-transform:uppercase; }
+  .catch{ color:var(--fg2); font-size:12.5px; }
+  .status{ font-family:'Space Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--sea-ink); display:inline-flex; align-items:center; gap:6px; }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--sea); display:inline-block; }
+
+  /* BROWSE card (homepage) — lighter */
+  .browse{ width:280px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 17px; box-shadow:0 2px 8px rgba(28,24,19,.07); color:var(--ink); }
+  .dest{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:25px; letter-spacing:-.01em; line-height:1; margin-top:9px; }
+  .b-price{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:33px; letter-spacing:-.02em; line-height:1; margin-top:11px; }
+  .b-price small{ font-size:13px; font-weight:600; color:var(--fg2); }
+  .b-why{ color:var(--sea-ink); font-weight:700; font-size:13px; margin-top:9px; }
+  .see{ display:block; text-align:center; font-weight:700; font-size:13px; padding:10px; border-radius:10px; margin-top:14px; background:transparent; color:var(--sea-ink); border:1px solid var(--line); font-family:'Hanken Grotesk',sans-serif; }
+
+  /* DETAIL card (decide) — fuller, approved */
+  .dc{ width:296px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 19px; box-shadow:0 10px 28px rgba(28,24,19,.12); color:var(--ink); position:relative; }
+  .verdict{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; letter-spacing:-.01em; line-height:1.1; margin-top:12px; }
+  .d-price{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:44px; letter-spacing:-.02em; line-height:1; margin-top:14px; }
+  .d-price small{ font-size:14px; font-weight:600; color:var(--fg2); }
+  .d-why{ color:var(--sea-ink); font-weight:700; font-size:14px; margin-top:12px; }
+  .btn{ display:block; text-align:center; font-weight:700; font-size:14px; padding:12px; border-radius:11px; margin-top:14px; background:var(--amber); color:#1C1813; box-shadow:0 8px 22px rgba(226,130,14,.30); font-family:'Hanken Grotesk',sans-serif; }
+  .bookmeta{ text-align:center; font-size:11px; color:var(--fg3); margin-top:8px; }
+  .approved{ position:absolute; top:-11px; right:14px; background:var(--sea-ink); color:#fff; font-family:'Space Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+</style>
+
+<h2>Two cards, two jobs</h2>
+<p class="subtitle">Homepage = a calm browse card you scan; tapping <strong>See the deal</strong> opens the full decision card to actually book. Confidence scoring removed (internal), proof trimmed on the browse card, the catch kept on both.</p>
+
+<div class="stage tw">
+
+  <div class="col">
+    <div class="col-lbl">Homepage · <b>browse</b> (new)</div>
+    <div class="browse">
+      <span class="tag">Rare deal</span>
+      <div class="dest">Barcelona</div>
+      <div class="route" style="margin-top:4px;">VNO &rarr; BCN · return · Sep 12–19</div>
+      <div class="b-price">€96 <small>return</small></div>
+      <div class="b-why">36% below usual</div>
+      <div class="catch" style="margin-top:5px;">Catch: 3h layover in Riga.</div>
+      <div class="status" style="margin-top:8px;"><span class="dot"></span>Live</div>
+      <a class="see">See the deal &rarr;</a>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-lbl">Deal detail · <b>decide</b></div>
+    <div class="dc">
+      <span class="approved">✓ you approved this</span>
+      <span class="chip">Rare deal</span>
+      <div class="verdict">Book this — it rarely drops this low.</div>
+      <div class="d-price">€96 <small>return</small></div>
+      <div class="route" style="margin-top:5px;">VNO &rarr; BCN · Sep 12–19 · 1 stop</div>
+      <div class="d-why">&minus;36% vs the 90-day median (€150)</div>
+      <div class="catch" style="margin-top:5px;">The catch: 3h layover in Riga.</div>
+      <div class="status" style="margin-top:6px;"><span class="dot"></span>Live · re-checked 2h ago</div>
+      <a class="btn">Book now &rarr;</a>
+      <div class="bookmeta">Direct with Ryanair · you'll see today's live price</div>
+    </div>
+  </div>
+
+</div>
+<p class="subtitle" style="margin-top:20px;">Browse card now: lighter shadow, smaller price, leads with the <strong>destination</strong>, proof trimmed to "36% below usual", no confidence %, <strong>See the deal</strong> as a quiet outline CTA. Confidence % also dropped from the detail card (kept the "Rare deal" label).<br><br><strong>One question:</strong> should browse cards carry a small warm destination photo (very on-brand, makes the feed feel like travel) — or stay clean and text-only for a calmer scan?</p>

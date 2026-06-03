@@ -1,0 +1,98 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .dp{ --amber:#E2820E; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A;
+       --sea:#0F7C68; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+       --coral:#D63E22; --coral-tint:#FDECE8; --coral-ink:#B53017; --coral-line:#F4A797;
+       --paper:#FFFFFF; --cream:#FBF6EC; --sunken:#F4ECDD; --ink:#1C1813; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA; --sand2:#E0D2BA;
+       background:var(--cream); border:1px solid var(--line); border-radius:18px; padding:20px 24px 26px;
+       font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); max-width:940px; margin:0 auto; }
+  .back{ font-family:'Space Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--sea-ink); }
+  .dpgrid{ display:grid; grid-template-columns:312px 1fr; gap:26px; margin-top:16px; align-items:start; }
+
+  .decide{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 19px; box-shadow:0 10px 28px rgba(28,24,19,.12); }
+  .chip{ display:inline-flex; font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; padding:4px 10px; border-radius:999px; background:var(--amber-tint); color:var(--amber-ink); border:1px solid var(--amber-line); }
+  .verdict{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:20px; letter-spacing:-.01em; line-height:1.12; margin-top:12px; }
+  .price{ font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:46px; letter-spacing:-.02em; line-height:1; margin-top:14px; }
+  .price small{ font-size:14px; font-weight:600; color:var(--fg2); }
+  .route{ font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.04em; color:var(--fg2); text-transform:uppercase; margin-top:5px; }
+  .why{ color:var(--sea-ink); font-weight:700; font-size:14px; margin-top:13px; }
+  .catch-sm{ color:var(--fg2); font-size:12.5px; margin-top:5px; }
+  .btn{ display:block; text-align:center; font-weight:700; font-size:15px; padding:13px; border-radius:11px; margin-top:14px; background:var(--amber); color:#1C1813; box-shadow:0 8px 22px rgba(226,130,14,.30); }
+  .bookmeta{ text-align:center; font-size:11px; color:var(--fg3); margin-top:8px; }
+  .st{ font-family:'Space Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--fg3); margin-top:14px; text-align:center; }
+
+  .sec{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:14px; }
+  .sec h3{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--sea-ink); margin:0 0 12px; }
+  .bignote{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:18px; letter-spacing:-.01em; margin:0 0 14px; }
+
+  .spark-wrap{ position:relative; padding-top:20px; }
+  .nowtag{ position:absolute; top:0; right:0; font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.04em; color:var(--amber-ink); background:var(--amber-tint); border:1px solid var(--amber-line); padding:2px 8px; border-radius:999px; }
+  .spark{ display:flex; align-items:flex-end; gap:3px; height:54px; }
+  .spark i{ flex:1; background:var(--sand2); border-radius:2px 2px 0 0; }
+  .spark i.lo{ background:var(--amber); }
+  .rangelbl{ display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:10.5px; color:var(--fg3); margin-top:8px; }
+  .rangelbl b{ color:var(--ink); }
+
+  .leg{ display:flex; gap:12px; padding:9px 0; border-bottom:1px solid var(--sunken); }
+  .leg:last-of-type{ border-bottom:none; }
+  .legt{ font-family:'Space Mono',monospace; font-size:13px; color:var(--ink); min-width:54px; }
+  .legd{ font-size:13px; color:var(--fg2); }
+  .flag{ font-size:13px; padding:8px 11px; border-radius:9px; margin-top:8px; border-left:3px solid; line-height:1.4; }
+  .flag-bad{ background:var(--coral-tint); border-color:var(--coral); color:var(--coral-ink); }
+  .flag-ok{ background:var(--sea-tint); border-color:var(--sea); color:var(--sea-ink); }
+  .gtk{ font-size:13.5px; color:var(--fg2); margin:0; line-height:1.55; }
+  .verify{ font-size:12.5px; color:var(--fg2); margin-top:11px; }
+  .verify a{ color:var(--sea-ink); font-weight:700; }
+</style>
+
+<h2>Deal detail · approved direction, refined</h2>
+<p class="subtitle">All your changes applied: catch back on the left card, provider-named CTA, consistent airline, labelled price bar, tightened copy, reworded verify link.</p>
+
+<div class="dp">
+  <div class="back">← All deals</div>
+  <div class="dpgrid">
+
+    <div class="decide">
+      <span class="chip">Rare deal</span>
+      <div class="verdict">Book this — it rarely drops this low.</div>
+      <div class="price">€96 <small>return</small></div>
+      <div class="route">VNO → BCN · Sep 12–19</div>
+      <div class="why">−36% vs the 90-day median (€150)</div>
+      <div class="catch-sm">Catch: 3h Riga layover</div>
+      <a class="btn">Book with airBaltic →</a>
+      <div class="bookmeta">Airline-direct · you'll see today's live price</div>
+      <div class="st">Checked 2h ago</div>
+    </div>
+
+    <div>
+      <div class="sec">
+        <h3>Why it's a good deal</h3>
+        <div class="bignote">Cheapest 8% we've seen in 90 days.</div>
+        <div class="spark-wrap">
+          <span class="nowtag">Today €96</span>
+          <div class="spark">
+            <i style="height:70%"></i><i style="height:85%"></i><i style="height:62%"></i><i style="height:90%"></i><i style="height:78%"></i><i style="height:100%"></i><i style="height:66%"></i><i style="height:81%"></i><i style="height:58%"></i><i style="height:74%"></i><i style="height:69%"></i><i style="height:52%"></i><i style="height:64%"></i><i class="lo" style="height:28%"></i>
+          </div>
+        </div>
+        <div class="rangelbl"><span>best <b>€89</b></span><span>typical <b>€150</b></span><span>highest <b>€290</b></span></div>
+      </div>
+
+      <div class="sec">
+        <h3>Your itinerary · 1 stop · 7h20 total</h3>
+        <div class="leg"><span class="legt">06:20</span><span class="legd"><b>VNO → RIX</b> · 1h05 · airBaltic</span></div>
+        <div class="leg"><span class="legt">07:25</span><span class="legd">Layover in Riga · 3h00</span></div>
+        <div class="leg"><span class="legt">10:25</span><span class="legd"><b>RIX → BCN</b> · 3h15 · airBaltic · arrives 13:40</span></div>
+        <div class="flag flag-bad">The catch: 3h layover in Riga — long, but same airport and one airline, so your bags go through.</div>
+        <div class="flag flag-ok">No self-transfer risk · no airport change · cabin bag included.</div>
+      </div>
+
+      <div class="sec">
+        <h3>Good to know</h3>
+        <p class="gtk">We checked this fare 2 hours ago and recheck before you book. Deals like this usually last a day or two, not weeks.</p>
+        <div class="verify">Want to be sure? <a>Check it in Google Flights →</a></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<p class="subtitle" style="margin-top:18px;">Provider is now airBaltic end-to-end (button + footer + legs). The "Today €96" tag sits over the amber bar so the chart reads at a glance. If the deal were an OTA/Google handoff instead of airline-direct, the CTA would read <strong>"Open booking partner →"</strong> with <strong>"live price shown there"</strong> beneath — the copy follows the real booking path.</p>

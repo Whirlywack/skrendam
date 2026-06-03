@@ -141,8 +141,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
+# mkdocs documentation (output relocated from ./site to ./_docs_build so site/ is the public app)
+/_docs_build/
 
 # mypy
 .mypy_cache/
@@ -182,3 +182,13 @@ web/test-results/
 # Unignore web/src/lib — the root lib/ rule (Python convention) would otherwise catch it
 !web/src/lib/
 !web/src/lib/**
+
+# Next.js public site (site/)
+site/node_modules/
+site/.next/
+site/out/
+site/.env*.local
+site/playwright-report/
+site/test-results/
+!site/src/lib/
+!site/src/lib/**

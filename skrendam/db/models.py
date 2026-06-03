@@ -237,7 +237,16 @@ class PublishedDeal(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
+    going_fast: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, unique=True)
+    source: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now, server_default=text("CURRENT_TIMESTAMP"))
 
 
 class ScanRequest(Base):

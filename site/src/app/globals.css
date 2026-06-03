@@ -1,0 +1,10 @@
+@import '../styles/colors_and_type.css';
+@import '../styles/logo.css';
+@import '../styles/site.css';
+
+body {
+  background: var(--bg-page);
+  color: var(--fg-1);
+  font-family: var(--font-body);
+  margin: 0;
+}
