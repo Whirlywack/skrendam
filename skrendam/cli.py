@@ -16,6 +16,21 @@ def _real_backend():
     return LiveFliBackend()
 
 
+def worker_command() -> None:
+    """Run the request-queue poller (blocks). Used by the always-on worker host."""
+    from skrendam.worker import poll_loop
+
+    settings = Settings()
+    make_session = make_sessionmaker(settings)
+    backend = _real_backend()
+
+    def make_adapter():
+        bucket = TokenBucket(settings.min_call_interval_seconds, settings.pacing_jitter_seconds)
+        return FliAdapter(backend, pace=bucket.acquire)
+
+    poll_loop(make_session, make_adapter, scanner_version=settings.scanner_version)
+
+
 def run_scan_command(session_factory=None, backend=None, today=None, seed=False) -> ScanSummary:
     settings = Settings()
     session = (session_factory or make_sessionmaker(settings))()
@@ -36,6 +51,7 @@ def main():
     rs.add_argument("--seed", action="store_true")
     sub.add_parser("seed")
     sub.add_parser("calibrate")
+    sub.add_parser("worker")
     args = parser.parse_args()
 
     if args.cmd == "run-scan":
@@ -49,6 +65,8 @@ def main():
     elif args.cmd == "calibrate":
         from skrendam.calibrate import calibrate
         calibrate()
+    elif args.cmd == "worker":
+        worker_command()
 
 
 if __name__ == "__main__":

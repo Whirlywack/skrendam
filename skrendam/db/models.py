@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from skrendam.db.base import Base
@@ -238,3 +238,18 @@ class PublishedDeal(Base):
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class ScanRequest(Base):
+    __tablename__ = "scan_requests"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String)  # "full_scan" | "recheck"
+    candidate_id: Mapped[int | None] = mapped_column(ForeignKey("candidates.id"))
+    status: Mapped[str] = mapped_column(String, default="queued", server_default="queued", index=True)
+    requested_by: Mapped[str] = mapped_column(String, default="curator", server_default="curator")
+    params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    result_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now, server_default=text("CURRENT_TIMESTAMP"), index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

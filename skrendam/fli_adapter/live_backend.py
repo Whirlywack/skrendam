@@ -1,6 +1,6 @@
 """Real fli wiring. The only place that builds fli filter objects + calls the network."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 from skrendam.config import Settings
 from skrendam.scanning.types import SearchSpec
@@ -12,20 +12,29 @@ class LiveFliBackend:
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or Settings()
 
-    def search_calendar(self, spec: SearchSpec):
-        from fli.models import (Airport, DateSearchFilters, FlightSegment, PassengerInfo,
-                                 TripType)
-        from fli.search import SearchDates
-        seg = FlightSegment(
+    def _build_date_filters(self, spec: SearchSpec):
+        from fli.models import Airport, DateSearchFilters, FlightSegment, PassengerInfo, TripType
+        is_rt = spec.trip_type == "roundtrip"
+        segments = [FlightSegment(
             departure_airport=[[getattr(Airport, spec.origin), 0]],
             arrival_airport=[[getattr(Airport, spec.destination), 0]],
-            travel_date=spec.window_start.strftime("%Y-%m-%d"))
-        filters = DateSearchFilters(
-            trip_type=TripType.ROUND_TRIP if spec.trip_type == "roundtrip" else TripType.ONE_WAY,
-            passenger_info=PassengerInfo(adults=1), flight_segments=[seg],
+            travel_date=spec.window_start.strftime("%Y-%m-%d"))]
+        if is_rt:
+            ret_date = spec.window_start + timedelta(days=spec.duration_days or 0)
+            segments.append(FlightSegment(
+                departure_airport=[[getattr(Airport, spec.destination), 0]],
+                arrival_airport=[[getattr(Airport, spec.origin), 0]],
+                travel_date=ret_date.strftime("%Y-%m-%d")))
+        return DateSearchFilters(
+            trip_type=TripType.ROUND_TRIP if is_rt else TripType.ONE_WAY,
+            passenger_info=PassengerInfo(adults=1), flight_segments=segments,
             from_date=spec.window_start.strftime("%Y-%m-%d"),
             to_date=spec.window_end.strftime("%Y-%m-%d"),
-            duration=spec.duration_days if spec.trip_type == "roundtrip" else None)
+            duration=spec.duration_days if is_rt else None)
+
+    def search_calendar(self, spec: SearchSpec):
+        from fli.search import SearchDates
+        filters = self._build_date_filters(spec)
         results = SearchDates().search(filters, currency=self.settings.currency,
                                        language=self.settings.language,
                                        country=self.settings.country) or []
@@ -39,8 +48,16 @@ class LiveFliBackend:
         return out
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
-        from fli.models import (Airport, FlightSearchFilters, FlightSegment, MaxStops,
-                                 PassengerInfo, SeatType, SortBy, TripType)
+        from fli.models import (
+            Airport,
+            FlightSearchFilters,
+            FlightSegment,
+            MaxStops,
+            PassengerInfo,
+            SeatType,
+            SortBy,
+            TripType,
+        )
         from fli.search import SearchFlights
         segs = [FlightSegment(departure_airport=[[getattr(Airport, origin), 0]],
                               arrival_airport=[[getattr(Airport, destination), 0]],

@@ -2,7 +2,7 @@
 
 Things deliberately deferred during the Plan 1 (deal engine) build + QA gauntlet. "Remembered and marked" so nothing is silently lost. Each item notes *why* it's deferred and *when/where* it should be picked up.
 
-_Last updated: 2026-06-02, after the QA pass on the deal engine._
+_Last updated: 2026-06-03, after the Plan 2 (curator admin) build + QA._
 
 ---
 
@@ -13,7 +13,8 @@ _Last updated: 2026-06-02, after the QA pass on the deal engine._
 Plan 1 is the **headless Python engine**. The design-system UI kits (`.claude/skills/yip-design-system/ui_kits/curator` and `…/website`) are **static React demos with mock `data.js`** — not connected to the engine/DB.
 
 - ✅ **Done now:** Playwright smoke of both static kits — they render and basic interactions work, no real console errors (screenshots: `qa-curator-deal-desk.png`, `qa-website-deal-detail.png`).
-- ⏳ **Deferred to Plan 2:** the *real* beginning-to-end browser journey — curator logs in → sees **real candidates from the DB** → rechecks → approves → writes a `published_deal` → public site renders it → newsletter signup. This needs the Next.js curator admin + public site wired to Postgres (Plan 2 / Spec 2). Build the Playwright E2E for this flow when that app exists.
+- ✅ **Resolved (Plan 2, 2026-06-03):** the curator **publish loop** — login → **real candidates from Neon** → review room → approve & publish → `published_deals` — is built and covered by a passing Playwright journey (`web/e2e/journey.spec.ts`).
+- ⏳ **Still deferred:** the **recheck** leg as an *automated* E2E (needs the live `fli` worker running; verified manually for now) and the **public site → newsletter** half of the journey (Spec 2). See §5.
 
 ## 2. Engine follow-ups surfaced by review (non-blocking)
 
@@ -35,3 +36,26 @@ Plan 1 is the **headless Python engine**. The design-system UI kits (`.claude/sk
 Tracked in `docs/research/2026-06-01-deal-engine-v1-review-brief.md`:
 - **R0 audience conversion** — TikTok → owned audience → paid; validate manually (Telegram + no-code email capture) in parallel.
 - **R1 data source + affiliate** — `fli` is fine for this private phase only; choose an EU-legal, affiliate-enabled production data source (e.g. Travelpayouts) before going paid.
+
+## 5. Plan 2 (curator admin, Next.js) — deferred + findings
+
+_Added 2026-06-03. The internal Deal Desk is built in `web/` and wired to real Neon data (158 candidates); login → review → publish verified end-to-end (Playwright). Branch `feat/curator-admin`._
+
+**Deferred to a Plan 2 "milestone 2" (core curate→publish loop shipped first — locked scope decision):**
+- **Config CRUD editors** — Spec §10 views for `deal_templates`, `audience_segments`, `travel_moments`, `routes`/destinations, `zones`. Until built, edit config via `skrendam seed` / direct DB.
+- **AI suggestions / drafts** placeholder page (Spec §10).
+- **Public site + newsletter** (Spec 2) — separate app; the admin already writes clean `published_deals` for it.
+
+**Verification gaps:**
+- **Recheck / run-scan via the queue** — `scan_requests` enqueue + the Python worker poll loop are built + unit-tested + verified manually, but NOT in the automated Playwright journey (needs the live `fli` worker). Add an E2E with a fake-backend worker toggle.
+
+**Findings / tech-debt from the build:**
+- **Round-trip calendar fix** — `live_backend.search_calendar` built a 1-segment round-trip `DateSearchFilters` (pydantic ValidationError → tripped breaker → 0 candidates). FIXED via `_build_date_filters` (adds the return leg). The per-trip-type calibration note (§2) still applies.
+- **`.env` `$`-escaping** — bcrypt hashes (`$2b$…`) must escape `$` as `\$` or `dotenv-expand` silently blanks them (caused a login failure). Root-caused + fixed; documented in `web/.env.example`.
+- **`next-auth` pinned exactly** (`5.0.0-beta.31`) — v5 is beta-only; prevents drift. Stack verified current; **`next@16.2.7` includes the May-2026 CVE batch** + CVE-2025-29927.
+- **`npm audit` dev-only moderates** — `esbuild` SSRF via `drizzle-kit`'s deprecated `@esbuild-kit/*`; `postcss` XSS bundled by `next`. Build-time only, not exploitable here, no clean fix (npm auto-fix = absurd downgrades). Revisit on transitive bumps.
+- **Layover airports missing from `fli.models.Airport`** (`ZWS`, `AGY`, …) — `fli/search/_decoders.py:334` logs a benign warning decoding real itineraries; cosmetic/upstream.
+- **DB defaults for Next.js writes** — `scan_requests` got `server_default`s (status/requested_by/created_at) so Drizzle inserts don't violate NOT NULL. `published_deals`/`content_drafts` lack them; the Server Actions supply `published_at`/`tier`/`created_at` explicitly — consider `server_default`s if other writers appear.
+- **Worker queue is single-worker v1** — non-atomic claim (SELECT queued → UPDATE running); a crash leaves a row stuck `running`. Use `SELECT … FOR UPDATE SKIP LOCKED` + a stuck-row requeue before multi-worker.
+- **`skrendam/**` not in ruff `include`** (only `fli/**`, `tests/**`, `examples/**`, `scripts/**`) — engine escapes ruff; consider adding (will surface pre-existing style issues).
+- **`datetime.utcnow()` deprecation** — `models._now()` + engine use it (removed in 3.14; handoff pins Python ≤3.13). Migrate to `datetime.now(UTC)` engine-wide (`worker.py` already uses a tz-safe `_utcnow`).
