@@ -5,7 +5,10 @@ import { StatusPill } from './StatusPill';
 export function QueueRow({ c, onOpen }: { c: CandidateView; onOpen: (id: number) => void }) {
   return (
     <div className="qrow" onClick={() => onOpen(c.matchId)}>
-      <ScoreBadge score={c.score} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <ScoreBadge score={c.score} />
+        <span className={`tier-chip ${c.tier}`}>{c.tier}</span>
+      </div>
       <div className="qdeal">
         <span className="qthumb" style={{ background: c.grad }} />
         <div style={{ minWidth: 0 }}>

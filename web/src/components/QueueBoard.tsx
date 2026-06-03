@@ -14,6 +14,61 @@ const TAB_TO_STATUS: Record<string, string | null> = {
   Rejected: 'rejected',
 };
 
+function TemplateSection({
+  g,
+  items,
+  onOpen,
+}: {
+  g: TemplateGroup;
+  items: CandidateView[];
+  onOpen: (id: number) => void;
+}) {
+  const [maybeOpen, setMaybeOpen] = useState(false);
+
+  const great = items.filter((c) => c.tier === 'great');
+  const maybe = items.filter((c) => c.tier === 'maybe');
+
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <h3
+        style={{
+          fontFamily: 'var(--font-mono)',
+          textTransform: 'uppercase',
+          letterSpacing: '.04em',
+          color: 'var(--fg-3)',
+          fontSize: 11,
+          fontWeight: 700,
+          margin: '0 28px 8px',
+          paddingTop: 8,
+        }}
+      >
+        {g.templateLabel} <span style={{ fontWeight: 400 }}>({items.length})</span>
+      </h3>
+
+      {great.length > 0 && <Queue candidates={great} onOpen={onOpen} />}
+
+      {maybe.length > 0 && (
+        <>
+          <button
+            className="maybe-toggle"
+            onClick={() => setMaybeOpen((o) => !o)}
+            aria-expanded={maybeOpen}
+          >
+            <span
+              className={`chevron${maybeOpen ? ' open' : ''}`}
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+            Maybe ({maybe.length})
+          </button>
+          {maybeOpen && <Queue candidates={maybe} onOpen={onOpen} />}
+        </>
+      )}
+    </section>
+  );
+}
+
 export function QueueBoard({
   groups,
   scan,
@@ -36,23 +91,12 @@ export function QueueBoard({
         const items = want ? g.items.filter((c) => c.status === want) : g.items;
         if (!items.length) return null;
         return (
-          <section key={g.templateId} style={{ marginBottom: 32 }}>
-            <h3
-              style={{
-                fontFamily: 'var(--font-mono)',
-                textTransform: 'uppercase',
-                letterSpacing: '.04em',
-                color: 'var(--fg-3)',
-                fontSize: 11,
-                fontWeight: 700,
-                margin: '0 28px 8px',
-                paddingTop: 8,
-              }}
-            >
-              {g.templateLabel} <span style={{ fontWeight: 400 }}>({items.length})</span>
-            </h3>
-            <Queue candidates={items} onOpen={(id) => setSelected(byId(id))} />
-          </section>
+          <TemplateSection
+            key={g.templateId}
+            g={g}
+            items={items}
+            onOpen={(id) => setSelected(byId(id))}
+          />
         );
       })}
 
