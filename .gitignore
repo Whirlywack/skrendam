@@ -141,8 +141,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-# (MkDocs `site/` output is handled by the site/ block below — do not restore `/site` here)
+# mkdocs documentation (output relocated from ./site to ./_docs_build so site/ is the public app)
+/_docs_build/
 
 # mypy
 .mypy_cache/

@@ -1,4 +1,6 @@
 site_name: Fli Documentation
+# Build to _docs_build (not the default ./site) so the public Next.js app can live at site/.
+site_dir: _docs_build
 site_url: https://punitarani.github.io/fli
 site_description: Documentation for the Fli library - A Python library for direct Google Flights API access
 repo_url: https://github.com/punitarani/fli
