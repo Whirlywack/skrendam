@@ -32,36 +32,52 @@ export function Composer({ c, onClose, inline = false }: ComposerProps) {
 
   function handleReject() {
     startTransition(async () => {
-      await setCandidateStatus(c.candidateId, 'rejected');
-      onClose();
+      try {
+        await setCandidateStatus(c.candidateId, 'rejected');
+        onClose();
+      } catch {
+        showToast('Reject failed — try again');
+      }
     });
   }
 
   function handleSchedule() {
     startTransition(async () => {
-      await setCandidateStatus(c.candidateId, 'maybe');
-      onClose();
+      try {
+        await setCandidateStatus(c.candidateId, 'maybe');
+        onClose();
+      } catch {
+        showToast('Schedule failed — try again');
+      }
     });
   }
 
   function handlePublish() {
     startTransition(async () => {
-      await publishDeal({
-        candidateId: c.candidateId,
-        templateId: c.templateId,
-        headline: c.copy.headline,
-        tiktokHook: c.copy.hook,
-      });
-      showToast(`${c.place}, ${c.country} is live`);
-      setTimeout(() => onClose(), 1200);
+      try {
+        await publishDeal({
+          candidateId: c.candidateId,
+          templateId: c.templateId,
+          headline: c.copy.headline,
+          tiktokHook: c.copy.hook,
+        });
+        showToast(`${c.place}, ${c.country} is live`);
+        setTimeout(() => onClose(), 1200);
+      } catch {
+        showToast('Publish failed — try again');
+      }
     });
   }
 
   function handleRecheck() {
     startTransition(async () => {
-      await enqueueRecheck(c.candidateId);
-      setRecheckQueued(true);
-      showToast('Recheck queued');
+      try {
+        await enqueueRecheck(c.candidateId);
+        setRecheckQueued(true);
+        showToast('Recheck queued');
+      } catch {
+        showToast("Couldn't queue recheck — try again");
+      }
     });
   }
 

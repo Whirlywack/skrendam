@@ -13,19 +13,25 @@ export function CopyDrafter({ c }: { c: CandidateView }) {
   const [hook, setHook] = useState(c.copy.hook);
   const [news, setNews] = useState(c.copy.news);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleSave() {
     startTransition(async () => {
-      await saveContentDraft({
-        candidateId: c.candidateId,
-        templateId: c.templateId,
-        headline,
-        hook,
-        news,
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      try {
+        await saveContentDraft({
+          candidateId: c.candidateId,
+          templateId: c.templateId,
+          headline,
+          hook,
+          news,
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } catch {
+        setSaveError(true);
+        setTimeout(() => setSaveError(false), 2500);
+      }
     });
   }
 
@@ -105,6 +111,12 @@ export function CopyDrafter({ c }: { c: CandidateView }) {
             <div className="toast" style={{ bottom: 56 }}>
               <span className="ic"><Icon name="CheckCircle" size={18} /></span>
               Copy draft saved
+            </div>
+          )}
+          {saveError && (
+            <div className="toast" style={{ bottom: 56, background: 'var(--coral-600)' }}>
+              <span className="ic"><Icon name="AlertTriangle" size={18} /></span>
+              Save failed — try again
             </div>
           )}
         </div>

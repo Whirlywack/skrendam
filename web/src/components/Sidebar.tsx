@@ -9,11 +9,10 @@ type NavItem = {
   label: string;
   href: string | null;
   icon: React.ReactNode;
-  badge?: number;
 };
 
 const navItems: NavItem[] = [
-  { label: 'Queue', href: '/queue', icon: <Inbox size={18} />, badge: 3 },
+  { label: 'Queue', href: '/queue', icon: <Inbox size={18} /> },
   { label: 'Published', href: '/published', icon: <Send size={18} /> },
   { label: 'Templates', href: null, icon: <LayoutTemplate size={18} /> },
   { label: 'Audience', href: null, icon: <Users size={18} /> },
@@ -31,7 +30,7 @@ export function Sidebar() {
         <span className="tag">Curator</span>
       </div>
       <nav>
-        {navItems.map(({ label, href, icon, badge }) => {
+        {navItems.map(({ label, href, icon }) => {
           const isActive = href !== null && pathname === href;
           if (href === null) {
             return (
@@ -55,7 +54,6 @@ export function Sidebar() {
             >
               {icon}
               {label}
-              {badge !== undefined && <span className="badge">{badge}</span>}
             </Link>
           );
         })}
