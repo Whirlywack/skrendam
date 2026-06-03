@@ -44,7 +44,7 @@ export function CaptureBand() {
             {pending ? 'Adding…' : 'Get deals'}
           </button>
           {error && (
-            <span style={{ color: 'var(--coral-600)', fontSize: 12 }}>{error}</span>
+            <span role="alert" style={{ color: 'var(--coral-600)', fontSize: 12 }}>{error}</span>
           )}
         </form>
       )}
