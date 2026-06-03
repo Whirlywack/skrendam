@@ -112,7 +112,10 @@ export async function toggleRouteEnabled(form: FormData): Promise<void> {
   const id = numOrNull(form.get('id'));
   if (!id) throw new Error('id required');
   const enabled = form.get('enabled') === 'true';
-  await db.update(routes).set({ enabled: !enabled }).where(eq(routes.id, id));
+  await db
+    .update(routes)
+    .set({ enabled: !enabled, updatedAt: new Date().toISOString() })
+    .where(eq(routes.id, id));
   revalidatePath('/config/routes');
 }
 
@@ -124,7 +127,10 @@ export async function toggleTemplateEnabled(form: FormData): Promise<void> {
   const id = numOrNull(form.get('id'));
   if (!id) throw new Error('id required');
   const enabled = form.get('enabled') === 'true';
-  await db.update(dealTemplates).set({ enabled: !enabled }).where(eq(dealTemplates.id, id));
+  await db
+    .update(dealTemplates)
+    .set({ enabled: !enabled, updatedAt: new Date().toISOString() })
+    .where(eq(dealTemplates.id, id));
   revalidatePath('/config/templates');
 }
 
@@ -138,12 +144,17 @@ export async function upsertDealTemplate(form: FormData): Promise<void> {
   if (audienceSegmentId === null || travelMomentId === null)
     throw new Error('audience_segment_id and travel_moment_id are required');
 
+  // trip_type drives the engine's price-anomaly branch (matching.py: tpl.trip_type == "oneway"),
+  // so validate it like haul_type/cabin rather than trusting the client select.
+  const tripType = (form.get('trip_type') ?? 'roundtrip').toString();
+  if (!['oneway', 'roundtrip'].includes(tripType)) throw new Error(`invalid trip_type: ${tripType}`);
+
   const editableValues = {
     slug: (form.get('slug') ?? '').toString().trim(),
     name: (form.get('name') ?? '').toString().trim(),
     audienceSegmentId,
     travelMomentId,
-    tripType: (form.get('trip_type') ?? 'roundtrip').toString(),
+    tripType,
     priority: numOrNull(form.get('priority')) ?? 0,
     publicLabel: strOrNull(form.get('public_label')),
     newsletterTag: strOrNull(form.get('newsletter_tag')),
