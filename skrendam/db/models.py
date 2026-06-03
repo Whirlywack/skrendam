@@ -241,6 +241,14 @@ class PublishedDeal(Base):
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, unique=True)
+    source: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class ScanRequest(Base):
     __tablename__ = "scan_requests"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

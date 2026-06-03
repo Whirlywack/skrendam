@@ -343,3 +343,12 @@ export const scanRequests = pgTable("scan_requests", {
 			name: "scan_requests_candidate_id_fkey"
 		}),
 ]);
+
+export const subscribers = pgTable("subscribers", {
+	id: serial().primaryKey().notNull(),
+	email: varchar().notNull(),
+	source: varchar(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => [
+	unique("subscribers_email_key").on(table.email),
+]);
