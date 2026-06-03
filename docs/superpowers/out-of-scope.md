@@ -61,6 +61,12 @@ _Added 2026-06-03. The internal Deal Desk is built in `web/` and wired to real N
 - **`skrendam/**` not in ruff `include`** (only `fli/**`, `tests/**`, `examples/**`, `scripts/**`) — engine escapes ruff; consider adding (will surface pre-existing style issues).
 - **`datetime.utcnow()` deprecation** — `models._now()` + engine use it (removed in 3.14; handoff pins Python ≤3.13). Migrate to `datetime.now(UTC)` engine-wide (`worker.py` already uses a tz-safe `_utcnow`).
 
+**Milestone-2 (config editors + tuning) code-review leftovers — non-blocking, deferred:**
+- **Config-editor DRY pass** — the 5 forms (`Zone`/`Template`/`Audience`/`Moment`/`Route`Form) copy-paste the `'use client'` submit/toast boilerplate, the label/input style constants, and the enable/disable toggle. Extract a `useConfigForm` hook + shared form-styles + an `<EnabledToggle>` next time they're touched.
+- **`skrendam analyze` counts all-time matches** — `tier_preview` + per-template/zone counts include historical/rejected/published rows, not just the active queue. Accurate on today's clean DB; will skew as history accumulates → add an active-status filter then.
+- **Config toggle stale-state** — `toggleRouteEnabled`/`toggleTemplateEnabled` flip the client-sent `enabled` snapshot, not the live DB value. Harmless for a single admin (revalidate refreshes); read-then-flip server-side if multi-curator ever lands.
+- **Spec 2 backend dependency:** the status/availability engine (Spec 2) leans on the recheck path + `last_seen_at`, so the **recheck E2E gap** + **worker single-worker atomicity** (both in §5) should be revisited *as part of* Spec 2's backend, not after.
+
 ## 6. Spec 2 (Yip homepage / public site) — locked design inputs
 
 _Added 2026-06-03 from founder research on Jack's Flight Club. Full notes:
