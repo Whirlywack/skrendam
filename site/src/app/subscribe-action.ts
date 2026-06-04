@@ -14,8 +14,11 @@ import {
   cleanPrefs,
 } from '@/lib/subscribe-prefs';
 
-// Re-export so tests and components can import from a single action module.
-export { normalizeEmail, isValidEmail, cleanSource, cleanPrefs };
+// NOTE: this is a 'use server' module — every export MUST be an async server
+// action. Do NOT re-export the pure helpers above (normalizeEmail/cleanPrefs/…);
+// doing so corrupts the Server Action manifest and makes the <form action={…}>
+// actions (subscribePageAction/savePreferences/joinEarlyAlerts) 404 on POST.
+// Import those helpers from '@/lib/subscribe-prefs' directly instead.
 
 // ---------------------------------------------------------------------------
 // Cookie helpers
