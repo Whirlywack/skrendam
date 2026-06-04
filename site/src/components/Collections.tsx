@@ -10,11 +10,15 @@ import Link from 'next/link';
 import { COLLECTIONS } from '@/lib/collections';
 import { Photo } from './Photo';
 
-export function Collections() {
+export function Collections({ showHeading = true }: { showHeading?: boolean }) {
   return (
     <div className="pad" style={{ background: 'var(--sunken)' }}>
-      <div className="eyebrow">Browse by</div>
-      <div className="sec-h">Where do you want to go?</div>
+      {showHeading && (
+        <>
+          <div className="eyebrow">Browse by</div>
+          <div className="sec-h">Where do you want to go?</div>
+        </>
+      )}
 
       <div className="coll">
         {COLLECTIONS.map((c) => (

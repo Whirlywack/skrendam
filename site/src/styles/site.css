@@ -1755,6 +1755,87 @@
 
 
 /* =========================================================================
+   COLLECTION PAGE  (.crumb / .coll-hero / .coll-h1 / .lead / .coll-count / .coll-empty)
+   Source: early-alerts-and-collection.html (.crumb, .h1, .lead, grid3)
+   ========================================================================= */
+
+/* Breadcrumb trail */
+.yip-site .crumb {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  padding: 14px 26px 0;
+}
+
+.yip-site .crumb a {
+  color: var(--fg3);
+  text-decoration: none;
+}
+
+.yip-site .crumb a:hover {
+  color: var(--sea-ink);
+}
+
+/* Collection page hero section */
+.yip-site .coll-hero {
+  padding-top: 14px;
+  padding-bottom: 4px;
+}
+
+/* Collection / collections-index H1 — mirrors mockup .h1 rule */
+.yip-site .coll-h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin: 8px 0 0;
+}
+
+/* Lead paragraph below H1 */
+.yip-site .lead {
+  font-size: 15px;
+  color: var(--fg2);
+  margin: 12px 0 0;
+  line-height: 1.5;
+  max-width: 54ch;
+}
+
+/* Small live-count line below lead */
+.yip-site .coll-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sea-ink);
+  margin: 12px 0 0;
+}
+
+/* Empty state */
+.yip-site .coll-empty {
+  background: var(--sunken);
+  border-radius: 16px;
+  padding: 32px 26px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.yip-site .coll-empty p {
+  font-size: 15px;
+  color: var(--fg2);
+  margin: 0;
+  max-width: 46ch;
+  line-height: 1.5;
+}
+
+
+/* =========================================================================
    FOOTER  (.ftr / .ftr-in / .ftr h4 / .ftr a / .legal)
    Source: homepage-v3-brand.html (canonical footer)
    ========================================================================= */
