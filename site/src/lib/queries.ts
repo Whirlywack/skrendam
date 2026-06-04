@@ -49,6 +49,38 @@ export async function getDeal(id: number) {
   return rows[0] ?? null;
 }
 
+export async function getSimilarDeals(
+  opts: { excludeId: number | string; zone?: string | null; origin?: string | null },
+  limit = 3,
+) {
+  const excludeId = Number(opts.excludeId);
+
+  // Fetch zone-matched live deals (excluding self)
+  const zoneRows: Awaited<ReturnType<typeof dealBase>> = opts.zone
+    ? await dealBase()
+      .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, opts.zone)))
+      .orderBy(desc(publishedDeals.publishedAt))
+    : [];
+
+  const zoneDeduped = dedupeById(zoneRows).filter((r) => r.pd.id !== excludeId);
+
+  if (zoneDeduped.length >= limit) return zoneDeduped.slice(0, limit);
+
+  // Top-up with same-origin live deals
+  const originRows: Awaited<ReturnType<typeof dealBase>> = opts.origin
+    ? await dealBase()
+      .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, opts.origin)))
+      .orderBy(desc(publishedDeals.publishedAt))
+    : [];
+
+  const merged = dedupeById([
+    ...zoneDeduped,
+    ...originRows.filter((r) => r.pd.id !== excludeId),
+  ]);
+
+  return merged.slice(0, limit);
+}
+
 export async function getCollectionDeals(filter: CollectionFilter) {
   if (filter.kind === 'origin') {
     return dedupeById(

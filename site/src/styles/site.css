@@ -1903,6 +1903,111 @@
 
 
 /* =========================================================================
+   DEAL DETAIL — FULL-PAGE ENRICHED LAYOUT (Task 13)
+   Boarding-pass hero image, meta row chips, headline, section body.
+   Source: deal-detail-v2.html
+   ========================================================================= */
+
+/* Hero image panel */
+.yip-site .himg {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 240px;
+}
+
+/* Photo component fills the full hero panel — border-radius 0 so the parent clips */
+.yip-site .himg-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* Dark overlay rising from bottom for hero legibility */
+.yip-site .himg .ov {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(28, 24, 19, 0.62), transparent 58%);
+  z-index: 1;
+}
+
+/* Caption positioned over photo */
+.yip-site .himg-cap {
+  position: absolute;
+  left: 22px;
+  bottom: 18px;
+  z-index: 3;
+  color: #fff;
+}
+
+/* Eyebrow inside hero */
+.yip-site .himg-eyebrow {
+  color: rgba(255, 255, 255, 0.92);
+  display: block;
+}
+
+/* H1 inside hero */
+.yip-site .himg-h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+  margin: 4px 0 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+/* Deal meta row: route · dates · stops · chip */
+.yip-site .dmeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--fg2);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-top: 16px;
+}
+
+/* Rare deal chip — amber */
+.yip-site .chip-rare {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+  border: 1px solid var(--amber-line);
+}
+
+/* Great deal chip — sea */
+.yip-site .chip-great {
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+}
+
+/* Freshness/checked chip — sea */
+.yip-site .chip-fresh {
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+}
+
+/* Deal headline hook */
+.yip-site .dh {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 16px 0 0;
+  max-width: 26ch;
+  letter-spacing: -0.01em;
+}
+
+
+/* =========================================================================
    DEAL DETAIL — WHY / CATCH COLUMNS  (.dcols / .dlist / .li)
    Source: deal-detail-brand.html
    ========================================================================= */
