@@ -277,7 +277,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // Expired deals: preserved noindex logic from prior task
   const noindex = row.pd.status !== 'live';
 
-  const title = `${d.destination} €${d.price} — ${d.route} · Yip`;
+  const title = `${d.destination} €${Math.round(d.price)} — ${d.route} · Yip`;
   const description = d.drop > 0
     ? `€${Math.round(d.price)} ${d.tripType === 'roundtrip' ? 'return' : 'one-way'} to ${d.destination} — ${d.drop}% below typical. ${d.dates}. Found and checked by hand.`
     : `€${Math.round(d.price)} ${d.tripType === 'roundtrip' ? 'return' : 'one-way'} to ${d.destination}. ${d.dates}. Found and checked by hand.`;

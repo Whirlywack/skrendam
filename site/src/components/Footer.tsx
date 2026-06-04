@@ -33,7 +33,7 @@ export function Footer() {
           <Link href="/past-deals">Past rare fares</Link>
           <Link href="/#how">How it works</Link>
           <Link href="/early-alerts">Get early alerts</Link>
-          <Link href="/contact">Contact</Link>
+          <a href="mailto:hello@yip.lt">Contact</a>
         </div>
 
         {/* Follow column */}

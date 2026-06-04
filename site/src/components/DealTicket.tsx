@@ -43,7 +43,7 @@ export function DealTicket({ t, featured = false }: { t: TicketView; featured?: 
         <div className="meta">{t.route} · {t.dates} · {t.legs}</div>
         <h3>{t.headline}</h3>
         <div className="chips">
-          <span className="chip chip-good">&#x2193; {t.drop}% under</span>
+          {t.drop > 0 && <span className="chip chip-good">&#x2193; {t.drop}% under</span>}
           {t.catchChip && <span className="chip chip-caveat">{t.catchChip}</span>}
         </div>
         <div className="ticket-foot">

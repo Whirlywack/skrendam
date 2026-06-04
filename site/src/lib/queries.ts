@@ -41,7 +41,12 @@ export async function getLiveDeals() {
 }
 
 export async function getInspirationDeals(limit = INSPIRATION_LIMIT) {
-  return dedupeById(await dealBase().where(eq(publishedDeals.status, 'expired')).orderBy(desc(publishedDeals.publishedAt)).limit(limit));
+  // Dedupe BEFORE limiting: the candidate_template_matches join can fan out (no
+  // composite unique constraint yet), so .limit() at the SQL level could return
+  // fewer than `limit` distinct deals. Fetch-then-slice (mirrors getSimilarDeals).
+  return dedupeById(
+    await dealBase().where(eq(publishedDeals.status, 'expired')).orderBy(desc(publishedDeals.publishedAt)),
+  ).slice(0, limit);
 }
 
 export async function getDeal(id: number) {
