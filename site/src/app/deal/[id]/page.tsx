@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getDeal } from '@/lib/queries';
 import { toPublicDeal } from '@/lib/mappers';
@@ -19,15 +20,17 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   return <DealDetail deal={deal} stats={stats} snapshot={row.snapshot} />;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const numId = Number(id);
   if (Number.isNaN(numId)) return { title: 'Deal — Yip' };
   const row = await getDeal(numId);
   if (!row) return { title: 'Deal — Yip' };
   const d = toPublicDeal(row, new Date());
+  const noindex = row.pd.status !== 'live';
   return {
     title: `${d.destination} €${d.price} — Yip`,
     description: `${d.route} · ${d.dates} · ${d.why}. Found and checked by hand.`,
+    ...(noindex ? { robots: { index: false, follow: true } } : {}),
   };
 }
