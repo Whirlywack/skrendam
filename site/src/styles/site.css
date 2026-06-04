@@ -1235,6 +1235,71 @@
   margin-top: 14px;
 }
 
+/* Three-column deal grid (past fares / collections layout) */
+.yip-site .grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 13px;
+}
+
+/* Section padding wrapper */
+.yip-site .pad {
+  padding: 26px 26px;
+}
+
+/* Section divider line */
+.yip-site .pad-bordered {
+  border-top: 1px solid var(--line);
+}
+
+/* Lead text below section heading */
+.yip-site .sec-lead {
+  font-size: 13.5px;
+  color: var(--fg2);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* FAQ section wrapper */
+.yip-site .faq {
+  padding: 26px;
+}
+
+/* Sticky CTA bar (fixed bottom; appears on scroll) */
+.yip-site .sticky-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--ink);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.yip-site .sticky-cta.visible {
+  transform: translateY(0);
+}
+
+.yip-site .sticky-cta p {
+  font-size: 14px;
+  color: var(--perf);
+  margin: 0;
+  font-weight: 500;
+}
+
+.yip-site .sticky-cta strong {
+  color: var(--cream);
+}
+
 
 /* =========================================================================
    ASYMMETRIC HERO (hero-grid 2-col: content+signup left, photo panel right)
