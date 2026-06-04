@@ -1,0 +1,257 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .yp{ --amber:#E2820E; --amber-600:#C56A07; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A; --amber-400:#EFA227;
+       --sea:#0F7C68; --sea-600:#0A6354; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+       --coral:#D63E22; --coral-ink:#B53017;
+       --paper:#fff; --cream:#FBF6EC; --sunken:#F4ECDD; --ink:#1C1813; --ink-soft:#2F2922; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA; --line-soft:#ECE1CD; --perf:#C8B79C; --sand200:#E0D2BA; --sand300:#C8B79C; --sand400:#A8967A;
+       font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); max-width:1000px; margin:0 auto;
+       background:var(--cream); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--sea-ink); }
+  .sec-h{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:23px; letter-spacing:-.02em; margin:5px 0 0; }
+  .pad{ padding:26px 26px; }
+  .btn-primary{ background:var(--amber); color:#1C1813; font-weight:800; font-size:12.5px; border:none; border-radius:11px; padding:10px 14px; box-shadow:0 8px 20px rgba(226,130,14,.30); white-space:nowrap; display:inline-flex; gap:6px; align-items:center; }
+  .arrow{ font-weight:700; }
+
+  /* photo treatment (warm gradient = real-photo stand-in) */
+  .photo{ position:relative; overflow:hidden; }
+  .photo .ov{ position:absolute; inset:0; background:linear-gradient(to top, rgba(28,24,19,.74) 0%, rgba(28,24,19,.30) 42%, transparent 70%); }
+  /* golden-hour SCENE stand-ins (sun + sky→sea horizon) — real warm photos in build */
+  .ph-sun{ background:
+    radial-gradient(circle at 73% 23%, #FFF7E2 0 3.5%, rgba(243,184,78,.6) 8%, rgba(243,184,78,0) 27%),
+    linear-gradient(180deg,#FCE9C6 0%,#F3B84E 30%,#EFA227 48%,#E55438 74%,#C56A07 100%); }
+  .ph-coast{ background:
+    radial-gradient(circle at 70% 30%, #FFF7E2 0 3.5%, rgba(243,184,78,.55) 8%, rgba(243,184,78,0) 25%),
+    linear-gradient(180deg,#FCE9C6 0%,#F3B84E 24%,#EFA227 42%,#E55438 51%,#2A8F7C 55%,#0F7C68 100%); }
+  .ph-city{ background:
+    radial-gradient(circle at 26% 24%, rgba(255,242,206,.6) 0, rgba(255,242,206,0) 32%),
+    linear-gradient(165deg,#F3B84E 0%,#E55438 56%,#7A410E 100%); }
+  .ph-market{ background:
+    radial-gradient(circle at 50% 42%, rgba(243,184,78,.55) 0, rgba(243,184,78,0) 46%),
+    linear-gradient(160deg,#5C320F,#9C520A 46%,#C56A07 100%); }
+  .ph-snow{ background:linear-gradient(180deg,#C6E8DF 0%,#8FD2C2 32%,#239A83 70%,#0A6354 100%); }
+  .duo{ filter:saturate(1.3) contrast(1.05); }
+
+  /* header (sticky translucent) */
+  .hdr{ display:flex; align-items:center; gap:24px; height:62px; padding:0 26px; background:rgba(251,246,236,.82); border-bottom:1px solid var(--line-soft); }
+  .wm{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:23px; color:var(--amber); letter-spacing:-.02em; }
+  .hdr nav{ display:flex; gap:18px; margin-left:6px; }
+  .hdr nav a{ font-size:14px; font-weight:500; color:var(--fg2); }
+  .hdr .sp{ flex:1; }
+  .frompill{ font-size:12.5px; font-weight:600; color:var(--fg2); background:#fff; border:1px solid var(--line); padding:6px 11px; border-radius:999px; }
+
+  /* hero */
+  .hero{ padding:34px 26px 22px; }
+  .hero h1{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:38px; line-height:1.04; letter-spacing:-.025em; margin:12px 0 0; }
+  .hero h1 .amber{ color:var(--amber); }
+  .hero .lead{ font-size:15px; color:var(--fg2); margin:13px 0 0; line-height:1.5; max-width:56ch; }
+  .hero-grid{ display:grid; grid-template-columns:1.12fr .88fr; gap:24px; align-items:stretch; }
+  .hero-left{ display:flex; flex-direction:column; }
+  .hero-left .cap{ margin-top:18px; }
+  .cap{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:0 14px 34px rgba(28,24,19,.16); border-top:4px solid var(--amber); position:relative; }
+  .freebadge{ position:absolute; top:-10px; right:14px; background:var(--sea); color:#fff; font-family:'Space Mono',monospace; font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+  .cap-lbl{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:16px; }
+  .cap-row{ display:flex; gap:8px; margin-top:9px; }
+  .cap-row input{ flex:1; border:1.5px solid var(--sand300); border-radius:11px; padding:10px 12px; font-size:13px; font-family:inherit; }
+  .cap-sub{ font-size:12px; color:var(--fg3); margin-top:7px; }
+  .trust{ display:flex; gap:13px; margin-top:9px; font-size:10.5px; color:var(--fg3); flex-wrap:wrap; }
+  .trust span{ display:inline-flex; gap:4px; align-items:center; }
+  .cap-div{ border-top:1px dashed var(--line); margin:12px 0 10px; }
+  .cap-early{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .btn-sec{ color:var(--sea-ink); font-weight:700; font-size:12px; border:1px solid var(--sea-line); background:var(--sea-tint); border-radius:10px; padding:7px 11px; white-space:nowrap; }
+  .hero-photo{ border-radius:20px; min-height:230px; height:100%; }
+  .hero-photo .ph-cap{ position:absolute; left:16px; bottom:14px; z-index:3; color:#fff; }
+  .hero-photo .ph-eyebrow{ font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+  .hero-photo .ph-title{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:24px; letter-spacing:-.02em; text-shadow:0 1px 10px rgba(0,0,0,.45); margin-top:3px; }
+  .microproof{ margin-top:16px; font-size:13px; color:var(--fg2); }
+  .microproof b{ color:var(--ink); }
+
+  /* ===== boarding-pass ticket DEAL CARD (canonical) ===== */
+  .deal{ background:#fff; border-radius:20px; box-shadow:0 2px 6px rgba(28,24,19,.07); overflow:hidden; display:flex; flex-direction:column; }
+  .deal .ph{ height:160px; position:relative; }
+  .deal .ph .eyebrow{ position:absolute; top:12px; left:14px; color:#fff; font-size:10px; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+  .deal .ph .place{ position:absolute; bottom:11px; left:14px; color:#fff; font-family:'Bricolage Grotesque'; font-weight:700; font-size:23px; line-height:1; text-shadow:0 1px 8px rgba(0,0,0,.45); }
+  .deal .ph .place small{ display:block; font-family:'Hanken Grotesk'; font-weight:500; font-size:12px; opacity:.92; margin-top:3px; }
+  .hot-tag{ position:absolute; top:11px; right:11px; background:var(--coral); color:#fff; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:999px; display:inline-flex; align-items:center; gap:4px; }
+  .deal .body{ padding:15px 18px 16px; display:flex; flex-direction:column; gap:10px; flex:1; }
+  .deal .meta{ font-family:'Space Mono',monospace; font-size:11px; text-transform:uppercase; color:var(--fg2); letter-spacing:.02em; }
+  .deal h3{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:17px; line-height:1.18; margin:0; }
+  .chips{ display:flex; gap:7px; flex-wrap:wrap; }
+  .chip{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:4px 9px; border-radius:999px; }
+  .chip-good{ background:var(--sea-tint); color:var(--sea-ink); }
+  .chip-caveat{ background:var(--sunken); color:#4A4034; }
+  .ticket-foot{ margin-top:auto; display:flex; align-items:flex-end; justify-content:space-between; border-top:1.5px dashed var(--perf); padding-top:13px; position:relative; }
+  .ticket-foot::before, .ticket-foot::after{ content:""; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--cream); }
+  .ticket-foot::before{ left:-26px; } .ticket-foot::after{ right:-26px; }
+  .price{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:28px; letter-spacing:-.03em; line-height:1; }
+  .price s{ font-family:'Hanken Grotesk'; font-weight:500; font-size:13px; color:var(--fg3); margin-left:6px; }
+  .price .ret{ font-family:'Hanken Grotesk'; font-weight:500; font-size:11.5px; color:var(--fg3); display:block; margin-top:3px; }
+  .btn-see{ background:var(--amber); color:#1C1813; font-weight:700; font-size:12.5px; border:none; border-radius:10px; padding:8px 12px; display:inline-flex; gap:5px; align-items:center; box-shadow:0 6px 16px rgba(226,130,14,.26); }
+
+  /* featured (horizontal ticket) */
+  .feat{ display:grid; grid-template-columns:1fr 1.1fr; background:#fff; border-radius:20px; box-shadow:0 10px 28px rgba(28,24,19,.12); overflow:hidden; margin-top:14px; }
+  .feat .ph{ min-height:230px; position:relative; }
+  .feat .ph .eyebrow{ position:absolute; top:14px; left:16px; color:#fff; font-size:10px; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+  .feat .ph .place{ position:absolute; bottom:14px; left:16px; color:#fff; font-family:'Bricolage Grotesque'; font-weight:800; font-size:30px; text-shadow:0 1px 10px rgba(0,0,0,.45); }
+  .feat .body{ padding:20px 22px; display:flex; flex-direction:column; gap:11px; }
+  .feat h3{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:21px; line-height:1.16; margin:0; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+
+  /* dark band */
+  .band{ background:var(--ink); border-radius:24px; margin:24px 26px; padding:34px 36px; display:flex; align-items:center; gap:36px; position:relative; overflow:hidden; flex-wrap:wrap; }
+  .band .bead{ position:absolute; width:200px; height:200px; border-radius:50%; background:radial-gradient(circle at 35% 35%, var(--amber-400), var(--amber-600)); right:-56px; top:-56px; opacity:.9; }
+  .band .bcol{ position:relative; z-index:1; flex:1; min-width:240px; }
+  .band h2{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:28px; line-height:1.06; letter-spacing:-.02em; color:#FBF6EC; margin:0 0 8px; }
+  .band p{ color:var(--sand300); font-size:14px; margin:0; }
+  .band .f{ display:flex; gap:8px; position:relative; z-index:1; }
+  .band input{ border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:#fff; border-radius:11px; padding:11px 13px; font-size:13px; width:190px; }
+
+  /* collections (duotone tiles) */
+  .coll{ display:grid; grid-template-columns:repeat(3,1fr); gap:13px; margin-top:13px; }
+  .ctile{ position:relative; border-radius:16px; overflow:hidden; min-height:104px; display:flex; align-items:flex-end; }
+  .ctile .ov{ position:absolute; inset:0; background:linear-gradient(150deg, rgba(226,130,14,.5), rgba(181,48,23,.5)); mix-blend-mode:multiply; }
+  .ctile .ov2{ position:absolute; inset:0; background:linear-gradient(to top, rgba(28,24,19,.55), transparent 60%); }
+  .ctile .nm{ position:relative; z-index:2; color:#fff; font-family:'Bricolage Grotesque'; font-weight:700; font-size:15px; padding:13px; text-shadow:0 1px 6px rgba(0,0,0,.5); }
+
+  /* process band (contrast) */
+  .how{ background:var(--sea-ink); color:#EAF6F2; padding:28px 26px; }
+  .how .eyebrow{ color:#8FD2C2; } .how .sec-h{ color:#fff; }
+  .proc{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:16px; }
+  .pstep{ text-align:center; }
+  .pstep .ic{ width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,.10); display:flex; align-items:center; justify-content:center; margin:0 auto 9px; color:#F3B84E; }
+  .pstep h4{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:14px; margin:0; color:#fff; }
+  .pstep p{ font-size:11.5px; color:#B9D8CF; margin:3px 0 0; line-height:1.4; }
+
+  /* early alerts amber band */
+  .early{ background:linear-gradient(120deg,var(--amber-tint),#FCE9C6); border-top:1px solid var(--amber-line); border-bottom:1px solid var(--amber-line); padding:24px 26px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+  .early h3{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:19px; margin:0; color:var(--amber-ink); }
+  .early p{ font-size:13px; color:var(--fg2); margin:4px 0 0; max-width:540px; }
+  .btn-out{ background:#fff; color:var(--amber-ink); border:1px solid var(--amber-line); font-weight:700; font-size:13px; border-radius:11px; padding:10px 14px; }
+
+  /* faq */
+  .faq{ padding:26px; }
+  details{ border:1px solid var(--line); border-radius:12px; background:#fff; padding:0 15px; margin-top:9px; }
+  summary{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:14px; padding:13px 0; cursor:pointer; list-style:none; display:flex; justify-content:space-between; }
+  summary::after{ content:'+'; color:var(--amber); font-size:18px; } details[open] summary::after{ content:'–'; }
+  details .a{ font-size:12.5px; color:var(--fg2); padding:0 0 13px; line-height:1.5; }
+
+  /* footer */
+  .ftr{ background:var(--ink); color:var(--sand300); padding:34px 26px 26px; }
+  .ftr-in{ display:flex; gap:48px; flex-wrap:wrap; }
+  .ftr .lead-col{ max-width:260px; } .ftr .lead-col .wm{ color:#fff; } .ftr .lead-col p{ font-size:13px; color:var(--sand400); line-height:1.55; margin-top:10px; }
+  .ftr h4{ font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--sand400); margin:0 0 11px; }
+  .ftr a{ display:block; color:#E0D2BA; font-size:14px; margin-bottom:7px; }
+  .ftr .legal{ border-top:1px solid rgba(255,255,255,.08); margin-top:28px; padding-top:18px; font-size:12px; color:#877860; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+</style>
+
+<h2>Homepage v3 · grounded in the Yip kit</h2>
+<p class="subtitle">Now using the canonical <b>boarding-pass ticket card</b> (photo + eyebrow + place + mono meta + hook headline + why-chips + perforated ticket-foot with notch + price·<s>usual</s>·airline), the ink signup band with amber bead, <code>.yip-photo</code> treatments, and the kit's hero/footer. Editorial headlines lead. Scroll.</p>
+
+<div class="yp">
+  <div class="hdr"><span class="wm">yıp</span><nav><a>Deals</a><a>Collections</a><a>Past fares</a><a>How it works</a></nav><span class="sp"></span><span class="frompill">From VNO · KUN · RIX</span></div>
+
+  <!-- hero (A': asymmetric 2-col — left content+card, right full-height visual panel, trust line spans below both) -->
+  <div class="hero">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="eyebrow">Found &amp; checked by hand · 3 new this week</div>
+        <h1>Hand-checked <span class="amber">cheap flights</span> from Vilnius, Kaunas and Riga.</h1>
+        <p class="lead">We find the cheap ones, check they're real, and tell you why each is good — and the catch. You book direct.</p>
+        <div class="cap">
+          <span class="freebadge">Free</span>
+          <div class="cap-lbl">Get the next rare fare by email</div>
+          <div class="cap-row"><input placeholder="you@email.com"><span class="btn-primary">Get free weekly deals</span></div>
+          <div class="cap-sub">Best rare fares in one calm weekly email.</div>
+          <div class="trust"><span>✓ No spam</span><span>✓ Unsubscribe anytime</span><span>✓ Hand-checked fares</span></div>
+          <div class="cap-div"></div>
+          <div class="cap-early"><div><div style="font-weight:700;font-size:13px;">Want them sooner?</div><div class="cap-sub" style="margin-top:1px;">The best fares as soon as Yip finds them — before the weekly email.</div></div><span class="btn-sec">Get early alerts →</span></div>
+        </div>
+      </div>
+      <div class="photo ph-coast hero-photo"><div class="ov"></div><div class="ph-cap"><div class="ph-eyebrow">This week · live now</div><div class="ph-title">Larnaca, from €140</div></div></div>
+    </div>
+    <div class="microproof">From <b>VNO, KUN and RIX</b>. No search engine, just the good ones.</div>
+  </div>
+
+  <!-- featured ticket -->
+  <div class="pad" style="border-top:1px solid var(--line);">
+    <div class="eyebrow">This week · rarest fare</div>
+    <div class="sec-h">Last warm week in Cyprus.</div>
+    <div class="feat">
+      <div class="photo ph-sun ph"><div class="ov"></div><span class="eyebrow">September sun · checked 2h ago</span><div class="place">Larnaca</div></div>
+      <div class="body">
+        <div class="meta">VNO → LCA · Sep 12–19 · 1 stop</div>
+        <h3>€140 return to Cyprus — sea's still 27°C and the crowds have gone home.</h3>
+        <div class="chips"><span class="chip chip-good">↓ 53% under usual</span><span class="chip chip-caveat">1 stop · Vienna</span></div>
+        <div class="ticket-foot"><div class="price">€140<s>€301</s><span class="ret">return · airBaltic</span></div><span class="btn-see">See the deal →</span></div>
+      </div>
+    </div>
+
+    <!-- live grid (2 more ticket cards) -->
+    <div class="grid2">
+      <div class="deal"><div class="photo ph-coast ph"><div class="ov"></div><span class="eyebrow">Last warm days</span><div class="place">Málaga<small>Spain · from Kaunas</small></div><span class="hot-tag">▲ Going fast</span></div><div class="body"><div class="meta">KUN → AGP · Oct 3–10 · 1 stop</div><h3>€78 return to the Costa del Sol, mid-October.</h3><div class="chips"><span class="chip chip-good">↓ 41% under</span><span class="chip chip-caveat">Overnight return</span></div><div class="ticket-foot"><div class="price">€78<s>€132</s><span class="ret">return · Ryanair</span></div><span class="btn-see">See deal →</span></div></div></div>
+      <div class="deal"><div class="photo ph-city ph"><div class="ov"></div><span class="eyebrow">City break</span><div class="place">Milan<small>Italy · from Vilnius</small></div></div><div class="body"><div class="meta">VNO → BGY · Oct 17–21 · direct</div><h3>€59 return to Milan — a long weekend, direct.</h3><div class="chips"><span class="chip chip-good">↓ 29% under</span><span class="chip chip-good">✈ Direct</span></div><div class="ticket-foot"><div class="price">€59<s>€83</s><span class="ret">return · Wizz Air</span></div><span class="btn-see">See deal →</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- dark band -->
+  <div class="band"><span class="bead"></span><div class="bcol"><h2>Get the next rare fare before it sells out.</h2><p>Best rare fares in one calm weekly email. No spam, unsubscribe anytime.</p></div><div class="f"><input placeholder="you@email.com"><span class="btn-primary">Get free weekly deals</span></div></div>
+
+  <!-- past fares -->
+  <div class="pad">
+    <div class="eyebrow">Expired, but useful proof</div>
+    <div class="sec-h">Past rare fares.</div>
+    <p class="lead" style="margin-top:6px;font-size:13.5px;color:var(--fg2);">These are gone now. Get the next one before it disappears.</p>
+    <div class="coll">
+      <div class="deal" style="opacity:.9;"><div class="photo ph-coast ph" style="height:96px;"><div class="ov"></div><div class="place" style="font-size:18px;">Tenerife</div></div><div class="body" style="padding:12px 15px;"><div class="meta">RIX → TFS · was Nov</div><div class="price" style="font-size:20px;color:var(--fg2);text-decoration:line-through;text-decoration-color:var(--fg3);">€119</div><div style="font-size:11.5px;color:var(--fg2);">38% under · lasted ~2 days</div></div></div>
+      <div class="deal" style="opacity:.9;"><div class="photo ph-sun ph" style="height:96px;"><div class="ov"></div><div class="place" style="font-size:18px;">Faro</div></div><div class="body" style="padding:12px 15px;"><div class="meta">KUN → FAO · was Sep</div><div class="price" style="font-size:20px;color:var(--fg2);text-decoration:line-through;text-decoration-color:var(--fg3);">€88</div><div style="font-size:11.5px;color:var(--fg2);">45% under · lasted ~1 day</div></div></div>
+      <div class="deal" style="opacity:.9;"><div class="photo ph-city ph" style="height:96px;"><div class="ov"></div><div class="place" style="font-size:18px;">Vienna</div></div><div class="body" style="padding:12px 15px;"><div class="meta">VNO → VIE · was Sep</div><div class="price" style="font-size:20px;color:var(--fg2);text-decoration:line-through;text-decoration-color:var(--fg3);">€44</div><div style="font-size:11.5px;color:var(--fg2);">33% under · direct</div></div></div>
+    </div>
+    <div style="margin-top:13px;"><span style="color:var(--sea-ink);font-weight:700;font-size:13px;">See all past fares →</span></div>
+  </div>
+
+  <!-- collections duotone -->
+  <div class="pad" style="background:var(--sunken);">
+    <div class="eyebrow">Browse by</div>
+    <div class="sec-h">Where do you want to go?</div>
+    <div class="coll">
+      <div class="ctile photo ph-sun"><div class="ov"></div><div class="ov2"></div><span class="nm">September sun</span></div>
+      <div class="ctile photo ph-market"><div class="ov"></div><div class="ov2"></div><span class="nm">Christmas markets</span></div>
+      <div class="ctile photo ph-coast"><div class="ov"></div><div class="ov2"></div><span class="nm">Cyprus from Lithuania</span></div>
+      <div class="ctile photo ph-city"><div class="ov"></div><div class="ov2"></div><span class="nm">Cheap flights from Vilnius</span></div>
+      <div class="ctile photo ph-sun"><div class="ov"></div><div class="ov2"></div><span class="nm">School holiday sun</span></div>
+      <div class="ctile photo ph-snow"><div class="ov"></div><div class="ov2"></div><span class="nm">Cheap flights from Kaunas</span></div>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <div class="how">
+    <div class="eyebrow">How Yip works</div>
+    <div class="sec-h">No search engine. Just the good ones.</div>
+    <div class="proc">
+      <div class="pstep"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div><h4>Find</h4><p>We scan every fare from VNO/KUN/RIX for real anomalies.</p></div>
+      <div class="pstep"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div><h4>Check</h4><p>A human verifies it's real and still bookable.</p></div>
+      <div class="pstep"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></div><h4>Explain the catch</h4><p>Layovers, self-transfer — honestly.</p></div>
+      <div class="pstep"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></div><h4>Send</h4><p>To your inbox — you book direct.</p></div>
+    </div>
+  </div>
+
+  <!-- early alerts -->
+  <div class="early"><div><h3>Some fares are gone by the weekly email.</h3><p>Early alerts get you the rare ones first — the moment Yip finds them, before they sell out.</p></div><span class="btn-out">Get early alerts →</span></div>
+
+  <!-- faq -->
+  <div class="faq">
+    <div class="eyebrow">Good to know</div><div class="sec-h">Questions, answered.</div>
+    <details open><summary>Is it free?</summary><div class="a">Yes — the weekly email is free. "Early alerts" (the fastest fares) is a paid tier coming soon; join the waitlist.</div></details>
+    <details><summary>How do you find these?</summary><div class="a">We scan fares constantly and a human checks each one is real before it reaches you. We're a local curator, not a search engine.</div></details>
+    <details><summary>Do I book with Yip?</summary><div class="a">No — you book direct with the airline (or via Google Flights). We just find and verify the deal and show you the live price.</div></details>
+  </div>
+
+  <!-- footer (canonical) -->
+  <div class="ftr"><div class="ftr-in">
+    <div class="lead-col"><span class="wm">yıp</span><p>Curated flight deals from Vilnius, Kaunas, Riga and nearby. We find the gems so you don't have to.</p></div>
+    <div><h4>Deals</h4><a>From Vilnius</a><a>From Kaunas</a><a>From Riga</a><a>Christmas markets</a></div>
+    <div><h4>Yip</h4><a>Past rare fares</a><a>How it works</a><a>Get early alerts</a><a>Contact</a></div>
+    <div><h4>Follow</h4><a>TikTok</a><a>Instagram</a><a>Telegram</a></div>
+  </div><div class="legal"><span>© 2026 Yip. We link to airlines &amp; OTAs to book — prices change fast.</span><span>Made in Vilnius 🇱🇹</span></div></div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Reconciled to the kit: ticket cards lead with an <b>editorial hook headline</b> + place on the photo + mono route meta + why/caveat chips + the perforated foot (note the notch cut-outs) with price·<s>usual</s>·airline. Collections use the <b>amber duotone</b> tile treatment. No filter bar (we're curated, not search). Footer matches the canonical kit incl. a Follow column for the TikTok→audience funnel.</p>

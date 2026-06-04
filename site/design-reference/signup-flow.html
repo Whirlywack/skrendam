@@ -1,0 +1,107 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .yp{ --amber:#E2820E; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A;
+       --sea:#0F7C68; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+       --coral:#D63E22; --paper:#fff; --cream:#FBF6EC; --sunken:#F4ECDD; --ink:#1C1813; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA; --sand300:#C8B79C;
+       font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); }
+  .row{ display:flex; gap:14px; align-items:stretch; flex-wrap:wrap; }
+  .lbl{ font-family:'Space Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--fg3); margin-bottom:7px; }
+  .lbl b{ color:var(--sea-ink); }
+  .panel{ width:266px; background:var(--cream); border:1px solid var(--line); border-radius:14px; padding:15px; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; box-shadow:0 4px 12px rgba(28,24,19,.08); }
+  .h{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:15px; }
+  .sub{ font-size:12px; color:var(--fg2); margin-top:5px; line-height:1.45; }
+  input{ width:100%; border:1.5px solid var(--sand300); border-radius:10px; padding:9px 11px; font-size:12.5px; font-family:inherit; box-sizing:border-box; }
+  .btn{ display:block; text-align:center; background:var(--amber); color:#1C1813; font-weight:800; font-size:12.5px; border-radius:10px; padding:10px; margin-top:8px; box-shadow:0 6px 16px rgba(226,130,14,.26); }
+  .btn-sea{ background:var(--sea-tint); color:var(--sea-ink); border:1px solid var(--sea-line); box-shadow:none; font-weight:700; }
+  .trust{ font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--fg3); margin-top:8px; }
+  .ok{ width:34px;height:34px;border-radius:50%; background:var(--sea-tint); color:var(--sea-ink); display:flex;align-items:center;justify-content:center; }
+  .chips{ display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+  .chip{ font-size:11px; font-weight:600; border:1.5px solid var(--line); border-radius:999px; padding:5px 10px; color:var(--fg2); }
+  .chip.on{ background:var(--sea); color:#fff; border-color:var(--sea); }
+  .chip.am{ background:var(--amber-tint); border-color:var(--amber-line); color:var(--amber-ink); }
+  .miniwm{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:18px; color:var(--amber); }
+  .flowarrow{ align-self:center; color:var(--fg3); font-size:20px; }
+  .upsell{ background:var(--amber-tint); border:1px solid var(--amber-line); border-radius:10px; padding:10px 12px; margin-top:9px; }
+  h2{ font-family:'Bricolage Grotesque'; }
+</style>
+
+<h2 class="yp">Email signup flow — the states</h2>
+<p class="subtitle">Two entry points → double opt-in → optional preferences → soft upsell. Free weekly is the default; early alerts is the soft second ask throughout. (Warm panels are Yip-styled stand-ins.)</p>
+
+<div class="yp">
+  <div class="lbl">Entry point A · <b>inline on homepage</b> (before → after submit)</div>
+  <div class="row">
+    <div class="panel">
+      <div class="card">
+        <div class="h">Get the next rare fare by email</div>
+        <input placeholder="you@email.com" style="margin-top:9px;">
+        <div class="btn">Get free weekly deals</div>
+        <div class="trust">No spam · Unsubscribe anytime</div>
+      </div>
+    </div>
+    <div class="flowarrow">→</div>
+    <div class="panel">
+      <div class="card">
+        <div style="display:flex; gap:10px; align-items:center;"><div class="ok"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div><div class="h">You're in.</div></div>
+        <div class="sub">First deals land in your inbox this week. Check your email to confirm.</div>
+        <div class="upsell"><div style="font-weight:700;font-size:12.5px;">Want them sooner?</div><div class="sub" style="margin-top:1px;">The rarest fares go fast. Get them the moment we find them.</div><div class="btn btn-sea" style="margin-top:8px;">Get early alerts →</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lbl" style="margin-top:18px;">Entry point B · <b>standalone /subscribe page</b> (from links, footer, TikTok bio)</div>
+  <div class="row">
+    <div class="panel" style="width:420px;">
+      <div style="text-align:center; padding:8px 6px;">
+        <div class="miniwm">yıp</div>
+        <div class="h" style="font-size:19px; margin-top:10px;">Get hand-checked cheap flights by email.</div>
+        <div class="sub">A few genuinely good deals a week from Vilnius, Kaunas &amp; Riga — checked by a real person, the catch shown up front.</div>
+        <div style="display:flex; gap:8px; margin-top:11px;"><input placeholder="you@email.com"><span class="btn" style="margin-top:0; padding:9px 14px; white-space:nowrap;">Get free weekly deals</span></div>
+        <div class="trust">No spam · Unsubscribe anytime · Hand-checked fares</div>
+        <div class="sub" style="margin-top:10px;">Want them sooner? <b style="color:var(--sea-ink)">Get early alerts →</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lbl" style="margin-top:18px;">After submit · <b>confirm → preferences (optional) → soft upsell</b></div>
+  <div class="row">
+    <!-- check email -->
+    <div class="panel">
+      <div class="lbl" style="color:var(--fg3)">1 · Check your email</div>
+      <div class="card">
+        <div class="ok" style="margin-bottom:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+        <div class="h">Almost there — check your inbox.</div>
+        <div class="sub">We've sent a confirmation link to <b>you@email.com</b>. Tap it and you're set.</div>
+        <div class="sub" style="margin-top:8px; color:var(--sea-ink); font-weight:700;">Resend link</div>
+      </div>
+    </div>
+    <div class="flowarrow">→</div>
+    <!-- preferences -->
+    <div class="panel">
+      <div class="lbl" style="color:var(--fg3)">2 · Preferences <span style="text-transform:none;">(optional)</span></div>
+      <div class="card">
+        <div class="h" style="font-size:14px;">What should we send you?</div>
+        <div class="trust" style="margin-top:9px;">Departing from</div>
+        <div class="chips"><span class="chip on">VNO</span><span class="chip on">KUN</span><span class="chip">RIX</span><span class="chip">PLQ</span><span class="chip">WAW</span></div>
+        <div class="trust" style="margin-top:10px;">Trips you like</div>
+        <div class="chips"><span class="chip on">Sun</span><span class="chip">City breaks</span><span class="chip on">Family</span><span class="chip">Last-minute</span><span class="chip">Weekends</span></div>
+        <div class="btn" style="margin-top:11px;">Save</div>
+        <div class="sub" style="text-align:center; margin-top:6px; color:var(--fg3);">Skip — I'll take everything</div>
+      </div>
+    </div>
+    <div class="flowarrow">→</div>
+    <!-- upsell -->
+    <div class="panel">
+      <div class="lbl" style="color:var(--fg3)">3 · Soft upsell</div>
+      <div class="card">
+        <span class="chip am" style="font-family:'Space Mono';font-size:9px;letter-spacing:.06em;text-transform:uppercase;">Early alerts</span>
+        <div class="h" style="margin-top:9px;">Some fares are gone by the weekly email.</div>
+        <div class="sub">Early alerts get you the rare ones first — the moment Yip finds them.</div>
+        <div class="btn btn-sea" style="margin-top:10px;">Join the early-alerts waitlist →</div>
+        <div class="sub" style="text-align:center; margin-top:5px; color:var(--fg3);">Free weekly is plenty — no thanks</div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="subtitle" style="margin-top:16px;">Double opt-in ("check your email") keeps the list clean + GDPR-friendly. Preferences are <b>optional</b> (skippable) and feed later segmentation. The early-alerts ask is <b>soft</b> and recurring (inline, on /subscribe, post-signup) but never blocks the free path. Next: the early-alerts <b>waitlist page</b> + the <b>collection template</b>.</p>
