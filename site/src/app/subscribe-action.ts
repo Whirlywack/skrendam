@@ -2,6 +2,7 @@
 import { randomBytes } from 'crypto';
 import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { cookies } from 'next/headers';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
@@ -15,6 +16,19 @@ import {
 
 // Re-export so tests and components can import from a single action module.
 export { normalizeEmail, isValidEmail, cleanSource, cleanPrefs };
+
+// ---------------------------------------------------------------------------
+// Cookie helpers
+// ---------------------------------------------------------------------------
+
+const COOKIE_NAME = 'yip_pt';
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 3600,
+  path: '/subscribe',
+};
 
 // ---------------------------------------------------------------------------
 // Action result type
@@ -49,11 +63,14 @@ export async function subscribeAction(
   const enabled = emailEnabled();
   const nowIso = new Date().toISOString();
 
+  let touched = false;
+
   try {
     if (enabled) {
-      // Double opt-in: insert unconfirmed row; on conflict bump token + OR earlyAlerts.
-      // Never downgrade confirmed=true or reset confirmedAt.
-      await db
+      // Double opt-in: insert unconfirmed row; on conflict update token + OR earlyAlerts
+      // ONLY for rows still unconfirmed (setWhere). Confirmed rows are fully immutable
+      // from this public endpoint — 0 rows returned means conflict hit a confirmed row.
+      const inserted = await db
         .insert(subscribers)
         .values({
           email,
@@ -68,11 +85,15 @@ export async function subscribeAction(
             confirmToken: token,
             earlyAlerts: sql`${subscribers.earlyAlerts} OR ${earlyAlerts}`,
           },
-        });
-      await sendConfirmEmail(email, token);
+          setWhere: eq(subscribers.confirmed, false),
+        })
+        .returning({ id: subscribers.id });
+      touched = inserted.length > 0;
+      if (touched) await sendConfirmEmail(email, token);
     } else {
       // Single opt-in (dev / no Resend key): confirm immediately.
-      await db
+      // Also gated by setWhere so confirmed rows stay immutable.
+      const inserted = await db
         .insert(subscribers)
         .values({
           email,
@@ -86,11 +107,14 @@ export async function subscribeAction(
           target: subscribers.email,
           set: {
             confirmToken: token,
-            confirmed: true,
+            confirmed: sql`true`,
             confirmedAt: nowIso,
             earlyAlerts: sql`${subscribers.earlyAlerts} OR ${earlyAlerts}`,
           },
-        });
+          setWhere: eq(subscribers.confirmed, false),
+        })
+        .returning({ id: subscribers.id });
+      touched = inserted.length > 0;
     }
   } catch (err) {
     if (isRedirectError(err)) throw err;
@@ -100,11 +124,18 @@ export async function subscribeAction(
     return { ok: false, error: 'Something went wrong — try again.' };
   }
 
+  // Same state regardless of touched — no enumeration of confirmed addresses.
   const state = enabled ? 'check-email' : 'subscribed';
 
   if (mode === 'page') {
     if (state === 'subscribed') {
-      redirect(`/subscribe?state=confirmed&t=${token}`);
+      // Single opt-in: set httpOnly cookie so prefs/early-alerts steps can read it.
+      // Only set when touched (new/unconfirmed row); already-confirmed = no cookie needed.
+      if (touched) {
+        const c = await cookies();
+        c.set(COOKIE_NAME, token, COOKIE_OPTS);
+      }
+      redirect('/subscribe?state=confirmed');
     } else {
       redirect('/subscribe?state=check-email');
     }
@@ -128,8 +159,12 @@ export async function subscribePageAction(formData: FormData): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function savePreferencesAction(formData: FormData): Promise<void> {
-  const token = (formData.get('t') ?? '').toString();
-  if (token.length < 16) return;
+  // Read token from httpOnly cookie, NOT formData (token must not appear in URL/form).
+  const c = await cookies();
+  const token = c.get(COOKIE_NAME)?.value ?? '';
+  if (token.length < 16) {
+    redirect('/subscribe?state=confirmed');
+  }
 
   const rawOrigins = formData.getAll('origins').map(String);
   const rawMoments = formData.getAll('moments').map(String);
@@ -142,10 +177,10 @@ export async function savePreferencesAction(formData: FormData): Promise<void> {
       .where(eq(subscribers.confirmToken, token));
   } catch (err) {
     if (isRedirectError(err)) throw err;
-    redirect(`/subscribe?state=confirmed&t=${token}`);
+    redirect('/subscribe?state=confirmed');
   }
 
-  redirect(`/subscribe?state=prefs-saved&t=${token}`);
+  redirect('/subscribe?state=prefs-saved');
 }
 
 // ---------------------------------------------------------------------------
@@ -153,18 +188,26 @@ export async function savePreferencesAction(formData: FormData): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function joinEarlyAlertsAction(formData: FormData): Promise<void> {
-  const token = (formData.get('t') ?? '').toString();
-  if (token.length < 16) return;
+  // Read token from httpOnly cookie, NOT formData (token must not appear in URL/form).
+  const c = await cookies();
+  const token = c.get(COOKIE_NAME)?.value ?? '';
+  if (token.length < 16) {
+    redirect('/subscribe?state=confirmed');
+  }
 
   try {
+    // Null the token at flow end — single-use closure.
     await db
       .update(subscribers)
-      .set({ earlyAlerts: true })
+      .set({ earlyAlerts: true, confirmToken: null })
       .where(eq(subscribers.confirmToken, token));
   } catch (err) {
     if (isRedirectError(err)) throw err;
-    redirect(`/subscribe?state=confirmed&t=${token}`);
+    redirect('/subscribe?state=confirmed');
   }
 
-  redirect(`/subscribe?state=early-joined`);
+  // Clear the cookie now that the flow is complete.
+  c.delete(COOKIE_NAME);
+
+  redirect('/subscribe?state=early-joined');
 }

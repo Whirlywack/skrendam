@@ -12,7 +12,7 @@ import { PREF_ORIGINS, PREF_MOMENTS } from '@/lib/subscribe-prefs';
 // ---------------------------------------------------------------------------
 
 type PageProps = {
-  searchParams: Promise<{ state?: string; t?: string }>;
+  searchParams: Promise<{ state?: string }>;
 };
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ function CheckEmailState() {
 // State: confirmed + prefs-saved — show preferences form + (optionally) saved note
 // ---------------------------------------------------------------------------
 
-function ConfirmedState({ token, prefsSaved }: { token: string; prefsSaved: boolean }) {
+function ConfirmedState({ prefsSaved }: { prefsSaved: boolean }) {
   return (
     <div className="sub-card">
       <div className="sub-ok">
@@ -137,7 +137,7 @@ function ConfirmedState({ token, prefsSaved }: { token: string; prefsSaved: bool
       )}
 
       <form action={savePreferencesAction}>
-        <input type="hidden" name="t" value={token} />
+        {/* Token is read from the httpOnly yip_pt cookie by the server action — not a form field. */}
 
         <p className="pref-lbl">Departing from</p>
         <div className="pref-chips" role="group" aria-label="Departure airports">
@@ -165,7 +165,7 @@ function ConfirmedState({ token, prefsSaved }: { token: string; prefsSaved: bool
       </form>
 
       <a
-        href={`/subscribe?state=upsell&t=${encodeURIComponent(token)}`}
+        href="/subscribe?state=upsell"
         className="sub-skip"
       >
         Skip — I&apos;ll take everything
@@ -178,7 +178,7 @@ function ConfirmedState({ token, prefsSaved }: { token: string; prefsSaved: bool
 // State: upsell — soft early-alerts ask
 // ---------------------------------------------------------------------------
 
-function UpsellState({ token, prefsSaved }: { token: string; prefsSaved: boolean }) {
+function UpsellState({ prefsSaved }: { prefsSaved: boolean }) {
   return (
     <div className="sub-card">
       {prefsSaved && (
@@ -199,7 +199,7 @@ function UpsellState({ token, prefsSaved }: { token: string; prefsSaved: boolean
       </p>
 
       <form action={joinEarlyAlertsAction}>
-        <input type="hidden" name="t" value={token} />
+        {/* Token is read from the httpOnly yip_pt cookie by the server action — not a form field. */}
         <button type="submit" className="sub-btn-sea">
           Join the early-alerts waitlist →
         </button>
@@ -285,8 +285,7 @@ export const metadata = {
 };
 
 export default async function SubscribePage({ searchParams }: PageProps) {
-  const { state, t } = await searchParams;
-  const token = t ?? '';
+  const { state } = await searchParams;
 
   let content: React.ReactNode;
 
@@ -296,16 +295,16 @@ export default async function SubscribePage({ searchParams }: PageProps) {
       break;
 
     case 'confirmed':
-      content = <ConfirmedState token={token} prefsSaved={false} />;
+      content = <ConfirmedState prefsSaved={false} />;
       break;
 
     case 'prefs-saved':
       // Show upsell after saving prefs (prefs form → upsell)
-      content = <UpsellState token={token} prefsSaved={true} />;
+      content = <UpsellState prefsSaved={true} />;
       break;
 
     case 'upsell':
-      content = <UpsellState token={token} prefsSaved={false} />;
+      content = <UpsellState prefsSaved={false} />;
       break;
 
     case 'early-joined':
