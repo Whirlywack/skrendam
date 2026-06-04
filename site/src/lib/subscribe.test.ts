@@ -67,6 +67,7 @@ describe('cleanSource', () => {
     expect(cleanSource('deal')).toBe('deal');
     expect(cleanSource('collection')).toBe('collection');
     expect(cleanSource('past')).toBe('past');
+    expect(cleanSource('early')).toBe('early');
     expect(cleanSource('site')).toBe('site');
   });
 
