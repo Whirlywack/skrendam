@@ -8,6 +8,8 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DealTicket } from '@/components/DealTicket';
 import { CaptureBand } from '@/components/CaptureBand';
+import { JsonLd } from '@/components/JsonLd';
+import { breadcrumbJsonLd } from '@/lib/seo';
 
 export const revalidate = 300;
 export const dynamicParams = false;
@@ -46,6 +48,11 @@ export default async function CollectionPage({
 
   return (
     <main className="yip-collection">
+      <JsonLd data={breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Collections', path: '/collections' },
+        { name: c.label, path: `/${c.slug}` },
+      ])} />
       <Header />
 
       {/* Breadcrumb */}

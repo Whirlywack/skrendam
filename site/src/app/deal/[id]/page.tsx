@@ -15,6 +15,8 @@ import { Photo } from '@/components/Photo';
 import { PriceSparkline } from '@/components/PriceSparkline';
 import { DealTicket } from '@/components/DealTicket';
 import { SignupCard } from '@/components/SignupCard';
+import { JsonLd } from '@/components/JsonLd';
+import { breadcrumbJsonLd, dealArticleJsonLd } from '@/lib/seo';
 
 export const revalidate = 300;
 
@@ -93,8 +95,24 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const destCity = city(pd.destination);
   const destCountry = country(pd.destination);
 
+  // Article description (price-free: drop%, route, dates — no € figure)
+  const articleDescription = deal.drop > 0
+    ? `${deal.drop}% below typical ${deal.route} flight. ${deal.dates}. Found and checked by hand.`
+    : `${deal.route}. ${deal.dates}. Found and checked by hand.`;
+
   return (
     <div className="yip-site">
+      <JsonLd data={breadcrumbJsonLd([
+        { name: 'Home', path: '/' },
+        { name: 'Deals', path: '/' },
+        { name: deal.destination, path: `/deal/${pd.id}` },
+      ])} />
+      <JsonLd data={dealArticleJsonLd({
+        id: pd.id,
+        headline: pd.headline,
+        description: articleDescription,
+        datePublished: pd.publishedAt,
+      })} />
       <Header />
 
       {/* ── Back link ─────────────────────────────────────────────────────── */}
