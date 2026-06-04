@@ -14,7 +14,7 @@ export default async function Home() {
   return (
     <main>
       <Header />
-      <Hero newCount={live.length} />
+      <Hero newCount={live.length} topDeal={null} />
       <Tabs bookNow={live} inspiration={inspiration} />
       <CaptureBand />
     </main>
