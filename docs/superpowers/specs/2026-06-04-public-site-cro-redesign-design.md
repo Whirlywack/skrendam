@@ -88,10 +88,21 @@ Compact, high-intent landing pages that are **filtered views of `published_deals
 - Individual expired-deal pages are **`noindex`** (avoid thousands of thin pages); the live `/deal/[id]` pages remain indexable while live.
 - Copy: *"Expired, but useful proof"* · *"was €X · lasted ~N days."*
 
-## 9. Lead capture & segmentation
+## 9. Email signup flow + early-alerts waitlist
 
-- **v1: email-first** (the existing `subscribers` table). The **"Get early alerts"** secondary records an **early-alerts interest flag** on the subscriber (the waitlist).
-- **Post-signup preferences (fast-follow / v1.1):** preferred airports (VNO/KUN/RIX/PLQ/WAW), deal types (sun / city / family / last-minute / premium), free-vs-early interest → segmentation for later monetization. Implies extending `subscribers` (preferences columns or a `subscriber_preferences` table) — design at plan time; keep v1 capture simple.
+### 9.1 Signup flow — design the states, not just a form
+- **Entry A — inline on homepage:** the capture card; on submit it flips to a **success state** ("You're in. First deals land this week — check your email to confirm.") with a **soft early-alerts upsell** beneath.
+- **Entry B — standalone `/subscribe` page:** wordmark + the promise + the capture + trust row + the soft early-alerts line. For links, the footer, and the TikTok bio.
+- **Double opt-in — "Check your email":** a confirmation link is sent (keeps the list clean + GDPR-friendly) with a **resend** affordance.
+- **Optional preferences (after confirm, skippable):** departure airports (VNO/KUN/RIX/PLQ/WAW) + trip types (sun / city breaks / family / last-minute / weekends) as multi-select chips → segmentation. **Always skippable** ("Skip — I'll take everything"). v1 may ship preferences-lite; the **early-alerts interest flag** is captured regardless.
+- **Soft upsell:** the early-alerts ask is **soft + recurring** (inline success, `/subscribe`, post-signup) and **never blocks the free path**.
+- **Data:** `subscribers` (email, source, `early_alerts_interest` flag). Preferences = the segmentation extension (preference columns or a `subscriber_preferences` table) — design at plan time; v1 capture stays simple.
+
+### 9.2 Early-alerts waitlist page (`/early-alerts`)
+The secondary CTA's destination. Explains the value with an **honest free-vs-early comparison**, premium kept soft:
+- **Free weekly** (left, "You're on this", *always free*): one calm email a week · the best of what we found · *slower — some rare fares may be gone*.
+- **Early alerts** (right, amber, "Waitlist", *paid · coming soon*): the rarest fares **the moment we find them** · before the weekly email, before they sell out · your airports + trip types prioritised.
+- A dark **waitlist band**: *"Early alerts isn't open yet — join the waitlist. We'll let you in first. Free weekly subscribers get priority."* + email → **Join the waitlist** (records the interest flag). No accounts/payments in v1 (that's Spec 3).
 
 ## 10. SEO / GEO / AEO
 
@@ -113,7 +124,7 @@ Sentence case; numbers are the hero; always *why* it's good **and** the catch; c
 
 ## 13. Architecture & data flow
 
-- **Extends the existing `site/` app** (no new app). New / enhanced routes: `/` (redesigned homepage), `/deal/[id]` (enriched), **top-level collection slugs** for SEO (e.g. `/cheap-flights-from-vilnius`, `/september-sun-deals`) + a `/collections` index, `/past-deals`. (Top-level slugs, not `/collections/<slug>`, since the keyword *is* the URL.)
+- **Extends the existing `site/` app** (no new app). New / enhanced routes: `/` (redesigned homepage), `/deal/[id]` (enriched), **top-level collection slugs** for SEO (e.g. `/cheap-flights-from-vilnius`, `/september-sun-deals`) + a `/collections` index, `/past-deals`, **`/subscribe`** (standalone capture + confirm/preferences states), **`/early-alerts`** (the waitlist page). (Collection slugs are top-level, not `/collections/<slug>`, since the keyword *is* the URL.)
 - **Reads** (read-only): `published_deals`, `price_log`, `routes`, `candidate_template_matches`, `travel_moments`, `zones` (for collection filters). Collections = parameterized queries over `published_deals` joined to `routes`/`zones`/`travel_moments`.
 - **Writes:** only `subscribers` (+ the early-alerts flag; preferences later) — the app's sole write surface.
 - **Engine:** vendor-direct booking persistence is a fast-follow (out of scope v1); no engine change is required for the no-account redesign except (optionally) the curator-note attribution field if not already on `published_deals` (`body` exists).
@@ -135,6 +146,6 @@ Sentence case; numbers are the hero; always *why* it's good **and** the catch; c
 4. **Deal-detail** enrichment — Why-good/catch, curator's note, similar deals, the email nudge (keep the sparkline/freshness).
 5. **Collections** — the route/data layer for filtered views + the collection page template + the initial 6 + `/collections` index.
 6. **Past-deals** `/past-deals` archive + expired `noindex`.
-7. **Capture** — early-alerts interest flag on `subscribers`.
+7. **Signup flow + early-alerts** — the flow states (inline success, `/subscribe` page, double opt-in "check your email", optional skippable preferences, soft upsell) + the **`/early-alerts`** waitlist page (free-vs-early comparison + join-the-waitlist band) + the `early_alerts_interest` flag on `subscribers`.
 8. **SEO/GEO** — per-page metadata/OG, breadcrumbs, JSON-LD (Organization/WebSite/BreadcrumbList/ItemList/WebPage), robots (allow answer crawlers), sitemap incl. collections.
 9. QA gauntlet (Playwright journeys for the new surfaces + `/code-review high` + `security-review`).
