@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { subscribe } from '@/app/subscribe-action';
+import { subscribeAction } from '@/app/subscribe-action';
 
 export function CaptureBand() {
   const [done, setDone] = useState(false);
@@ -11,11 +11,11 @@ export function CaptureBand() {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     start(async () => {
-      const res = await subscribe(data);
-      if (res.ok) {
+      const res = await subscribeAction(data);
+      if (res && res.ok) {
         setDone(true);
         setError(null);
-      } else {
+      } else if (res && !res.ok) {
         setError(res.error ?? 'Something went wrong.');
       }
     });
@@ -38,6 +38,8 @@ export function CaptureBand() {
       </div>
       {!done && (
         <form className="f" onSubmit={onSubmit}>
+          <input type="hidden" name="source" value="home" />
+          <input type="hidden" name="mode" value="inline" />
           <input
             type="email"
             name="email"

@@ -2099,3 +2099,293 @@
   cursor: pointer;
   font-family: 'Hanken Grotesk', sans-serif;
 }
+
+
+/* =========================================================================
+   /SUBSCRIBE PAGE — standalone signup flow states
+   Source: site/design-reference/signup-flow.html
+   ========================================================================= */
+
+/* Centered page wrapper */
+.yip-site .sub-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 24px 64px;
+}
+
+/* Card container */
+.yip-site .sub-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px 26px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 4px 20px rgba(28, 24, 19, 0.08);
+}
+
+/* Wordmark on /subscribe idle state */
+.yip-site .sub-wm {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--amber);
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+/* Page headline */
+.yip-site .sub-h {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+
+/* Sub-text on subscribe page */
+.yip-site .sub-body {
+  font-size: 13.5px;
+  color: var(--fg2);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+/* Email + submit row on /subscribe page */
+.yip-site .sub-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.yip-site .sub-row input[type="email"] {
+  flex: 1;
+  border: 1.5px solid var(--perf);
+  border-radius: 11px;
+  padding: 10px 13px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  min-width: 0;
+}
+
+/* Primary CTA — amber (shared with btn-primary but no margin-top here) */
+.yip-site .sub-btn {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  border: none;
+  border-radius: 11px;
+  padding: 10px 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+  box-shadow: 0 4px 14px rgba(226, 130, 14, 0.22);
+}
+
+/* Sea-tinted secondary button (prefs Save + early-alerts waitlist) */
+.yip-site .sub-btn-sea {
+  display: block;
+  width: 100%;
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+  font-weight: 700;
+  font-size: 13.5px;
+  border-radius: 11px;
+  padding: 11px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+  margin-top: 10px;
+}
+
+/* Check-email icon circle */
+.yip-site .sub-ok {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+/* Resend link */
+.yip-site .sub-resend {
+  font-size: 13px;
+  color: var(--sea-ink);
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* Preference chips — keyboard-accessible checkbox labels */
+.yip-site .pref-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+/* Each chip is a <label> wrapping a hidden <input type="checkbox"> */
+.yip-site .pref-chip {
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  color: var(--fg2);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.yip-site .pref-chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Checked state — sea green (matches design "on" chip) */
+.yip-site .pref-chip:has(input:checked) {
+  background: var(--sea);
+  color: #fff;
+  border-color: var(--sea);
+}
+
+/* Focus-visible ring for keyboard users */
+.yip-site .pref-chip:has(input:focus-visible) {
+  outline: 2px solid var(--sea);
+  outline-offset: 2px;
+}
+
+/* Trust line */
+.yip-site .sub-trust {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-top: 10px;
+}
+
+/* Early-alerts chip label (amber pill on upsell card) */
+.yip-site .early-chip {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-line);
+  color: var(--amber-ink);
+  border-radius: 999px;
+  padding: 3px 9px;
+  margin-bottom: 9px;
+}
+
+/* Upsell card inside the subscribe flow */
+.yip-site .sub-upsell {
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-line);
+  border-radius: 12px;
+  padding: 14px 15px;
+  margin-top: 10px;
+}
+
+/* Skip link (plain, centered) */
+.yip-site .sub-skip {
+  display: block;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--fg3);
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+.yip-site .sub-skip:hover {
+  color: var(--fg2);
+}
+
+/* Section label inside prefs card */
+.yip-site .pref-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-top: 13px;
+  margin-bottom: 0;
+}
+
+/* "Preferences saved" confirmation note */
+.yip-site .sub-saved {
+  font-size: 12.5px;
+  color: var(--sea-ink);
+  font-weight: 700;
+  background: var(--sea-tint);
+  border: 1px solid var(--sea-line);
+  border-radius: 8px;
+  padding: 7px 11px;
+  margin-bottom: 12px;
+}
+
+/* Early-alerts joined state */
+.yip-site .sub-joined {
+  text-align: center;
+}
+
+/* Optional early-alerts checkbox row on idle /subscribe */
+.yip-site .sub-ea-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--fg2);
+}
+
+.yip-site .sub-ea-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--sea);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Early-alerts link on idle /subscribe page */
+.yip-site .sub-ea-link {
+  color: var(--sea-ink);
+  font-weight: 700;
+  font-size: 13px;
+  margin-top: 11px;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.yip-site .sub-ea-link:hover {
+  text-decoration: underline;
+}
