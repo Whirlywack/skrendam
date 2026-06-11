@@ -51,11 +51,14 @@ rechecks from expiring anything, and adds the date-based expiry that should have
 | Alert surface | `ScanRun.status="degraded"` + `health` JSON → Deal Desk banner → loud CLI warning + exit code 2. No new alerting infra. |
 | Upstream fli updates | Keep vendored; add a **weekly scheduled watch agent** over `punitarani/fli`. No runtime code. |
 | Breaker | Unchanged. Empties must NOT trip it — we want the whole-run picture, not an aborted run. |
+| Scan cadence | **Minimal local cadence in scope** (added after review): a launchd job on the dev Mac runs the daily 06:00 scan against the Neon dev DB. Hosted deployment stays out of scope. Unlocks the history-fed scorers, the cliff signal, and a continuously refilled queue. |
 
 ## Non-goals (YAGNI)
 
 - No HTML-fallback data path (the probes proved one exists; it is a separate initiative if needed).
-- No scheduler/worker deployment (adjacent ops gap, noted for later; nothing here depends on it).
+- No hosted scheduler/worker deployment (Railway etc.) — the launchd job (Module 7) is the v1
+  cadence. The `skrendam worker` queue-poller also stays manual for now: the admin's
+  enqueue-scan/recheck buttons only take effect while a worker is running.
 - No email/webhook alerting; the banner + exit code are the v1 surfaces.
 - No automatic recovery, retry-on-empty, or re-scan logic.
 - No per-route health history tables — the verdict + JSON metrics on `ScanRun` are enough for v1.
@@ -182,7 +185,24 @@ Consequence (accepted): **no recheck can ever expire a deal.** Expiry comes from
   yip design system. Drizzle re-pull after the migration.
 - **site/**: untouched (it never reads these columns in v1).
 
-### Module 6 — upstream watch (ops, no runtime code)
+### Module 6 — daily scan cadence (launchd on the dev Mac)
+
+The product's designed heartbeat (daily 06:00 Europe/Vilnius scan) currently runs nowhere. V1
+cadence is local and minimal:
+
+- `scripts/daily-scan.sh` — resolves the repo dir, exports `SKRENDAM_DATABASE_URL` (from the
+  environment, else derived from `web/.env.local`'s `DATABASE_URL` — the same Neon dev-branch DB
+  the apps use; the secret stays in the gitignored env file, never in the plist or repo), runs
+  `uv run skrendam run-scan`, appends stdout+verdict to `~/Library/Logs/skrendam/daily-scan.log`,
+  propagates the exit code (0 healthy / 2 degraded).
+- `scripts/launchd/com.skrendam.daily-scan.plist` — template with `StartCalendarInterval` 06:00
+  (local time) + `scripts/install-daily-scan.sh` that fills in absolute paths and
+  `launchctl bootstrap`s it into the user domain (and can uninstall).
+- `docs/ops/daily-scan.md` — install/uninstall/log location; documents that launchd fires a missed
+  06:00 run on next wake if the Mac was asleep, and that a degraded run shows up as exit 2 in the
+  log plus the Deal Desk banner.
+
+### Module 7 — upstream watch (ops, no runtime code)
 
 `docs/ops/upstream-watch.md` documents a weekly scheduled cloud agent: clone/compare
 `punitarani/fli` against the vendored base, report new commits touching `fli/search/`,
@@ -239,8 +259,10 @@ CLI exit-code test. Migration applies/downgrades on scratch SQLite. Vitest: web 
 5. Verification fail-safe rewrite.
 6. CLI exit codes + worker `result_summary.health`.
 7. Web: Drizzle pull, mapper, dashboard banner, unverified chip.
-8. `CONTEXT.md` vocabulary + `docs/ops/upstream-watch.md`; create the `/schedule` routine.
-9. Apply migration to Neon dev; verify; `npm run db:pull`.
+8. Daily-scan cadence: `scripts/daily-scan.sh` + launchd plist/template + install script +
+   `docs/ops/daily-scan.md`; install on the dev Mac and verify a manual trigger end to end.
+9. `CONTEXT.md` vocabulary + `docs/ops/upstream-watch.md`; create the `/schedule` routine.
+10. Apply migration to Neon dev; verify; `npm run db:pull`.
 
 ## Risks & mitigations
 
@@ -253,3 +275,5 @@ CLI exit-code test. Migration applies/downgrades on scratch SQLite. Vitest: web 
 - **Drizzle drift** → re-pull `web/` after migration (0006 ritual).
 - **Worker recheck batches during an outage** → each empty recheck just stamps `unverified_since`;
   harmless, reversible, and visible.
+- **Mac asleep at 06:00** → launchd coalesces and fires the missed calendar job on next wake;
+  worst case a day's scan runs late, never twice. Accepted for v1 (hosted cadence is the future fix).
