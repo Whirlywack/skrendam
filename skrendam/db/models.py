@@ -2,8 +2,19 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import (JSON, Boolean, Date, DateTime, Float, ForeignKey, Index,
-                        Integer, String, Text, text)
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from skrendam.db.base import Base
@@ -111,7 +122,9 @@ class DealTemplate(Base):
     newsletter_section: Mapped[str | None] = mapped_column(String, nullable=True)
     publish_channel_default: Mapped[str] = mapped_column(String, default="public")
     rules_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    primary_scorer: Mapped[str] = mapped_column(String, default="weighted", server_default="weighted")
+    primary_scorer: Mapped[str] = mapped_column(
+        String, default="weighted", server_default="weighted"
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 
@@ -136,7 +149,7 @@ class ScanRun(Base):
 class PriceLog(Base):
     __tablename__ = "price_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    run_id: Mapped[int] = mapped_column(ForeignKey("scan_runs.id"))
+    run_id: Mapped[int] = mapped_column(ForeignKey("scan_runs.id"), index=True)
     route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"), index=True)
     trip_type: Mapped[str] = mapped_column(String)
     travel_date: Mapped[date] = mapped_column(Date, index=True)
@@ -146,8 +159,13 @@ class PriceLog(Base):
     scanner_version: Mapped[str] = mapped_column(String)
     scanned_at: Mapped[datetime] = mapped_column(DateTime, default=_now, index=True)
     __table_args__ = (
-        Index("ix_price_log_route_trip_date_scanned",
-              "route_id", "trip_type", "travel_date", "scanned_at"),
+        Index(
+            "ix_price_log_route_trip_date_scanned",
+            "route_id",
+            "trip_type",
+            "travel_date",
+            "scanned_at",
+        ),
     )
 
 
@@ -241,7 +259,9 @@ class PublishedDeal(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     candidate_id: Mapped[int] = mapped_column(ForeignKey("candidates.id"))
     deal_template_id: Mapped[int] = mapped_column(ForeignKey("deal_templates.id"))
-    content_draft_id: Mapped[int | None] = mapped_column(ForeignKey("content_drafts.id"), nullable=True)
+    content_draft_id: Mapped[int | None] = mapped_column(
+        ForeignKey("content_drafts.id"), nullable=True
+    )
     public_label: Mapped[str | None] = mapped_column(String, nullable=True)
     newsletter_tag: Mapped[str | None] = mapped_column(String, nullable=True)
     headline: Mapped[str] = mapped_column(Text)
@@ -262,7 +282,9 @@ class PublishedDeal(Base):
     unverified_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
-    going_fast: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    going_fast: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
@@ -271,11 +293,17 @@ class Subscriber(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String, unique=True)
     source: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now, server_default=text("CURRENT_TIMESTAMP"))
-    confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=_now, server_default=text("CURRENT_TIMESTAMP")
+    )
+    confirmed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     confirm_token: Mapped[str | None] = mapped_column(String, nullable=True)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    early_alerts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    early_alerts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     prefs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
@@ -284,11 +312,15 @@ class ScanRequest(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     kind: Mapped[str] = mapped_column(String)  # "full_scan" | "recheck"
     candidate_id: Mapped[int | None] = mapped_column(ForeignKey("candidates.id"))
-    status: Mapped[str] = mapped_column(String, default="queued", server_default="queued", index=True)
+    status: Mapped[str] = mapped_column(
+        String, default="queued", server_default="queued", index=True
+    )
     requested_by: Mapped[str] = mapped_column(String, default="curator", server_default="curator")
     params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     result_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now, server_default=text("CURRENT_TIMESTAMP"), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=_now, server_default=text("CURRENT_TIMESTAMP"), index=True
+    )
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

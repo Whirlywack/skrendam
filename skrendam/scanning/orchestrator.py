@@ -32,6 +32,7 @@ class ScanSummary:
     errors: int = 0
     http_429s: int = 0
     health: HealthVerdict | None = None
+    aborted: bool = False
 
 
 def _flagged(points, baseline, _zone):
@@ -149,6 +150,8 @@ def run_scan(
         )
         or 0
     )
+    # degraded runs count as a cliff baseline on purpose: CLIFF_PRIOR_MIN_ROWS guards
+    # against a low-data baseline, and sustained outages are the ratio signal's job.
     prior_run_id = session.scalar(
         select(models.ScanRun.id)
         .where(models.ScanRun.id != run.id, models.ScanRun.status.in_(("completed", "degraded")))
@@ -171,6 +174,7 @@ def run_scan(
     run.finished_at = now
     if aborted:
         run.status = "failed"
+        summary.aborted = True
     elif verdict.degraded:
         run.status = "degraded"
     else:

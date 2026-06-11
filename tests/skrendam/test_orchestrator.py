@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
@@ -277,3 +277,28 @@ def test_expiry_sweep_expires_past_dates(session):
         for pd in session.query(models.PublishedDeal).filter(models.PublishedDeal.id >= 11)
     }
     assert statuses == {11: "expired", 12: "expired", 13: "live", 14: "live"}
+
+
+def test_cliff_reason_uses_last_trustworthy_run(session):
+    """A collapsed scan after a healthy prior run carries the cliff reason; failed runs
+    are skipped as baseline."""
+    _seed_many_routes(session)
+    prior = models.ScanRun(scanner_version="t", status="completed",
+                           started_at=datetime(2026, 6, 1))
+    failed = models.ScanRun(scanner_version="t", status="failed",
+                            started_at=datetime(2026, 6, 1, 12))
+    session.add_all([prior, failed])
+    session.flush()
+    for i in range(100):
+        session.add(models.PriceLog(run_id=prior.id, route_id=1, trip_type="oneway",
+                                    travel_date=date(2026, 7, 1), price=100.0 + i,
+                                    currency="EUR", scanner_version="t",
+                                    scanned_at=datetime(2026, 6, 1)))
+    session.commit()
+
+    adapter = FliAdapter(EmptyBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    run = session.query(models.ScanRun).order_by(models.ScanRun.id.desc()).first()
+    assert run.status == "degraded"
+    assert run.health["metrics"]["prior_price_rows"] == 100  # the failed run was skipped
+    assert any("cliff" in r for r in run.health["reasons"])

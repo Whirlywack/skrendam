@@ -22,9 +22,11 @@ def upgrade() -> None:
         "published_deals",
         sa.Column("unverified_since", sa.DateTime(), nullable=True),
     )
+    op.create_index(op.f("ix_price_log_run_id"), "price_log", ["run_id"])
 
 
 def downgrade() -> None:
     """Remove health and unverified_since columns."""
+    op.drop_index(op.f("ix_price_log_run_id"), table_name="price_log")
     op.drop_column("published_deals", "unverified_since")
     op.drop_column("scan_runs", "health")
