@@ -17,6 +17,8 @@ function dealBase() {
   return db.select({
     pd: publishedDeals,
     score: candidateTemplateMatches.matchScore,
+    score100: candidateTemplateMatches.score0100,
+    qualityTier: candidateTemplateMatches.qualityTier,
     snapshot: candidates.itinerarySnapshot,
     candLastSeen: candidates.lastSeenAt,
   })

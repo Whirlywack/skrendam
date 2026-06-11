@@ -9,6 +9,8 @@ function row(over: Partial<Record<string, unknown>> = {}): Row {
           bookingUrl: 'https://www.google.com/travel/flights?tfs=X', lastSeenAt: '2026-06-03T10:00:00',
           goingFast: false, status: 'live', ...((over.pd as object) ?? {}) },
     score: over.score ?? 0.96,
+    score100: over.score100 ?? null,
+    qualityTier: over.qualityTier ?? null,
     snapshot: over.snapshot ?? { stops: 1, legs: [{ airline: { code: 'BT' } }], duration: 440, self_transfer: false },
     candLastSeen: '2026-06-03T10:00:00',
   } as unknown as Row;
@@ -32,5 +34,15 @@ describe('toPublicDeal', () => {
   it('non-stop → no catch line', () => {
     const d = toPublicDeal(row({ snapshot: { stops: 0, legs: [{ airline: { code: 'FR' } }], duration: 120 } }), new Date('2026-06-03T12:00:00Z'));
     expect(d.catchLine).toBeNull();
+  });
+  it('engine quality_tier wins over the raw score', () => {
+    // raw score 0.50 would derive no tier, but the engine tagged it "rare".
+    const d = toPublicDeal(row({ score: 0.5, qualityTier: 'rare' }), new Date('2026-06-03T12:00:00Z'));
+    expect(d.quality).toBe('rare');
+  });
+  it('engine score_0_100 drives the derived tier when quality_tier is absent', () => {
+    // raw score 0.50 → 50 → no tier; stored score_0_100 95 → "rare".
+    const d = toPublicDeal(row({ score: 0.5, score100: 95 }), new Date('2026-06-03T12:00:00Z'));
+    expect(d.quality).toBe('rare');
   });
 });
