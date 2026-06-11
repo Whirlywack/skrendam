@@ -8,6 +8,7 @@ from skrendam.fli_adapter.errors import (
     ConnectionError_ as SkConnectionError,
 )
 from skrendam.fli_adapter.errors import (
+    ParseError,
     RateLimitedError,
     ScanError,
 )
@@ -120,3 +121,15 @@ def test_classify_uses_fli_typed_exceptions():
     assert not isinstance(_classify(SearchHTTPError("server", status_code=503)), RateLimitedError)
     assert isinstance(_classify(SearchTimeoutError("slow")), SkTimeout)
     assert isinstance(_classify(SearchConnectionError("dns")), SkConnectionError)
+
+
+def test_parse_error_is_recorded_with_its_type():
+    class BadShape(FakeBackend):
+        def search_flights(self, *a, **k):
+            return [{"price": "not-a-number"}]
+
+    adapter = FliAdapter(BadShape(), pace=lambda: None)
+    with pytest.raises(ParseError):
+        adapter.search_flights("VNO", "BCN", date(2026, 7, 29), None, "ECONOMY")
+    (rec,) = adapter.call_log.records
+    assert rec.outcome == "error" and rec.error_kind == "ParseError"

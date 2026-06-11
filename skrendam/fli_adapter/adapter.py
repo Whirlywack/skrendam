@@ -107,7 +107,7 @@ class FliAdapter:
                 spec.trip_type,
                 "error",
                 error_kind=type(err).__name__,
-                error_msg=str(exc),
+                error_msg=str(err),
             )
             raise err from exc
         self.call_log.record(
@@ -160,7 +160,7 @@ class FliAdapter:
                 trip_type,
                 "error",
                 error_kind=type(err).__name__,
-                error_msg=str(exc),
+                error_msg=str(err),
             )
             raise err from exc
         self.call_log.record(
