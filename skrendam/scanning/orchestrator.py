@@ -12,9 +12,12 @@ from skrendam.fli_adapter.errors import RateLimitedError, ScanError
 from skrendam.fli_adapter.pacing import CircuitBreaker
 from skrendam.scanning import baseline as baseline_mod
 from skrendam.scanning import content as content_mod
-from skrendam.scanning import matching as matching_mod
 from skrendam.scanning.dedup import deal_group_key
+from skrendam.scanning.history import DbPriceHistory
 from skrendam.scanning.resolver import resolve
+from skrendam.scanning.scoring.base import ScoringContext
+from skrendam.scanning.scoring.eligibility import in_template_scope
+from skrendam.scanning.scoring.registry import enabled_scorers
 
 CANDIDATE_TTL_DAYS = 14
 
@@ -45,6 +48,7 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
     session.flush()
     summary = ScanSummary()
     breaker = CircuitBreaker(circuit_breaker_threshold)
+    history = DbPriceHistory(session, now)
 
     templates = list(session.scalars(
         select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True))))
@@ -99,7 +103,7 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
                     continue
                 fare = min(fares, key=lambda f: f.price)
                 _persist_fare(session, run, route, zone, spec, p, fare, base,
-                              templates, now, scanner_version, summary)
+                              templates, now, scanner_version, summary, history)
             if aborted:
                 break
 
@@ -118,19 +122,28 @@ def run_scan(session: Session, today: date, adapter: FliAdapter,
 
 
 def _persist_fare(session, run, route, zone, spec, point, fare, base, templates,
-                  now, scanner_version, summary):
-    # Evaluate against every applicable template FIRST (pure, no writes).
-    matches = []
+                  now, scanner_version, summary, history):
+    # Score against every applicable template with every enabled scorer (pure, no writes).
+    hist_series = history.for_route(route.id, spec.trip_type)
+    prev = hist_series.previous_price(point.travel_date, now)
+    matched = []  # (tpl, headline_score, all_scores)
     for tpl in templates:
         if tpl.trip_type != spec.trip_type:
             continue
-        if not _fare_in_template_scope(tpl, route, point, today=now.date()):
+        if not in_template_scope(tpl, route, point, today=now.date()):
             continue
-        result = matching_mod.match(fare, tpl, base, zone)
-        if result is not None:
-            matches.append((tpl, result))
-    if not matches:
-        return  # no template matched -> not a candidate, don't persist an orphan
+        ctx = ScoringContext(fare=fare, baseline=base, zone=zone, template=tpl,
+                             history=hist_series, previous_price=prev)
+        scores = [s for sc in enabled_scorers() if (s := sc.score(ctx)) is not None]
+        if not scores:
+            continue
+        primary_name = tpl.primary_scorer or "weighted"
+        headline = next((s for s in scores if s.scorer == primary_name), None)
+        if headline is None:
+            headline = max(scores, key=lambda s: s.score_0_100)
+        matched.append((tpl, headline, scores))
+    if not matched:
+        return  # nothing flagged -> not a candidate, don't persist an orphan
 
     discount = None if base.median <= 0 else round((base.median - fare.price) / base.median * 100, 1)
     key = deal_group_key(spec.origin, spec.destination, spec.trip_type,
@@ -146,22 +159,18 @@ def _persist_fare(session, run, route, zone, spec, point, fare, base, templates,
     if created:
         summary.candidates_found += 1
 
-    for tpl, result in matches:
-        _match, created = repo.upsert_match(session, cand.id, tpl.id, result.match_score,
-                                            result.reason_text, result.gate_results)
+    for tpl, headline, scores in matched:
+        _match, created = repo.upsert_match(
+            session, cand.id, tpl.id, headline.value, headline.reason_text, headline.signals,
+            score_0_100=headline.score_0_100, quality_tier=headline.quality_tier,
+            primary_scorer=headline.scorer)
         if created:
             summary.matches_created += 1
+        for sc in scores:
+            repo.upsert_score(session, cand.id, tpl.id, sc)
         draft = content_mod.build_content_draft(spec.origin, spec.destination, fare.price,
                                                 base.median, point.travel_date, tpl)
         repo.ensure_content_draft(session, cand.id, tpl.id, draft)
-
-
-def _fare_in_template_scope(tpl, route, point, today) -> bool:
-    from skrendam.scanning.resolver import _destinations_ok, _window
-    if not _destinations_ok(tpl, route):
-        return False
-    start, end = _window(tpl, today)
-    return start <= point.travel_date <= end
 
 
 def _expire_stale(session, now):

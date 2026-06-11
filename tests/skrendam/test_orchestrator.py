@@ -73,3 +73,18 @@ def test_match_less_fare_creates_no_candidate(session):
     summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
     assert summary.candidates_found == 0
     assert session.query(models.Candidate).count() == 0
+
+
+def test_run_scan_persists_per_scorer_rows(session):
+    _seed(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="test")
+
+    # The weighted scorer fired -> its score persisted to candidate_scores...
+    weighted_rows = session.query(models.CandidateScore).filter_by(scorer="weighted").all()
+    assert weighted_rows, "expected weighted scores persisted to candidate_scores"
+    # ...and the headline match carries the scorer + normalized score.
+    match = session.query(models.CandidateTemplateMatch).one()
+    assert match.primary_scorer == "weighted"
+    assert match.score_0_100 == round(match.match_score * 100)
+    assert match.quality_tier in (None, "great", "rare")
