@@ -150,6 +150,8 @@ def assess(log: CallLog, price_rows: int, prior_price_rows: int | None = None) -
     cal = log.count("calendar")
     cal_empty = log.count("calendar", "empty")
 
+    # error-outcome calls stay in the denominator on purpose: heavy-error runs are
+    # the circuit breaker's job ("failed"), not this ratio's.
     if cal >= MIN_CALENDAR_SAMPLE and cal_empty / cal >= EMPTY_RATIO_BAR:
         reasons.append(f"{cal_empty}/{cal} calendar searches returned no data")
 
@@ -191,8 +193,8 @@ def health_json(verdict: HealthVerdict, log: CallLog) -> dict:
 
     """
     return {
-        "reasons": verdict.reasons,
-        "metrics": verdict.metrics,
+        "reasons": list(verdict.reasons),
+        "metrics": dict(verdict.metrics),
         "errors": [
             {"kind": r.error_kind, "call": r.kind, "route": r.route, "msg": r.error_msg}
             for r in log.errors[:ERROR_DETAIL_CAP]

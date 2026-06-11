@@ -69,3 +69,27 @@ def test_health_json_caps_error_detail():
     }
     assert j["metrics"]["error_calls"] == ERROR_DETAIL_CAP + 10
     assert j["reasons"] == []
+
+
+def test_empty_ratio_trips_exactly_at_bar():
+    v = assess(_log(calendar_data=3, calendar_empty=3), price_rows=90)  # 3/6 == 0.5
+    assert v.degraded
+
+
+def test_empty_ratio_trips_at_exact_min_sample():
+    v = assess(_log(calendar_empty=5), price_rows=50)  # exactly MIN_CALENDAR_SAMPLE calls
+    assert v.degraded
+
+
+def test_cliff_boundary_at_exact_fraction():
+    # exactly 10% of prior stays healthy (strict <); one below trips
+    assert assess(_log(calendar_data=40), price_rows=10, prior_price_rows=100).status == "healthy"
+    assert assess(_log(calendar_data=40), price_rows=9, prior_price_rows=100).degraded
+
+
+def test_record_truncates_error_msg():
+    log = CallLog()
+    log.record(
+        "calendar", "VNO-BCN", "oneway", "error", error_kind="ScanError", error_msg="x" * 1000
+    )
+    assert len(log.records[0].error_msg) == 300
