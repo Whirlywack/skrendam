@@ -34,6 +34,25 @@ def test_analyze_summarizes_real_data(session):
     assert rep.tier_preview.maybe == 2
 
 
+def test_analyze_counts_quality_tier_over_score_fallback(session):
+    # A match the engine tagged quality_tier="great" must count as great via the tier,
+    # even though its match_score (0.40) is below the 0.88 fallback threshold.
+    session.add(models.Zone(zone="MED", haul_type="short"))
+    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED"))
+    session.add(models.AudienceSegment(id=1, slug="c", name="C"))
+    session.add(models.TravelMoment(id=1, slug="s", name="S", moment_type="seasonal"))
+    session.add(models.DealTemplate(id=1, slug="t", name="T", audience_segment_id=1, travel_moment_id=1))
+    session.add(models.Candidate(id=1, route_id=1, origin="VNO", destination="BCN", zone="MED",
+                                 trip_type="oneway", travel_date=date(2026, 9, 10), price=50.0,
+                                 deal_group_key="k"))
+    session.add(models.CandidateTemplateMatch(candidate_id=1, deal_template_id=1,
+                                              match_score=0.40, quality_tier="great", score_0_100=40))
+    session.commit()
+    rep = analyze.analyze(session)  # default great_threshold=0.88
+    assert rep.tier_preview.great == 1
+    assert rep.tier_preview.maybe == 0
+
+
 def test_format_report_is_nonempty_string(session):
     _seed(session)
     rep = analyze.analyze(session, great_threshold=0.8)

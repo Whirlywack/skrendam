@@ -49,13 +49,16 @@ def _percentile(values: list[float], pct: float) -> float:
     return round(s[k], 1)
 
 
-# Keep great_threshold in sync with the web UI's GREAT_THRESHOLD (web/src/lib/tiers.ts,
-# 0–100 scale → 0.88 here). Tuned 2026-06-03; see docs/research/2026-06-03-tuning-analysis.md.
+# quality_tier is written by the engine via skrendam/scanning/scoring/tiering.py
+# (GREAT=88, RARE=94, 0–100 scale). great_threshold (0.88) is only the fallback for old,
+# un-backfilled rows that predate the score_0_100/quality_tier columns.
 def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
     discounts = [d for (d,) in session.execute(
         select(models.Candidate.discount_pct).where(models.Candidate.discount_pct.is_not(None))
     )]
-    scores = [s for (s,) in session.execute(select(models.CandidateTemplateMatch.match_score))]
+    match_rows = session.execute(
+        select(models.CandidateTemplateMatch.quality_tier,
+               models.CandidateTemplateMatch.match_score)).all()
     per_tmpl = session.execute(
         select(models.DealTemplate.name, func.count(models.CandidateTemplateMatch.id))
         .join(models.CandidateTemplateMatch,
@@ -68,17 +71,19 @@ def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
         .group_by(models.Candidate.zone)
         .order_by(func.count(models.Candidate.id).desc())
     ).all()
-    great = sum(1 for s in scores if s >= great_threshold)
+    great = sum(1 for tier, ms in match_rows
+                if (tier in ("great", "rare"))
+                or (tier is None and ms is not None and ms >= great_threshold))
     return AnalysisReport(
         candidate_count=session.scalar(select(func.count(models.Candidate.id))) or 0,
-        match_count=len(scores),
+        match_count=len(match_rows),
         price_log_count=session.scalar(select(func.count(models.PriceLog.id))) or 0,
         discount_p10=_percentile(discounts, 10),
         discount_p50=_percentile(discounts, 50),
         discount_p90=_percentile(discounts, 90),
         per_template=[TemplateVolume(t, c) for (t, c) in per_tmpl],
         per_zone=[ZoneVolume(z, c) for (z, c) in per_zone],
-        tier_preview=TierPreview(great=great, maybe=len(scores) - great),
+        tier_preview=TierPreview(great=great, maybe=len(match_rows) - great),
     )
 
 
