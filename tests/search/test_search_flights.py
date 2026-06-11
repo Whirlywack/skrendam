@@ -268,9 +268,7 @@ class TestParsePriceInfo:
 class TestSearchParseErrorMessage:
     """SearchParseError surfaces sample reasons when every row fails."""
 
-    def _client_with_canned_response(self, body: str) -> SearchFlights:
-        from unittest.mock import patch
-
+    def _client_with_canned_response(self, body: str, monkeypatch) -> SearchFlights:
         sf = SearchFlights()
 
         def _fake_post(url, data, **kwargs):  # noqa: ANN001
@@ -284,8 +282,12 @@ class TestSearchParseErrorMessage:
                 },
             )()
 
-        patcher = patch.object(sf.client, "post", side_effect=_fake_post)
-        patcher.start()
+        # ``sf.client`` is the module-level singleton shared by every
+        # SearchFlights instance — an unrestored patch here leaks the canned
+        # body into all later tests in the process (it made the live-API
+        # tests fail with this file's fixture data). monkeypatch reverts
+        # the patch at test teardown.
+        monkeypatch.setattr(sf.client, "post", _fake_post)
         return sf
 
     def _build_response(self, rows: list) -> str:
@@ -305,7 +307,7 @@ class TestSearchParseErrorMessage:
         outer = [["wrb.fr", None, json.dumps(inner, separators=(",", ":"))]]
         return ")]}'\n\n" + json.dumps(outer)
 
-    def test_error_includes_sample_failure_reasons(self):
+    def test_error_includes_sample_failure_reasons(self, monkeypatch):
         """When all rows fail, the error message names what went wrong."""
         from fli.search.flights import SearchParseError
 
@@ -314,7 +316,7 @@ class TestSearchParseErrorMessage:
         bad_row = [None, [[None, "not-a-number"]]]
         body = self._build_response([bad_row, bad_row, bad_row])
 
-        sf = self._client_with_canned_response(body)
+        sf = self._client_with_canned_response(body, monkeypatch)
         filters = FlightSearchFilters(
             passenger_info=PassengerInfo(adults=1),
             flight_segments=[
@@ -328,13 +330,13 @@ class TestSearchParseErrorMessage:
         with pytest.raises(SearchParseError, match="sample reasons:.*not numeric"):
             sf.search(filters)
 
-    def test_error_dedups_repeated_reasons(self):
+    def test_error_dedups_repeated_reasons(self, monkeypatch):
         """Identical failure messages collapse to a single sample."""
         from fli.search.flights import SearchParseError
 
         bad_row = [None, [[None, "not-a-number"]]]
         body = self._build_response([bad_row] * 10)
-        sf = self._client_with_canned_response(body)
+        sf = self._client_with_canned_response(body, monkeypatch)
         filters = FlightSearchFilters(
             passenger_info=PassengerInfo(adults=1),
             flight_segments=[
