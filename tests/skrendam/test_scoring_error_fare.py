@@ -8,8 +8,10 @@ from skrendam.scanning.types import Baseline, FareItinerary
 
 
 def _series(prices):
-    pts = tuple(HistoryPoint(scanned_at=datetime(2026, 1, i + 1),
-                             travel_date=date(2026, 6, 1), price=p) for i, p in enumerate(prices))
+    pts = tuple(
+        HistoryPoint(scanned_at=datetime(2026, 1, i + 1), travel_date=date(2026, 6, 1), price=p)
+        for i, p in enumerate(prices)
+    )
     return PriceHistorySeries(route_id=1, trip_type="oneway", points=pts)
 
 
@@ -17,8 +19,11 @@ def _ctx(price, series):
     return ScoringContext(
         fare=FareItinerary(price=price, currency="EUR", stops=0, duration_minutes=120, legs=[]),
         baseline=Baseline(minimum=price, median=price, decile=price, sample_size=1),
-        zone=SimpleNamespace(), template=SimpleNamespace(primary_scorer="weighted"),
-        history=series, previous_price=None)
+        zone=SimpleNamespace(),
+        template=SimpleNamespace(primary_scorer="weighted"),
+        history=series,
+        previous_price=None,
+    )
 
 
 def test_error_fare_fires_far_below_floor():

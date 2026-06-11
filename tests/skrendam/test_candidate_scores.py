@@ -21,15 +21,31 @@ def _seed_candidate(s):
     s.add(m.AudienceSegment(id=1, slug="a", name="a"))
     s.add(m.TravelMoment(id=1, slug="t", name="t", moment_type="relative"))
     s.add(m.DealTemplate(id=1, slug="d", name="d", audience_segment_id=1, travel_moment_id=1))
-    s.add(m.Candidate(id=1, route_id=1, origin="VNO", destination="AMS", zone="EU_SHORT",
-                      trip_type="oneway", travel_date=date(2026, 6, 1), price=100.0,
-                      deal_group_key="k1"))
+    s.add(
+        m.Candidate(
+            id=1,
+            route_id=1,
+            origin="VNO",
+            destination="AMS",
+            zone="EU_SHORT",
+            trip_type="oneway",
+            travel_date=date(2026, 6, 1),
+            price=100.0,
+            deal_group_key="k1",
+        )
+    )
     s.flush()
 
 
 def _score(scorer="drop", value=0.4):
-    return Score(scorer=scorer, value=value, score_0_100=round(value * 100),
-                 quality_tier=None, reason_text="r", signals={"x": 1})
+    return Score(
+        scorer=scorer,
+        value=value,
+        score_0_100=round(value * 100),
+        quality_tier=None,
+        reason_text="r",
+        signals={"x": 1},
+    )
 
 
 def test_upsert_score_inserts_then_updates():
@@ -47,8 +63,17 @@ def test_upsert_score_inserts_then_updates():
 def test_upsert_match_writes_headline_fields():
     s = _session()
     _seed_candidate(s)
-    repo.upsert_match(s, 1, 1, 0.9, "reason", {"price_anomaly": True},
-                      score_0_100=90, quality_tier="great", primary_scorer="weighted")
+    repo.upsert_match(
+        s,
+        1,
+        1,
+        0.9,
+        "reason",
+        {"price_anomaly": True},
+        score_0_100=90,
+        quality_tier="great",
+        primary_scorer="weighted",
+    )
     row = s.scalar(select(m.CandidateTemplateMatch))
     assert row.score_0_100 == 90
     assert row.quality_tier == "great"

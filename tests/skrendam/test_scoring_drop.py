@@ -9,8 +9,11 @@ def _ctx(price, previous_price):
     return ScoringContext(
         fare=FareItinerary(price=price, currency="EUR", stops=0, duration_minutes=120, legs=[]),
         baseline=Baseline(minimum=price, median=price, decile=price, sample_size=1),
-        zone=SimpleNamespace(), template=SimpleNamespace(primary_scorer="weighted"),
-        history=None, previous_price=previous_price)
+        zone=SimpleNamespace(),
+        template=SimpleNamespace(primary_scorer="weighted"),
+        history=None,
+        previous_price=previous_price,
+    )
 
 
 def test_drop_fires_on_big_fall():

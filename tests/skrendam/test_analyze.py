@@ -1,7 +1,7 @@
 from datetime import date
 
-from skrendam.db import models
 from skrendam import analyze
+from skrendam.db import models
 
 
 def _seed(session):
@@ -9,16 +9,37 @@ def _seed(session):
     session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED"))
     session.add(models.AudienceSegment(id=1, slug="couples", name="Couples"))
     session.add(models.TravelMoment(id=1, slug="sept", name="September", moment_type="seasonal"))
-    session.add(models.DealTemplate(id=1, slug="sept-sun", name="September sun",
-                                    audience_segment_id=1, travel_moment_id=1, trip_type="roundtrip"))
-    for i, (price, disc, score) in enumerate([(96.0, 67.0, 0.9), (150.0, 40.0, 0.7), (180.0, 20.0, 0.5)]):
-        c = models.Candidate(id=i + 1, route_id=1, origin="VNO", destination="BCN", zone="MED",
-                             trip_type="roundtrip", travel_date=date(2026, 9, 10), price=price,
-                             baseline_price=290.0, discount_pct=disc, status="new",
-                             deal_group_key=f"k{i}")
+    session.add(
+        models.DealTemplate(
+            id=1,
+            slug="sept-sun",
+            name="September sun",
+            audience_segment_id=1,
+            travel_moment_id=1,
+            trip_type="roundtrip",
+        )
+    )
+    for i, (price, disc, score) in enumerate(
+        [(96.0, 67.0, 0.9), (150.0, 40.0, 0.7), (180.0, 20.0, 0.5)]
+    ):
+        c = models.Candidate(
+            id=i + 1,
+            route_id=1,
+            origin="VNO",
+            destination="BCN",
+            zone="MED",
+            trip_type="roundtrip",
+            travel_date=date(2026, 9, 10),
+            price=price,
+            baseline_price=290.0,
+            discount_pct=disc,
+            status="new",
+            deal_group_key=f"k{i}",
+        )
         session.add(c)
-        session.add(models.CandidateTemplateMatch(candidate_id=i + 1, deal_template_id=1,
-                                                  match_score=score))
+        session.add(
+            models.CandidateTemplateMatch(candidate_id=i + 1, deal_template_id=1, match_score=score)
+        )
     session.commit()
 
 
@@ -41,12 +62,31 @@ def test_analyze_counts_quality_tier_over_score_fallback(session):
     session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED"))
     session.add(models.AudienceSegment(id=1, slug="c", name="C"))
     session.add(models.TravelMoment(id=1, slug="s", name="S", moment_type="seasonal"))
-    session.add(models.DealTemplate(id=1, slug="t", name="T", audience_segment_id=1, travel_moment_id=1))
-    session.add(models.Candidate(id=1, route_id=1, origin="VNO", destination="BCN", zone="MED",
-                                 trip_type="oneway", travel_date=date(2026, 9, 10), price=50.0,
-                                 deal_group_key="k"))
-    session.add(models.CandidateTemplateMatch(candidate_id=1, deal_template_id=1,
-                                              match_score=0.40, quality_tier="great", score_0_100=40))
+    session.add(
+        models.DealTemplate(id=1, slug="t", name="T", audience_segment_id=1, travel_moment_id=1)
+    )
+    session.add(
+        models.Candidate(
+            id=1,
+            route_id=1,
+            origin="VNO",
+            destination="BCN",
+            zone="MED",
+            trip_type="oneway",
+            travel_date=date(2026, 9, 10),
+            price=50.0,
+            deal_group_key="k",
+        )
+    )
+    session.add(
+        models.CandidateTemplateMatch(
+            candidate_id=1,
+            deal_template_id=1,
+            match_score=0.40,
+            quality_tier="great",
+            score_0_100=40,
+        )
+    )
     session.commit()
     rep = analyze.analyze(session)  # default great_threshold=0.88
     assert rep.tier_preview.great == 1

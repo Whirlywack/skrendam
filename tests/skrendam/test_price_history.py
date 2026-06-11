@@ -24,7 +24,7 @@ def _series(prices):
 def test_min_seen_and_percentile():
     s = _series([100, 200, 300, 400])
     assert s.min_seen() == 100
-    assert s.percentile(100) == 0.25      # 1 of 4 at or below
+    assert s.percentile(100) == 0.25  # 1 of 4 at or below
     assert s.percentile(400) == 1.0
 
 
@@ -50,9 +50,17 @@ def _seed_session():
     s.add(m.ScanRun(id=1, scanner_version="t"))
     s.flush()
     for day, price in enumerate([300.0, 250.0, 120.0], start=1):
-        s.add(m.PriceLog(run_id=1, route_id=1, trip_type="oneway",
-                         travel_date=date(2026, 6, 1), price=price,
-                         scanner_version="t", scanned_at=datetime(2026, 1, day)))
+        s.add(
+            m.PriceLog(
+                run_id=1,
+                route_id=1,
+                trip_type="oneway",
+                travel_date=date(2026, 6, 1),
+                price=price,
+                scanner_version="t",
+                scanned_at=datetime(2026, 1, day),
+            )
+        )
     s.flush()
     return s
 
