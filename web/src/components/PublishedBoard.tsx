@@ -86,7 +86,7 @@ function DealRow({ deal }: { deal: Deal }) {
             </span>
           )}
           {deal.unverifiedSince && (
-            <span className="stat rejected">
+            <span className="stat unverified">
               unverified since {String(deal.unverifiedSince).slice(0, 10)}
             </span>
           )}

@@ -14,7 +14,7 @@ export default async function Dashboard() {
   ]);
 
   const views = rows.map(toCandidateView);
-  const scan = toScanView(run as Parameters<typeof toScanView>[0]);
+  const scan = toScanView(run);
 
   // New high-score candidates: status 'suggested' AND in the GREAT tier
   const highScore = views.filter((v) => v.status === 'suggested' && v.score >= GREAT_THRESHOLD).length;

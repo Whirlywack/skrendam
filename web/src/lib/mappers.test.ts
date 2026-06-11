@@ -145,6 +145,11 @@ describe('toScanView health', () => {
     expect(toScanView(null).healthReasons).toEqual([]);
     expect(toScanView({ status: 'completed' }).healthReasons).toEqual([]);
   });
+
+  it('ignores malformed health payloads', () => {
+    expect(toScanView({ status: 'degraded', health: { reasons: 'nope' } }).healthReasons).toEqual([]);
+    expect(toScanView({ status: 'degraded', health: 42 }).healthReasons).toEqual([]);
+  });
 });
 
 describe('groupByTemplate', () => {

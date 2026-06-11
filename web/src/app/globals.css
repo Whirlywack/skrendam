@@ -13,13 +13,3 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: inherit; }
-
-.scan-health-banner {
-  background: var(--coral-50);
-  border: 1px solid var(--coral-200);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-.scan-health-banner ul { margin: 6px 0 0; padding-left: 18px; }
