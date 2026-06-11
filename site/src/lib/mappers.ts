@@ -22,7 +22,10 @@ export function toTicket(r: Row, now: Date): TicketView {
   const s = (r.snapshot ?? {}) as Record<string, unknown>;
   const dur = s.duration ? `${Math.floor(Number(s.duration) / 60)}h` : '';
   const drop = Math.round(Number(pd.discountPct ?? 0));
-  const score = Math.round(Number(r.score ?? 0) * 100);
+  // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
+  const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
+  const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
+    ? r.qualityTier : (qualityTag(score) ?? 'great');
   return {
     id: pd.id,
     destination: city(pd.destination),
@@ -34,7 +37,7 @@ export function toTicket(r: Row, now: Date): TicketView {
     price: Number(pd.price),
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
-    quality: qualityTag(score) ?? 'great',
+    quality,
     headline: pd.headline ?? `€${Math.round(Number(pd.price))} return to ${city(pd.destination)}`,
     eyebrow: pd.publicLabel ?? 'Found by hand',
     catchChip: stops === 0 ? 'Direct' : `${stops} stop${stops > 1 ? 's' : ''}`,
@@ -47,7 +50,9 @@ export function toTicket(r: Row, now: Date): TicketView {
 export function toPublicDeal(r: Row, now: Date): PublicDeal {
   const pd = r.pd;
   const { stops, airline } = legs(r.snapshot);
-  const score = Math.round(Number(r.score ?? 0) * 100);
+  const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
+  const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
+    ? r.qualityTier : (qualityTag(score) ?? 'great');
   const drop = Math.round(Number(pd.discountPct ?? 0));
   const fresh = pd.lastSeenAt ?? r.candLastSeen ?? null;
   const status = pd.goingFast
@@ -69,7 +74,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     price: Number(pd.price),
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
-    quality: qualityTag(score) ?? 'great',
+    quality,
     verdict: 'Book this — it rarely drops this low.',
     why: drop ? `${drop}% below typical` : 'Below typical',
     catchLine: stops >= 1 ? `Catch: ${stops} stop${stops > 1 ? 's' : ''}` : null,

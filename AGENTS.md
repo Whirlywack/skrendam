@@ -23,6 +23,23 @@ All standard commands are in the `Makefile` and `CLAUDE.md`. Key ones:
 - Run `uv run pytest -vv --ignore=tests/search/` to skip flaky API-dependent tests.
 - One MCP test (`test_search_dates_round_trip`) also makes a live API call and may fail with empty results.
 
+### Pre-PR gate (required)
+
+Before opening any PR, run the gate and complete its ritual — see
+[`docs/PR-GATE.md`](docs/PR-GATE.md). It is **lane-aware**: it runs only the
+verification lanes your diff touches (Python / fli-js / web / site / migration).
+
+```bash
+scripts/pr-gate.sh            # mechanical lanes (tests, typecheck, lint, migration no-diff)
+scripts/pr-gate.sh --full     # also cold Next builds + Playwright
+scripts/pr-gate.sh --base=<ref>   # stacked branch: diff against <ref> (default: main)
+```
+
+The script's green is **necessary, not sufficient**: every PR also requires the
+two code-review passes (`/code-review high` then
+`superpowers:requesting-code-review`), the housekeeping in §C, and the PR-body
+contents in §D of `docs/PR-GATE.md`.
+
 ### Releasing
 
 Releases are manual: GitHub Actions → **Release** → Run workflow on `main`,

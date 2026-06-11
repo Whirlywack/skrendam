@@ -16,6 +16,8 @@ function makeRow(overrides: Partial<{
   hook: string | null;
   news: string | null;
   publishedId: number | null;
+  score100: number | null;
+  qualityTier: string | null;
   cOverrides: Record<string, unknown>;
 }>): QueueRow {
   const {
@@ -29,6 +31,8 @@ function makeRow(overrides: Partial<{
     hook = null,
     news = null,
     publishedId = null,
+    score100 = null,
+    qualityTier = null,
     cOverrides = {},
   } = overrides ?? {};
 
@@ -48,7 +52,7 @@ function makeRow(overrides: Partial<{
     ...cOverrides,
   };
 
-  return { matchId, score, reason, templateId, templateLabel, templateName, headline, hook, news, publishedId, c } as unknown as QueueRow;
+  return { matchId, score, score100, qualityTier, reason, templateId, templateLabel, templateName, headline, hook, news, publishedId, c } as unknown as QueueRow;
 }
 
 describe('toCandidateView', () => {
@@ -107,6 +111,22 @@ describe('toCandidateView', () => {
 
   it('score 0.60 → tier "maybe"', () => {
     const row = makeRow({ score: '0.60' });
+    expect(toCandidateView(row).tier).toBe('maybe');
+  });
+
+  it('prefers engine score_0_100 over round(score*100)', () => {
+    // raw score 0.50 would map to 50, but the engine wrote 91 → use 91.
+    const row = makeRow({ score: '0.50', score100: 91 });
+    expect(toCandidateView(row).score).toBe(91);
+  });
+
+  it('engine quality_tier "rare" maps to web tier "great"', () => {
+    const row = makeRow({ score: '0.50', score100: 95, qualityTier: 'rare' });
+    expect(toCandidateView(row).tier).toBe('great');
+  });
+
+  it('null quality_tier with a stored score derives "maybe"', () => {
+    const row = makeRow({ score: '0.50', score100: 70, qualityTier: null });
     expect(toCandidateView(row).tier).toBe('maybe');
   });
 });
