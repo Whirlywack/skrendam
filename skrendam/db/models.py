@@ -2,7 +2,8 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, text
+from sqlalchemy import (JSON, Boolean, Date, DateTime, Float, ForeignKey, Index,
+                        Integer, String, Text, text)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from skrendam.db.base import Base
@@ -110,6 +111,7 @@ class DealTemplate(Base):
     newsletter_section: Mapped[str | None] = mapped_column(String, nullable=True)
     publish_channel_default: Mapped[str] = mapped_column(String, default="public")
     rules_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    primary_scorer: Mapped[str] = mapped_column(String, default="weighted", server_default="weighted")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 
@@ -142,6 +144,10 @@ class PriceLog(Base):
     currency: Mapped[str] = mapped_column(String, default="EUR")
     scanner_version: Mapped[str] = mapped_column(String)
     scanned_at: Mapped[datetime] = mapped_column(DateTime, default=_now, index=True)
+    __table_args__ = (
+        Index("ix_price_log_route_trip_date_scanned",
+              "route_id", "trip_type", "travel_date", "scanned_at"),
+    )
 
 
 class Candidate(Base):
@@ -179,6 +185,23 @@ class CandidateTemplateMatch(Base):
     match_score: Mapped[float] = mapped_column(Float)
     reason_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     gate_results: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    score_0_100: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    quality_tier: Mapped[str | None] = mapped_column(String, nullable=True)
+    primary_scorer: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class CandidateScore(Base):
+    __tablename__ = "candidate_scores"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    candidate_id: Mapped[int] = mapped_column(ForeignKey("candidates.id"), index=True)
+    deal_template_id: Mapped[int] = mapped_column(ForeignKey("deal_templates.id"), index=True)
+    scorer: Mapped[str] = mapped_column(String)
+    value: Mapped[float] = mapped_column(Float)
+    score_0_100: Mapped[int] = mapped_column(Integer)
+    quality_tier: Mapped[str | None] = mapped_column(String, nullable=True)
+    reason_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    signals: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
