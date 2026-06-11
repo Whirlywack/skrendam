@@ -349,6 +349,11 @@ export const subscribers = pgTable("subscribers", {
 	email: varchar().notNull(),
 	source: varchar(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	confirmed: boolean().default(false).notNull(),
+	confirmToken: varchar("confirm_token"),
+	confirmedAt: timestamp("confirmed_at", { withTimezone: true, mode: 'string' }),
+	earlyAlerts: boolean("early_alerts").default(false).notNull(),
+	prefs: json(),
 }, (table) => [
 	unique("subscribers_email_key").on(table.email),
 ]);

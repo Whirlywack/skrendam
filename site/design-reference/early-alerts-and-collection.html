@@ -1,0 +1,122 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .yp{ --amber:#E2820E; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A; --amber-400:#EFA227; --amber-600:#C56A07;
+       --sea:#0F7C68; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+       --coral:#D63E22; --paper:#fff; --cream:#FBF6EC; --sunken:#F4ECDD; --ink:#1C1813; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA; --line-soft:#ECE1CD; --perf:#C8B79C; --sand200:#E0D2BA; --sand300:#C8B79C;
+       font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); max-width:880px; margin:0 auto 22px;
+       background:var(--cream); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--sea-ink); }
+  .hdr{ display:flex; align-items:center; gap:22px; height:56px; padding:0 24px; background:rgba(251,246,236,.82); border-bottom:1px solid var(--line-soft); }
+  .wm{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:21px; color:var(--amber); letter-spacing:-.02em; }
+  .hdr nav{ display:flex; gap:16px; margin-left:4px; } .hdr nav a{ font-size:13.5px; font-weight:500; color:var(--fg2); } .hdr .sp{ flex:1; }
+  .frompill{ font-size:12px; font-weight:600; color:var(--fg2); background:#fff; border:1px solid var(--line); padding:6px 10px; border-radius:999px; }
+  .pad{ padding:26px 24px; }
+  .h1{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:32px; letter-spacing:-.025em; line-height:1.05; margin:8px 0 0; }
+  .h1 .am{ color:var(--amber); }
+  .lead{ font-size:15px; color:var(--fg2); margin:12px 0 0; line-height:1.5; max-width:54ch; }
+  .btn{ display:inline-block; background:var(--amber); color:#1C1813; font-weight:800; font-size:13px; border-radius:11px; padding:11px 16px; box-shadow:0 8px 20px rgba(226,130,14,.30); }
+  .btn-sea{ background:var(--sea); color:#fff; box-shadow:none; }
+  input{ border:1.5px solid var(--sand300); border-radius:11px; padding:11px 13px; font-size:13px; font-family:inherit; }
+  .ph{ position:relative; overflow:hidden; }
+  .ph .ov{ position:absolute; inset:0; background:linear-gradient(to top,rgba(28,24,19,.5),transparent 60%); }
+  .ph-sun{ background:radial-gradient(circle at 70% 24%,#FFF7E2 0 4%,rgba(243,184,78,.5) 9%,rgba(243,184,78,0) 26%),linear-gradient(180deg,#FCE9C6,#F3B84E 30%,#EFA227 48%,#E55438 74%,#C56A07); }
+  .ph-coast{ background:radial-gradient(circle at 68% 30%,#FFF7E2 0 4%,rgba(243,184,78,.45) 9%,rgba(243,184,78,0) 24%),linear-gradient(180deg,#FCE9C6,#F3B84E 24%,#EFA227 42%,#E55438 51%,#2A8F7C 55%,#0F7C68); }
+
+  /* early-alerts comparison */
+  .cmp{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px; }
+  .cmpcard{ border-radius:16px; padding:18px; border:1px solid var(--line); background:#fff; }
+  .cmpcard.early{ background:linear-gradient(135deg,var(--amber-tint),#FCE9C6); border-color:var(--amber-line); }
+  .cmptag{ font-family:'Space Mono',monospace; font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+  .tag-now{ background:var(--sea-tint); color:var(--sea-ink); border:1px solid var(--sea-line); }
+  .tag-wait{ background:#fff; color:var(--amber-ink); border:1px solid var(--amber-line); }
+  .cmpcard h3{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:18px; margin:10px 0 0; }
+  .cmpcard .price{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:15px; color:var(--fg2); margin-top:2px; }
+  .cmpcard ul{ margin:11px 0 0; padding-left:0; list-style:none; }
+  .cmpcard li{ font-size:13px; color:var(--fg2); margin:7px 0; display:flex; gap:8px; line-height:1.4; }
+  .cmpcard li svg{ flex:none; margin-top:2px; color:var(--sea); }
+  .cmpcard.early li svg{ color:var(--amber-600); }
+
+  .waitband{ background:var(--ink); color:#FBF6EC; border-radius:16px; margin-top:18px; padding:22px 24px; display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; }
+  .waitband h3{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:20px; margin:0; } .waitband p{ font-size:12.5px; color:#C8B79C; margin:4px 0 0; }
+
+  /* collection */
+  .crumb{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--fg3); padding:14px 24px 0; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:13px; margin-top:14px; }
+  .deal{ background:#fff; border-radius:16px; box-shadow:0 2px 6px rgba(28,24,19,.07); overflow:hidden; }
+  .deal .ph{ height:100px; } .deal .ph .place{ position:absolute; bottom:8px; left:11px; color:#fff; font-family:'Bricolage Grotesque'; font-weight:700; font-size:17px; text-shadow:0 1px 6px rgba(0,0,0,.5); }
+  .deal .b{ padding:11px 13px; } .deal .m{ font-family:'Space Mono',monospace; font-size:10px; color:var(--fg2); text-transform:uppercase; } .deal .p{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:19px; margin-top:5px; } .deal .p s{ font-size:11px; color:var(--fg3); font-family:'Hanken Grotesk'; } .deal .why{ font-size:11px; color:var(--sea-ink); font-weight:700; margin-top:3px; }
+  .inlinecap{ display:flex; gap:8px; margin-top:14px; max-width:440px; } .inlinecap input{ flex:1; }
+  .trustband{ background:var(--sunken); border-radius:14px; padding:16px 18px; margin-top:18px; font-size:13.5px; color:var(--fg2); line-height:1.5; }
+  details{ border:1px solid var(--line); border-radius:11px; background:#fff; padding:0 14px; margin-top:9px; } summary{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:14px; padding:12px 0; cursor:pointer; list-style:none; display:flex; justify-content:space-between; } summary::after{ content:'+'; color:var(--amber); } details[open] summary::after{ content:'–'; } details .a{ font-size:12.5px; color:var(--fg2); padding:0 0 12px; line-height:1.5; }
+  .related{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; } .rel{ font-size:12.5px; font-weight:700; color:var(--sea-ink); background:var(--sea-tint); border:1px solid var(--sea-line); border-radius:999px; padding:7px 12px; }
+  .sec-h{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:19px; margin-top:6px; }
+  h2{ font-family:'Bricolage Grotesque'; }
+</style>
+
+<h2 class="yp" style="background:none;border:none;max-width:880px;margin:0 auto 6px;">Early-alerts waitlist page</h2>
+<div class="yp">
+  <div class="hdr"><span class="wm">yıp</span><nav><a>Deals</a><a>Collections</a><a>Past fares</a><a>How it works</a></nav><span class="sp"></span><span class="frompill">From VNO · KUN · RIX</span></div>
+  <div class="pad">
+    <div class="eyebrow">Early alerts · coming soon</div>
+    <div class="h1">Get the best fares <span class="am">first</span>.</div>
+    <p class="lead">Some rare fares are gone by the time the weekly email goes out. Early alerts send them the moment Yip finds them — before the email, before they sell out.</p>
+
+    <div class="cmp">
+      <div class="cmpcard">
+        <span class="cmptag tag-now">You're on this</span>
+        <h3>Free weekly email</h3>
+        <div class="price">Always free</div>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>One calm email a week</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>The best of what we found that week</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span style="color:var(--fg3)">Slower — some rare fares may be gone</span></li>
+        </ul>
+      </div>
+      <div class="cmpcard early">
+        <span class="cmptag tag-wait">Waitlist</span>
+        <h3>Early alerts</h3>
+        <div class="price">Paid · coming soon</div>
+        <ul>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>The rarest fares <b style="color:var(--ink)">the moment we find them</b></li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Before the weekly email — before they sell out</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Your airports + trip types, prioritised</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="waitband"><div><h3>Early alerts isn't open yet — join the waitlist.</h3><p>We'll let you in first. Free weekly subscribers get priority.</p></div><div style="display:flex;gap:8px;"><input placeholder="you@email.com" style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#fff;"><span class="btn">Join the waitlist →</span></div></div>
+  </div>
+</div>
+
+<h2 class="yp" style="background:none;border:none;max-width:880px;margin:18px auto 6px;">Collection template · September sun</h2>
+<div class="yp">
+  <div class="hdr"><span class="wm">yıp</span><nav><a>Deals</a><a>Collections</a><a>Past fares</a><a>How it works</a></nav><span class="sp"></span><span class="frompill">From VNO · KUN · RIX</span></div>
+  <div class="crumb">Home › Collections › September sun</div>
+  <div class="pad" style="padding-top:14px;">
+    <div class="eyebrow">September sun · from VNO · KUN · RIX</div>
+    <div class="h1">Cheap <span class="am">September sun</span> flights from the Baltics.</div>
+    <p class="lead">Late-summer warmth, fewer crowds, lower fares. The September sun deals we've hand-checked from Vilnius, Kaunas and Riga — why each is good, and the catch.</p>
+    <div class="inlinecap"><input placeholder="you@email.com"><span class="btn" style="white-space:nowrap;">Get these by email</span></div>
+
+    <div class="sec-h" style="margin-top:22px;">Live right now</div>
+    <div class="grid3">
+      <div class="deal"><div class="ph ph-coast" style="position:relative;"><div class="ov"></div><div class="place">Larnaca</div></div><div class="b"><div class="m">VNO → LCA · Sep 12–19</div><div class="p">€140<s>€301</s></div><div class="why">53% under usual</div></div></div>
+      <div class="deal"><div class="ph ph-sun" style="position:relative;"><div class="ov"></div><div class="place">Málaga</div></div><div class="b"><div class="m">KUN → AGP · Sep 20–27</div><div class="p">€78<s>€132</s></div><div class="why">41% under usual</div></div></div>
+      <div class="deal"><div class="ph ph-coast" style="position:relative;"><div class="ov"></div><div class="place">Faro</div></div><div class="b"><div class="m">KUN → FAO · Sep 26–Oct 3</div><div class="p">€88<s>€160</s></div><div class="why">45% under usual</div></div></div>
+    </div>
+
+    <div class="trustband"><b>How Yip checks these.</b> We scan fares from VNO, KUN and RIX constantly; a real person verifies each September deal is genuinely cheap and still bookable, and writes up the catch. We're a local curator, not a search engine — you book direct.</div>
+
+    <div class="waitband" style="margin-top:18px;"><div><h3>Don't want to miss September's best?</h3><p>The rarest sun fares go fast. Get the next one the moment we find it.</p></div><span class="btn btn-sea">Get early alerts →</span></div>
+
+    <div class="sec-h" style="margin-top:22px;">September sun — good to know</div>
+    <details open><summary>When's the best time for September sun?</summary><div class="a">Mid-to-late September: sea's still warm (~25–27°C around Cyprus, Spain, Portugal), prices drop as families go back to school.</div></details>
+    <details><summary>Where do these deals go?</summary><div class="a">Mostly the Mediterranean + Canaries — Cyprus, Spain, Portugal, the Greek islands — from Vilnius, Kaunas and Riga.</div></details>
+    <details><summary>Is it free?</summary><div class="a">Yes — the weekly email is free. Early alerts (the fastest fares) is a paid tier coming soon.</div></details>
+
+    <div class="sec-h" style="margin-top:22px;">Related</div>
+    <div class="related"><span class="rel">Cyprus from Lithuania →</span><span class="rel">School holiday sun →</span><span class="rel">Cheap flights from Vilnius →</span><span class="rel">Last-minute weekends →</span></div>
+  </div>
+</div>
+
+<p class="subtitle yp" style="background:none;border:none;max-width:880px;margin:14px auto;">Early-alerts page: honest free-vs-early comparison (free = slower, on the left; early = best-first, amber, waitlist). Collection = a filtered view of <code>published_deals</code> (here by the "September sun" travel-moment): intent H1 → promise → email CTA → live examples → how-we-check → early-alerts CTA → FAQ (GEO/JSON-LD) → related. Human labels; the slug (<code>/september-sun-deals</code>) lives only in the URL.</p>

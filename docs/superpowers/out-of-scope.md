@@ -2,7 +2,13 @@
 
 Things deliberately deferred during the Plan 1 (deal engine) build + QA gauntlet. "Remembered and marked" so nothing is silently lost. Each item notes *why* it's deferred and *when/where* it should be picked up.
 
-_Last updated: 2026-06-03, after Plan 2 milestone 2 (config editors + engine tuning) shipped (PR #3) + JFC research captured for Spec 2 (§6)._
+_Last updated: 2026-06-04, after T11/T12 security hardening (confirmed-row immutable upsert, RETURNING-gated email, httpOnly cookie token transport)._
+
+---
+
+## 8. Public site — pre-launch security (subscribe + confirm email)
+
+Subscribe + confirm-email send need per-email and per-IP rate-limiting before email is enabled in production (e.g. Vercel KV / Upstash Redis sliding window). Not built in v1: serverless has no shared in-memory state, and email sending is disabled in dev (`emailEnabled()` is false until `RESEND_API_KEY` is set). Tracking: finding from the T11/T12 security review.
 
 ---
 

@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import './globals.css';
+import { JsonLd } from '@/components/JsonLd';
+import { orgJsonLd, websiteJsonLd, siteUrl } from '@/lib/seo';
 
-export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001'),
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: 'Yip — cheap flights from the Baltics, found and checked by hand',
   description: 'We find the best cheap flights from Vilnius, Kaunas, Riga and nearby — and tell you why each is good, and the catch.',
   openGraph: {
@@ -15,6 +18,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <JsonLd data={orgJsonLd()} />
+        <JsonLd data={websiteJsonLd()} />
+      </head>
       <body>
         <div className="yip-site">{children}</div>
       </body>

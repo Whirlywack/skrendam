@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { subscribe } from '@/app/subscribe-action';
+import { subscribeAction } from '@/app/subscribe-action';
 
 export function CaptureBand() {
   const [done, setDone] = useState(false);
@@ -11,28 +11,35 @@ export function CaptureBand() {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     start(async () => {
-      const res = await subscribe(data);
-      if (res.ok) {
+      const res = await subscribeAction(data);
+      if (res && res.ok) {
         setDone(true);
         setError(null);
-      } else {
+      } else if (res && !res.ok) {
         setError(res.error ?? 'Something went wrong.');
       }
     });
   }
 
   return (
-    <div className="cap" id="capture">
-      <div>
-        <h3>{done ? "You're in — check your inbox." : 'Never miss a rare fare.'}</h3>
+    <div className="band" id="capture">
+      <span className="bead" aria-hidden="true" />
+      <div className="bcol">
+        <h2>
+          {done
+            ? "You're in — check your inbox."
+            : 'Get the next rare fare before it sells out.'}
+        </h2>
         <p>
           {done
             ? "We'll send the best deals in one calm weekly email."
-            : 'The best deals go in one calm weekly email. No spam, unsubscribe anytime.'}
+            : 'Best rare fares in one calm weekly email. No spam, unsubscribe anytime.'}
         </p>
       </div>
       {!done && (
-        <form className="capform" onSubmit={onSubmit}>
+        <form className="f" onSubmit={onSubmit}>
+          <input type="hidden" name="source" value="home" />
+          <input type="hidden" name="mode" value="inline" />
           <input
             type="email"
             name="email"
@@ -40,11 +47,11 @@ export function CaptureBand() {
             aria-label="Email address"
             required
           />
-          <button type="submit" className="capbtn" disabled={pending}>
-            {pending ? 'Adding…' : 'Get deals'}
+          <button type="submit" className="btn-primary" disabled={pending}>
+            {pending ? 'Adding…' : 'Get free weekly deals'}
           </button>
           {error && (
-            <span role="alert" style={{ color: 'var(--coral-600)', fontSize: 12 }}>{error}</span>
+            <span role="alert" style={{ color: 'var(--amber-400, #EFA227)', fontSize: 12 }}>{error}</span>
           )}
         </form>
       )}

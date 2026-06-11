@@ -40,10 +40,55 @@
 
 
 /* =========================================================================
-   HEADER / NAV
-   Source: homepage-v1 (.hbar, .wm, .hbar-right, .airports, .hlink)
+   HEADER / NAV  (v2: .hdr  +  legacy v1: .hbar)
+   Source: homepage-v2 (.hdr, .wm, .frompill, .sp)
    ========================================================================= */
 
+/* v2 header — sticky translucent bar */
+.yip-site .hdr {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 62px;
+  padding: 0 26px;
+  background: rgba(251, 246, 236, 0.82);
+  border-bottom: 1px solid var(--line);
+}
+
+.yip-site .hdr nav {
+  display: flex;
+  gap: 18px;
+  margin-left: 6px;
+}
+
+.yip-site .hdr nav a {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg2);
+  text-decoration: none;
+}
+
+.yip-site .hdr nav a:hover {
+  color: var(--ink);
+}
+
+/* flex spacer */
+.yip-site .sp {
+  flex: 1;
+}
+
+/* "From VNO · KUN · RIX" pill */
+.yip-site .frompill {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg2);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 6px 11px;
+  border-radius: 999px;
+}
+
+/* ---- legacy v1 header (kept until page.tsx migrates) ---- */
 .yip-site .hbar {
   display: flex;
   align-items: center;
@@ -408,6 +453,24 @@
   cursor: pointer;
 }
 
+/* Primary amber CTA — used in hero SignupCard (.cap-row) */
+.yip-site .btn-primary {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 12.5px;
+  border: none;
+  border-radius: 11px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 20px rgba(226, 130, 14, 0.30);
+  white-space: nowrap;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-family: 'Hanken Grotesk', sans-serif;
+  cursor: pointer;
+}
+
 
 /* =========================================================================
    DEAL DETAIL PAGE WRAPPER
@@ -767,4 +830,1859 @@
   outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+
+/* =========================================================================
+   IMAGERY TREATMENTS
+   Source: .claude/skills/yip-design-system/assets/imagery.css
+   Warm "scene" gradients from homepage-v3-brand.html (improved golden-hour
+   versions with sun glow + sky→sea horizon).
+   ========================================================================= */
+
+.yip-site .yip-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 16px);
+  background: var(--sand2);
+  isolation: isolate;
+}
+
+.yip-site .yip-photo > img,
+.yip-site .yip-photo > .ph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 1. Protection gradient — ink rises from bottom so white text stays legible */
+.yip-site .yip-photo--protect::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    to top,
+    rgba(28, 24, 19, 0.74) 0%,
+    rgba(28, 24, 19, 0.30) 42%,
+    rgba(28, 24, 19, 0) 70%
+  );
+}
+
+/* 2. Warm wash — amber multiply pulls cool photos toward brand temperature */
+.yip-site .yip-photo--warm::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: var(--amber);
+  mix-blend-mode: multiply;
+  opacity: 0.14;
+}
+
+/* 3. Amber duotone — editorial treatment for tiles + section headers */
+.yip-site .yip-photo--duotone > img,
+.yip-site .yip-photo--duotone > .ph {
+  filter: grayscale(1) sepia(0.5) saturate(1.7) hue-rotate(-12deg) brightness(0.95) contrast(1.12);
+}
+
+.yip-site .yip-photo--duotone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(150deg, var(--amber), var(--coral-ink));
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+/* Caption helpers — used on top of --protect */
+.yip-site .yip-photo .ph-cap {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  right: 16px;
+  z-index: 3;
+  color: #fff;
+}
+
+.yip-site .yip-photo .ph-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.yip-site .yip-photo .ph-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Warm "scene" stand-in gradients (improved golden-hour, sun glow + sky→sea horizon)
+   Source: homepage-v3-brand.html <style> */
+.yip-site .ph-sun {
+  background:
+    radial-gradient(circle at 73% 23%, #FFF7E2 0 3.5%, rgba(243, 184, 78, 0.6) 8%, rgba(243, 184, 78, 0) 27%),
+    linear-gradient(180deg, #FCE9C6 0%, #F3B84E 30%, #EFA227 48%, #E55438 74%, #C56A07 100%);
+}
+
+.yip-site .ph-coast {
+  background:
+    radial-gradient(circle at 70% 30%, #FFF7E2 0 3.5%, rgba(243, 184, 78, 0.55) 8%, rgba(243, 184, 78, 0) 25%),
+    linear-gradient(180deg, #FCE9C6 0%, #F3B84E 24%, #EFA227 42%, #E55438 51%, #2A8F7C 55%, #0F7C68 100%);
+}
+
+.yip-site .ph-city {
+  background:
+    radial-gradient(circle at 26% 24%, rgba(255, 242, 206, 0.6) 0, rgba(255, 242, 206, 0) 32%),
+    linear-gradient(165deg, #F3B84E 0%, #E55438 56%, #7A410E 100%);
+}
+
+.yip-site .ph-market {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(243, 184, 78, 0.55) 0, rgba(243, 184, 78, 0) 46%),
+    linear-gradient(160deg, #5C320F, #9C520A 46%, #C56A07 100%);
+}
+
+.yip-site .ph-snow {
+  background: linear-gradient(180deg, #C6E8DF 0%, #8FD2C2 32%, #239A83 70%, #0A6354 100%);
+}
+
+/* Generic photo container with base overlay (non-.yip-photo panels that use .photo + .ov) */
+.yip-site .photo {
+  position: relative;
+  overflow: hidden;
+}
+
+.yip-site .photo .ov {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(28, 24, 19, 0.74) 0%, rgba(28, 24, 19, 0.30) 42%, transparent 70%);
+}
+
+
+/* =========================================================================
+   BOARDING-PASS TICKET CARD  (.deal + .feat featured variant)
+   Source: homepage-v3-brand.html
+   The .deal class below is the new boarding-pass ticket card — distinct from
+   the old .bc / .browse browse card. Scoped carefully so the old cards are
+   unaffected: old price is at 46px on .decide/.dp; ticket price is 28px and
+   scoped to .deal .ticket-foot .price.
+   ========================================================================= */
+
+.yip-site .deal {
+  background: var(--paper);
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(28, 24, 19, 0.07);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.yip-site .deal .ph {
+  height: 160px;
+  position: relative;
+}
+
+/* Eyebrow text overlaid on photo — overrides the base .eyebrow colour */
+.yip-site .deal .ph .eyebrow {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  color: #fff;
+  font-size: 10px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Place name (city) overlaid on bottom of photo */
+.yip-site .deal .ph .place {
+  position: absolute;
+  bottom: 11px;
+  left: 14px;
+  color: #fff;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 23px;
+  line-height: 1;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+
+.yip-site .deal .ph .place small {
+  display: block;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  opacity: 0.92;
+  margin-top: 3px;
+}
+
+/* "Going fast" hot tag — top-right of photo */
+.yip-site .hot-tag {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  background: var(--coral);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Card body */
+.yip-site .deal .body {
+  padding: 15px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+/* Route meta line */
+.yip-site .deal .meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--fg2);
+  letter-spacing: 0.02em;
+}
+
+/* Editorial hook headline */
+.yip-site .deal h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.18;
+  margin: 0;
+}
+
+/* Why/caveat chip row */
+.yip-site .chips {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* New chip variant for ticket cards — different from the old .tag/.chip pill
+   (those are amber/sea; these are content chips with icons) */
+.yip-site .deal .chip,
+.yip-site .feat .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  /* Reset inherited from global .chip (amber pill) */
+  background: transparent;
+  border: none;
+  color: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.yip-site .chip-good {
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+}
+
+.yip-site .chip-caveat {
+  background: var(--sunken);
+  color: #4A4034;
+}
+
+/* Perforated ticket footer with cream notch cut-outs */
+.yip-site .ticket-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-top: 1.5px dashed var(--perf);
+  padding-top: 13px;
+  position: relative;
+}
+
+/* Cream circles that simulate the die-cut notches on a real ticket */
+.yip-site .ticket-foot::before,
+.yip-site .ticket-foot::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+.yip-site .ticket-foot::before { left: -26px; }
+.yip-site .ticket-foot::after  { right: -26px; }
+
+/* Ticket price — scoped to ticket-foot to avoid collision with .decide .price (46px) */
+.yip-site .ticket-foot .price {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.yip-site .ticket-foot .price s {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--fg3);
+  margin-left: 6px;
+  text-decoration: line-through;
+}
+
+.yip-site .ticket-foot .price .ret {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 11.5px;
+  color: var(--fg3);
+  display: block;
+  margin-top: 3px;
+}
+
+/* "See the deal" amber CTA button on ticket */
+.yip-site .btn-see {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 12.5px;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  box-shadow: 0 6px 16px rgba(226, 130, 14, 0.26);
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+/* Featured horizontal ticket variant */
+.yip-site .feat {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  background: var(--paper);
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(28, 24, 19, 0.12);
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.yip-site .feat .ph {
+  min-height: 230px;
+  position: relative;
+}
+
+.yip-site .feat .ph .eyebrow {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  color: #fff;
+  font-size: 10px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.yip-site .feat .ph .place {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  color: #fff;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 30px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+}
+
+.yip-site .feat .body {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.yip-site .feat h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.16;
+  margin: 0;
+}
+
+/* Two-column deal grid used below featured card */
+.yip-site .grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* Three-column deal grid (past fares / collections layout) */
+.yip-site .grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 13px;
+}
+
+/* Section padding wrapper */
+.yip-site .pad {
+  padding: 26px 26px;
+}
+
+/* Section divider line */
+.yip-site .pad-bordered {
+  border-top: 1px solid var(--line);
+}
+
+/* Lead text below section heading */
+.yip-site .sec-lead {
+  font-size: 13.5px;
+  color: var(--fg2);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* FAQ section wrapper */
+.yip-site .faq {
+  padding: 26px;
+}
+
+/* Sticky CTA bar (fixed bottom; appears on scroll) */
+.yip-site .sticky-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--ink);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.yip-site .sticky-cta.visible {
+  transform: translateY(0);
+}
+
+.yip-site .sticky-cta p {
+  font-size: 14px;
+  color: var(--perf);
+  margin: 0;
+  font-weight: 500;
+}
+
+.yip-site .sticky-cta strong {
+  color: var(--cream);
+}
+
+
+/* =========================================================================
+   ASYMMETRIC HERO (hero-grid 2-col: content+signup left, photo panel right)
+   Source: homepage-v3-brand.html
+   ========================================================================= */
+
+.yip-site .hero-grid {
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.yip-site .hero-left {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero signup card — distinct from the existing .cap email band at page bottom.
+   The global .cap is an inline flex row band; this is a white card with top border. */
+.yip-site .hero-left .cap {
+  margin-top: 18px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 14px 34px rgba(28, 24, 19, 0.16);
+  border-top: 4px solid var(--amber);
+  position: relative;
+  /* Reset the inherited flex-row layout from the global .cap */
+  display: block;
+  color: var(--ink);
+}
+
+/* "Free" pill badge on the signup card */
+.yip-site .freebadge {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  background: var(--sea);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* Signup card internal layout classes */
+.yip-site .cap-lbl {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.yip-site .cap-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.yip-site .cap-row input {
+  flex: 1;
+  border: 1.5px solid var(--perf);
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+.yip-site .cap-sub {
+  font-size: 12px;
+  color: var(--fg3);
+  margin-top: 7px;
+}
+
+/* Trust indicators row inside the signup card */
+.yip-site .trust {
+  display: flex;
+  gap: 13px;
+  margin-top: 9px;
+  font-size: 10.5px;
+  color: var(--fg3);
+  flex-wrap: wrap;
+}
+
+.yip-site .trust span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Dashed divider inside signup card */
+.yip-site .cap-div {
+  border-top: 1px dashed var(--line);
+  margin: 12px 0 10px;
+}
+
+/* "Want them sooner?" row at bottom of signup card */
+.yip-site .cap-early {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Secondary sea-tinted button */
+.yip-site .btn-sec {
+  color: var(--sea-ink);
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid var(--sea-line);
+  background: var(--sea-tint);
+  border-radius: 10px;
+  padding: 7px 11px;
+  white-space: nowrap;
+  font-family: 'Hanken Grotesk', sans-serif;
+  cursor: pointer;
+}
+
+/* Right-panel photo in the asymmetric hero */
+.yip-site .hero-photo {
+  border-radius: 20px;
+  min-height: 230px;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Caption helpers used directly on .hero-photo (not .yip-photo) */
+.yip-site .hero-photo .ph-cap {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  z-index: 3;
+  color: #fff;
+}
+
+.yip-site .hero-photo .ph-eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.yip-site .hero-photo .ph-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+  margin-top: 3px;
+}
+
+/* Trust line below the hero grid */
+.yip-site .microproof {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--fg2);
+}
+
+.yip-site .microproof b {
+  color: var(--ink);
+}
+
+
+/* =========================================================================
+   DARK INK SIGNUP BAND  (.band + .bead)
+   Source: homepage-v3-brand.html
+   ========================================================================= */
+
+.yip-site .band {
+  background: var(--ink);
+  border-radius: 24px;
+  margin: 24px 26px;
+  padding: 34px 36px;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  position: relative;
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
+/* Amber glow bead in top-right corner */
+.yip-site .band .bead {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--amber-400, #EFA227), var(--amber-ink));
+  right: -56px;
+  top: -56px;
+  opacity: 0.9;
+}
+
+/* Content column inside the band */
+.yip-site .band .bcol {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 240px;
+}
+
+.yip-site .band h2 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  margin: 0 0 8px;
+}
+
+.yip-site .band p {
+  color: var(--perf);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Email input + CTA row inside the band */
+.yip-site .band .f {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.yip-site .band input {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 11px;
+  padding: 11px 13px;
+  font-size: 13px;
+  width: 190px;
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+
+/* =========================================================================
+   COLLECTION TILES  (.coll / .ctile / .ov2 / .nm)
+   Source: homepage-v3-brand.html
+   ========================================================================= */
+
+.yip-site .coll {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 13px;
+  margin-top: 13px;
+}
+
+.yip-site .ctile {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 104px;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Amber→coral duotone overlay on collection tile photo */
+.yip-site .ctile .ov {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(150deg, rgba(226, 130, 14, 0.5), rgba(181, 48, 23, 0.5));
+  mix-blend-mode: multiply;
+}
+
+/* Dark gradient to ensure name legibility at the bottom */
+.yip-site .ov2 {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(28, 24, 19, 0.55), transparent 60%);
+}
+
+/* Collection tile label */
+.yip-site .ctile .nm {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 13px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+
+/* =========================================================================
+   HOW IT WORKS — PROCESS BAND  (.how / .proc / .pstep)
+   Source: homepage-v3-brand.html
+   ========================================================================= */
+
+.yip-site .how {
+  background: var(--sea-ink);
+  color: #EAF6F2;
+  padding: 28px 26px;
+}
+
+/* Eyebrow and section-heading overrides inside .how */
+.yip-site .how .eyebrow {
+  color: var(--sea-line);
+}
+
+.yip-site .how .sec-h {
+  color: #fff;
+}
+
+/* Section heading style (used in .how and elsewhere) */
+.yip-site .sec-h {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 23px;
+  letter-spacing: -0.02em;
+  margin: 5px 0 0;
+}
+
+/* Process step grid */
+.yip-site .proc {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.yip-site .pstep {
+  text-align: center;
+}
+
+.yip-site .pstep .ic {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 9px;
+  color: #F3B84E;
+}
+
+.yip-site .pstep h4 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0;
+  color: #fff;
+}
+
+.yip-site .pstep p {
+  font-size: 11.5px;
+  color: #B9D8CF;
+  margin: 3px 0 0;
+  line-height: 1.4;
+}
+
+
+/* =========================================================================
+   EARLY ALERTS AMBER BAND  (.early / .btn-out)
+   Source: homepage-v3-brand.html
+   ========================================================================= */
+
+.yip-site .early {
+  background: linear-gradient(120deg, var(--amber-tint), #FCE9C6);
+  border-top: 1px solid var(--amber-line);
+  border-bottom: 1px solid var(--amber-line);
+  padding: 24px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.yip-site .early h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 19px;
+  margin: 0;
+  color: var(--amber-ink);
+}
+
+.yip-site .early p {
+  font-size: 13px;
+  color: var(--fg2);
+  margin: 4px 0 0;
+  max-width: 540px;
+}
+
+/* "Get early alerts" outlined button on amber band */
+.yip-site .btn-out {
+  background: var(--paper);
+  color: var(--amber-ink);
+  border: 1px solid var(--amber-line);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 11px;
+  padding: 10px 14px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  cursor: pointer;
+}
+
+
+/* =========================================================================
+   FAQ ACCORDION  (details / summary / details[open])
+   Source: homepage-v3-brand.html + early-alerts-and-collection.html
+   ========================================================================= */
+
+.yip-site details {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  padding: 0 15px;
+  margin-top: 9px;
+}
+
+.yip-site summary {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 13px 0;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+}
+
+.yip-site summary::-webkit-details-marker {
+  display: none;
+}
+
+.yip-site summary::after {
+  content: '+';
+  color: var(--amber);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.yip-site details[open] summary::after {
+  content: '–';
+}
+
+.yip-site details .a {
+  font-size: 12.5px;
+  color: var(--fg2);
+  padding: 0 0 13px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================================
+   COLLECTION PAGE  (.crumb / .coll-hero / .coll-h1 / .lead / .coll-count / .coll-empty)
+   Source: early-alerts-and-collection.html (.crumb, .h1, .lead, grid3)
+   ========================================================================= */
+
+/* Breadcrumb trail */
+.yip-site .crumb {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  padding: 14px 26px 0;
+}
+
+.yip-site .crumb a {
+  color: var(--fg3);
+  text-decoration: none;
+}
+
+.yip-site .crumb a:hover {
+  color: var(--sea-ink);
+}
+
+/* Collection page hero section */
+.yip-site .coll-hero {
+  padding-top: 14px;
+  padding-bottom: 4px;
+}
+
+/* Collection / collections-index H1 — mirrors mockup .h1 rule */
+.yip-site .coll-h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin: 8px 0 0;
+}
+
+/* Lead paragraph below H1 */
+.yip-site .lead {
+  font-size: 15px;
+  color: var(--fg2);
+  margin: 12px 0 0;
+  line-height: 1.5;
+  max-width: 54ch;
+}
+
+/* Small live-count line below lead */
+.yip-site .coll-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sea-ink);
+  margin: 12px 0 0;
+}
+
+/* Empty state */
+.yip-site .coll-empty {
+  background: var(--sunken);
+  border-radius: 16px;
+  padding: 32px 26px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.yip-site .coll-empty p {
+  font-size: 15px;
+  color: var(--fg2);
+  margin: 0;
+  max-width: 46ch;
+  line-height: 1.5;
+}
+
+
+/* =========================================================================
+   FOOTER  (.ftr / .ftr-in / .ftr h4 / .ftr a / .legal)
+   Source: homepage-v3-brand.html (canonical footer)
+   ========================================================================= */
+
+.yip-site .ftr {
+  background: var(--ink);
+  color: var(--perf);
+  padding: 34px 26px 26px;
+}
+
+.yip-site .ftr-in {
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.yip-site .ftr .lead-col {
+  max-width: 260px;
+}
+
+/* .wm inside footer is white */
+.yip-site .ftr .lead-col .wm {
+  color: #fff;
+}
+
+.yip-site .ftr .lead-col p {
+  font-size: 13px;
+  color: var(--sand2);
+  line-height: 1.55;
+  margin-top: 10px;
+}
+
+.yip-site .ftr h4 {
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sand2);
+  margin: 0 0 11px;
+}
+
+.yip-site .ftr a {
+  display: block;
+  color: var(--line);
+  font-size: 14px;
+  margin-bottom: 7px;
+  text-decoration: none;
+}
+
+.yip-site .ftr a:hover {
+  color: #fff;
+}
+
+.yip-site .legal {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 28px;
+  padding-top: 18px;
+  font-size: 12px;
+  color: var(--fg3);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+
+/* =========================================================================
+   DEAL DETAIL — FULL-PAGE ENRICHED LAYOUT (Task 13)
+   Boarding-pass hero image, meta row chips, headline, section body.
+   Source: deal-detail-v2.html
+   ========================================================================= */
+
+/* Hero image panel */
+.yip-site .himg {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 240px;
+}
+
+/* Photo component fills the full hero panel — border-radius 0 so the parent clips */
+.yip-site .himg-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* Dark overlay rising from bottom for hero legibility */
+.yip-site .himg .ov {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(28, 24, 19, 0.62), transparent 58%);
+  z-index: 1;
+}
+
+/* Caption positioned over photo */
+.yip-site .himg-cap {
+  position: absolute;
+  left: 22px;
+  bottom: 18px;
+  z-index: 3;
+  color: #fff;
+}
+
+/* Eyebrow inside hero */
+.yip-site .himg-eyebrow {
+  color: rgba(255, 255, 255, 0.92);
+  display: block;
+}
+
+/* H1 inside hero */
+.yip-site .himg-h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+  margin: 4px 0 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+/* Deal meta row: route · dates · stops · chip */
+.yip-site .dmeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--fg2);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-top: 16px;
+}
+
+/* Rare deal chip — amber */
+.yip-site .chip-rare {
+  background: var(--amber-tint);
+  color: var(--amber-ink);
+  border: 1px solid var(--amber-line);
+}
+
+/* Great deal chip — sea */
+.yip-site .chip-great {
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+}
+
+/* Freshness/checked chip — sea */
+.yip-site .chip-fresh {
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+}
+
+/* Deal headline hook */
+.yip-site .dh {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 16px 0 0;
+  max-width: 26ch;
+  letter-spacing: -0.01em;
+}
+
+
+/* =========================================================================
+   DEAL DETAIL — WHY / CATCH COLUMNS  (.dcols / .dlist / .li)
+   Source: deal-detail-brand.html
+   ========================================================================= */
+
+.yip-site .dcols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  margin: 18px 0 6px;
+}
+
+.yip-site .dcols h5 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.yip-site .dcols h5.good { color: var(--sea-ink); }
+.yip-site .dcols h5.cav  { color: var(--fg2); }
+
+.yip-site .dlist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.yip-site .dlist .li {
+  display: flex;
+  gap: 9px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.yip-site .dlist .ic {
+  flex: none;
+  margin-top: 1px;
+}
+
+.yip-site .dlist .li.good .ic { color: var(--sea); }
+.yip-site .dlist .li.cav  .ic { color: var(--fg2); }
+
+/* Deal-detail book row price (34px) — scoped to .dbook to avoid collision */
+.yip-site .dbook {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.yip-site .dbook .price {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.yip-site .dbook .price s {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--fg3);
+  margin-left: 7px;
+}
+
+.yip-site .dbook .price .ret {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--fg3);
+  display: block;
+  margin-top: 4px;
+}
+
+.yip-site .bookbtn {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 14px;
+  border: none;
+  border-radius: 11px;
+  padding: 13px 18px;
+  box-shadow: 0 8px 22px rgba(226, 130, 14, 0.30);
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+.yip-site .booksub {
+  font-size: 11px;
+  color: var(--fg3);
+  margin-top: 6px;
+  text-align: right;
+}
+
+
+/* =========================================================================
+   DEAL DETAIL — CURATOR NOTE  (.curator / .av / .txt / .sig)
+   Source: deal-detail-brand.html
+   ========================================================================= */
+
+.yip-site .curator {
+  background: var(--amber-tint);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin: 16px 0;
+  display: flex;
+  gap: 13px;
+}
+
+.yip-site .curator .av {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #F3B84E, var(--amber-ink));
+}
+
+.yip-site .curator .txt {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-soft, var(--ink));
+}
+
+.yip-site .curator .txt b {
+  color: var(--ink);
+}
+
+.yip-site .curator .sig {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--amber-ink);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+
+/* =========================================================================
+   DEAL DETAIL — EMAIL NUDGE  (.nudge)
+   Source: deal-detail-brand.html
+   ========================================================================= */
+
+.yip-site .nudge {
+  background: var(--ink);
+  color: var(--cream);
+  border-radius: 16px;
+  margin: 18px 0;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.yip-site .nudge h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  margin: 0;
+}
+
+.yip-site .nudge p {
+  font-size: 12.5px;
+  color: var(--perf);
+  margin: 3px 0 0;
+}
+
+.yip-site .nudge input {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 13px;
+  width: 180px;
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+.yip-site .nudge .b {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+}
+
+
+/* =========================================================================
+   /SUBSCRIBE PAGE — standalone signup flow states
+   Source: site/design-reference/signup-flow.html
+   ========================================================================= */
+
+/* Centered page wrapper */
+.yip-site .sub-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 24px 64px;
+}
+
+/* Card container */
+.yip-site .sub-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px 26px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 4px 20px rgba(28, 24, 19, 0.08);
+}
+
+/* Wordmark on /subscribe idle state */
+.yip-site .sub-wm {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--amber);
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+/* Page headline */
+.yip-site .sub-h {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+
+/* Sub-text on subscribe page */
+.yip-site .sub-body {
+  font-size: 13.5px;
+  color: var(--fg2);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+/* Email + submit row on /subscribe page */
+.yip-site .sub-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.yip-site .sub-row input[type="email"] {
+  flex: 1;
+  border: 1.5px solid var(--perf);
+  border-radius: 11px;
+  padding: 10px 13px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  min-width: 0;
+}
+
+/* Primary CTA — amber (shared with btn-primary but no margin-top here) */
+.yip-site .sub-btn {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  border: none;
+  border-radius: 11px;
+  padding: 10px 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+  box-shadow: 0 4px 14px rgba(226, 130, 14, 0.22);
+}
+
+/* Sea-tinted secondary button (prefs Save + early-alerts waitlist) */
+.yip-site .sub-btn-sea {
+  display: block;
+  width: 100%;
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+  font-weight: 700;
+  font-size: 13.5px;
+  border-radius: 11px;
+  padding: 11px;
+  text-align: center;
+  cursor: pointer;
+  font-family: 'Hanken Grotesk', sans-serif;
+  margin-top: 10px;
+}
+
+/* Check-email icon circle */
+.yip-site .sub-ok {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+/* Resend link */
+.yip-site .sub-resend {
+  font-size: 13px;
+  color: var(--sea-ink);
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* Preference chips — keyboard-accessible checkbox labels */
+.yip-site .pref-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+}
+
+/* Each chip is a <label> wrapping a hidden <input type="checkbox"> */
+.yip-site .pref-chip {
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  color: var(--fg2);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.yip-site .pref-chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Checked state — sea green (matches design "on" chip) */
+.yip-site .pref-chip:has(input:checked) {
+  background: var(--sea);
+  color: #fff;
+  border-color: var(--sea);
+}
+
+/* Focus-visible ring for keyboard users */
+.yip-site .pref-chip:has(input:focus-visible) {
+  outline: 2px solid var(--sea);
+  outline-offset: 2px;
+}
+
+/* Trust line */
+.yip-site .sub-trust {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-top: 10px;
+}
+
+/* Early-alerts chip label (amber pill on upsell card) */
+.yip-site .early-chip {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-line);
+  color: var(--amber-ink);
+  border-radius: 999px;
+  padding: 3px 9px;
+  margin-bottom: 9px;
+}
+
+/* Upsell card inside the subscribe flow */
+.yip-site .sub-upsell {
+  background: var(--amber-tint);
+  border: 1px solid var(--amber-line);
+  border-radius: 12px;
+  padding: 14px 15px;
+  margin-top: 10px;
+}
+
+/* Skip link (plain, centered) */
+.yip-site .sub-skip {
+  display: block;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--fg3);
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+.yip-site .sub-skip:hover {
+  color: var(--fg2);
+}
+
+/* Section label inside prefs card */
+.yip-site .pref-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-top: 13px;
+  margin-bottom: 0;
+}
+
+/* "Preferences saved" confirmation note */
+.yip-site .sub-saved {
+  font-size: 12.5px;
+  color: var(--sea-ink);
+  font-weight: 700;
+  background: var(--sea-tint);
+  border: 1px solid var(--sea-line);
+  border-radius: 8px;
+  padding: 7px 11px;
+  margin-bottom: 12px;
+}
+
+/* Early-alerts joined state */
+.yip-site .sub-joined {
+  text-align: center;
+}
+
+/* Optional early-alerts checkbox row on idle /subscribe */
+.yip-site .sub-ea-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--fg2);
+}
+
+.yip-site .sub-ea-row input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--sea);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Early-alerts link on idle /subscribe page */
+.yip-site .sub-ea-link {
+  color: var(--sea-ink);
+  font-weight: 700;
+  font-size: 13px;
+  margin-top: 11px;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.yip-site .sub-ea-link:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================================================================
+   /EARLY-ALERTS PAGE — free-vs-early comparison, waitlist join form
+   Source: early-alerts-and-collection.html (.cmp, .cmpcard, .waitband)
+   ========================================================================= */
+
+/* Two-column comparison grid */
+.yip-site .cmp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+/* Base comparison card */
+.yip-site .cmpcard {
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+/* Featured (early alerts) card — amber tint */
+.yip-site .cmpcard--early {
+  background: linear-gradient(135deg, var(--amber-tint), #FCE9C6);
+  border-color: var(--amber-line);
+}
+
+/* Comparison card heading */
+.yip-site .cmpcard h3 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  margin: 10px 0 0;
+}
+
+/* Price/tier line under heading */
+.yip-site .cmp-price {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--fg2);
+  margin-top: 2px;
+}
+
+/* Feature list */
+.yip-site .cmplist {
+  margin: 12px 0 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.yip-site .cmplist li {
+  font-size: 13px;
+  color: var(--fg2);
+  margin: 7px 0;
+  display: flex;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+/* SVG icon colour for the free column (sea green) */
+.yip-site .cmpcard .cmplist li svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--sea);
+}
+
+/* SVG icon colour for the early column (amber) */
+.yip-site .cmpcard--early .cmplist li svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--amber-600, var(--amber-ink));
+}
+
+/* Dimmed "catch" row in the free column */
+.yip-site .cmplist li.cmp-dim {
+  color: var(--fg3);
+}
+
+/* Status tags on comparison cards */
+.yip-site .cmptag {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.yip-site .tag-now {
+  background: var(--sea-tint);
+  color: var(--sea-ink);
+  border: 1px solid var(--sea-line);
+}
+
+.yip-site .tag-wait {
+  background: var(--paper);
+  color: var(--amber-ink);
+  border: 1px solid var(--amber-line);
+}
+
+.yip-site .tag-later {
+  background: var(--sunken);
+  color: var(--fg2);
+  border: 1px solid var(--line);
+}
+
+/* Join form inside the early column */
+.yip-site .ea-form {
+  margin-top: 18px;
+}
+
+.yip-site .ea-form-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.yip-site .ea-form-row input[type="email"] {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid var(--perf);
+  border-radius: 11px;
+  padding: 11px 13px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+/* Submit button inherits .btn but we ensure amber on the early card */
+.yip-site .cmpcard--early .btn {
+  white-space: nowrap;
+}
+
+/* Trust line below the form */
+.yip-site .ea-trust {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin: 8px 0 0;
+}
+
+/* Premium aspirational note — faint, no CTA */
+.yip-site .ea-premium-note {
+  background: var(--sunken);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-top: 4px;
+  max-width: 560px;
+}
+
+.yip-site .ea-premium-note p {
+  font-size: 13px;
+  color: var(--fg2);
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* "Just want the weekly email?" back link */
+.yip-site .ea-back-link {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--sea-ink);
+  text-decoration: none;
+}
+
+.yip-site .ea-back-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive: stack comparison cards on narrow screens */
+@media (max-width: 580px) {
+  .yip-site .cmp {
+    grid-template-columns: 1fr;
+  }
+
+  .yip-site .ea-form-row {
+    flex-direction: column;
+  }
+
+  .yip-site .ea-form-row input[type="email"],
+  .yip-site .cmpcard--early .btn {
+    width: 100%;
+  }
 }

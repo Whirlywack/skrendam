@@ -1,0 +1,131 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  .yp{ --amber:#E2820E; --amber-tint:#FEF6E8; --amber-ink:#9C520A; --amber-line:#F8D28A; --amber-50:#FEF6E8;
+       --sea:#0F7C68; --sea-tint:#E8F5F1; --sea-ink:#094E43; --sea-line:#8FD2C2;
+       --coral:#D63E22; --coral-ink:#B53017;
+       --paper:#fff; --cream:#FBF6EC; --sunken:#F4ECDD; --ink:#1C1813; --fg2:#685B47; --fg3:#877860; --line:#E0D2BA; --line-soft:#ECE1CD; --perf:#C8B79C; --sand200:#E0D2BA; --sand400:#A8967A; --sand800:#2F2922;
+       font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); max-width:860px; margin:0 auto;
+       background:var(--cream); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--sea-ink); }
+  .ph-sun{ background:radial-gradient(circle at 70% 26%, #FFF7E2 0 3.5%, rgba(243,184,78,.55) 8%, rgba(243,184,78,0) 26%), linear-gradient(180deg,#FCE9C6,#F3B84E 30%,#EFA227 48%,#E55438 74%,#C56A07); }
+  .ph-coast{ background:radial-gradient(circle at 68% 30%, #FFF7E2 0 3.5%, rgba(243,184,78,.5) 8%, rgba(243,184,78,0) 24%), linear-gradient(180deg,#FCE9C6,#F3B84E 24%,#EFA227 42%,#E55438 51%,#2A8F7C 55%,#0F7C68); }
+  .ph-city{ background:linear-gradient(165deg,#F3B84E,#E55438 56%,#7A410E); }
+
+  .hdr{ display:flex; align-items:center; gap:24px; height:60px; padding:0 26px; background:rgba(251,246,236,.82); border-bottom:1px solid var(--line-soft); }
+  .wm{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:22px; color:var(--amber); letter-spacing:-.02em; }
+  .hdr nav{ display:flex; gap:18px; margin-left:6px; } .hdr nav a{ font-size:14px; font-weight:500; color:var(--fg2); } .hdr .sp{ flex:1; }
+  .back{ padding:14px 26px 0; font-family:'Space Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--sea-ink); }
+
+  /* hero image */
+  .himg{ margin:12px 26px 0; height:240px; border-radius:20px; position:relative; overflow:hidden; }
+  .himg .ov{ position:absolute; inset:0; background:linear-gradient(to top, rgba(28,24,19,.62), transparent 58%); }
+  .himg .cap{ position:absolute; left:22px; bottom:18px; color:#fff; z-index:2; }
+  .himg .cap .eyebrow{ color:rgba(255,255,255,.92); }
+  .himg .cap h1{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:34px; margin:4px 0 0; letter-spacing:-.02em; text-shadow:0 1px 10px rgba(0,0,0,.4); }
+
+  .body{ padding:22px 26px 8px; }
+  .dmeta{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-family:'Space Mono',monospace; font-size:12px; text-transform:uppercase; color:var(--fg2); padding-bottom:14px; border-bottom:1px solid var(--line-soft); }
+  .chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; font-family:'Space Mono',monospace; letter-spacing:.04em; text-transform:uppercase; }
+  .chip-rare{ background:var(--amber-tint); color:var(--amber-ink); border:1px solid var(--amber-line); }
+  .chip-fresh{ background:var(--sea-tint); color:var(--sea-ink); border:1px solid var(--sea-line); }
+  .dh{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:25px; line-height:1.15; margin:16px 0 0; max-width:26ch; }
+
+  /* book row */
+  .dbook{ display:flex; align-items:center; justify-content:space-between; gap:16px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 20px; margin:16px 0; flex-wrap:wrap; }
+  .price{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:34px; letter-spacing:-.03em; line-height:1; }
+  .price s{ font-family:'Hanken Grotesk'; font-weight:500; font-size:15px; color:var(--fg3); margin-left:7px; }
+  .price .ret{ font-family:'Hanken Grotesk'; font-weight:500; font-size:12px; color:var(--fg3); display:block; margin-top:4px; }
+  .bookbtn{ background:var(--amber); color:#1C1813; font-weight:800; font-size:14px; border:none; border-radius:11px; padding:13px 18px; box-shadow:0 8px 22px rgba(226,130,14,.30); }
+  .booksub{ font-size:11px; color:var(--fg3); margin-top:6px; text-align:right; }
+
+  /* why / catch columns */
+  .dcols{ display:grid; grid-template-columns:1fr 1fr; gap:26px; margin:18px 0 6px; }
+  .dcols h5{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; margin:0 0 12px; }
+  .dcols h5.good{ color:var(--sea-ink); } .dcols h5.cav{ color:var(--sand400); }
+  .dlist{ display:flex; flex-direction:column; gap:10px; } .dlist .li{ display:flex; gap:9px; font-size:14px; line-height:1.4; }
+  .dlist .ic{ flex:none; margin-top:1px; } .li.good .ic{ color:var(--sea); } .li.cav .ic{ color:var(--sand400); }
+
+  /* price history */
+  .sec{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:16px 0; }
+  .sec h3{ font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--sea-ink); margin:0 0 10px; }
+  .bignote{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:18px; margin:0 0 14px; }
+  .spark-wrap{ position:relative; padding-top:18px; }
+  .nowtag{ position:absolute; top:0; right:0; font-family:'Space Mono',monospace; font-size:10px; font-weight:700; color:var(--amber-ink); background:var(--amber-tint); border:1px solid var(--amber-line); padding:2px 8px; border-radius:999px; }
+  .spark{ display:flex; align-items:flex-end; gap:3px; height:50px; } .spark i{ flex:1; background:var(--sand200); border-radius:2px 2px 0 0; } .spark i.lo{ background:var(--amber); }
+  .rangelbl{ display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:10.5px; color:var(--fg3); margin-top:8px; } .rangelbl b{ color:var(--ink); }
+
+  /* curator note */
+  .curator{ background:var(--amber-50); border-radius:14px; padding:16px 18px; margin:16px 0; display:flex; gap:13px; }
+  .curator .av{ flex:none; width:38px; height:38px; border-radius:50%; background:linear-gradient(140deg,#F3B84E,#C56A07); }
+  .curator .txt{ font-size:14.5px; line-height:1.5; color:var(--sand800); } .curator .txt b{ color:var(--ink); }
+  .curator .sig{ font-family:'Space Mono',monospace; font-size:11px; color:var(--amber-ink); margin-top:6px; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* email nudge */
+  .nudge{ background:var(--ink); color:#FBF6EC; border-radius:16px; margin:18px 0; padding:20px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .nudge h3{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:18px; margin:0; }
+  .nudge p{ font-size:12.5px; color:#C8B79C; margin:3px 0 0; }
+  .nudge input{ border:none; border-radius:10px; padding:11px 13px; font-size:13px; width:180px; }
+  .nudge .b{ background:var(--amber); color:#1C1813; font-weight:800; font-size:13px; border:none; border-radius:10px; padding:11px 14px; }
+
+  /* similar */
+  .sec-h{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:20px; margin:8px 0 0; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:13px; margin-top:13px; }
+  .deal{ background:#fff; border-radius:16px; box-shadow:0 2px 6px rgba(28,24,19,.07); overflow:hidden; }
+  .deal .ph{ height:96px; position:relative; } .deal .ph .ov{ position:absolute; inset:0; background:linear-gradient(to top,rgba(28,24,19,.5),transparent 60%); } .deal .ph .place{ position:absolute; bottom:8px; left:11px; color:#fff; font-family:'Bricolage Grotesque'; font-weight:700; font-size:16px; text-shadow:0 1px 6px rgba(0,0,0,.5); }
+  .deal .b{ padding:11px 13px; } .deal .m{ font-family:'Space Mono',monospace; font-size:10px; color:var(--fg2); text-transform:uppercase; } .deal .p{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:19px; margin-top:5px; } .deal .p s{ font-size:11px; color:var(--fg3); font-family:'Hanken Grotesk'; }
+
+  .ftr{ background:var(--ink); color:#877860; padding:22px 26px; font-size:12px; margin-top:8px; }
+</style>
+
+<h2>Deal detail · grounded in the kit</h2>
+<p class="subtitle">Kit pattern (hero image → meta → headline → book row → Why-good | The-catch → curator's note) + our price-history proof + similar deals + the email nudge. Scroll.</p>
+
+<div class="yp">
+  <div class="hdr"><span class="wm">yıp</span><nav><a>Deals</a><a>Collections</a><a>Past fares</a><a>How it works</a></nav><span class="sp"></span></div>
+  <div class="back">← All deals</div>
+
+  <div class="himg photo ph-coast"><div class="ov"></div><div class="cap"><div class="eyebrow">September sun · checked 2h ago</div><h1>Larnaca, Cyprus</h1></div></div>
+
+  <div class="body">
+    <div class="dmeta"><span>VNO → LCA · Sep 12–19 · 1 stop · airBaltic</span><span class="chip chip-rare">Rare deal</span><span class="chip chip-fresh">● Checked 2h ago</span></div>
+    <div class="dh">€140 return to Cyprus — the sea's still 27°C and the crowds have gone home.</div>
+
+    <div class="dbook">
+      <div class="price">€140<s>€301</s><span class="ret">return · per person</span></div>
+      <div style="text-align:right;"><span class="bookbtn">Book with airBaltic →</span><div class="booksub">Airline-direct · live price shown there</div></div>
+    </div>
+
+    <div class="dcols">
+      <div><h5 class="good">Why it's good</h5><div class="dlist">
+        <div class="li good"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg><span><b>53% under</b> the 90-day median (€301).</span></div>
+        <div class="li good"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg><span>September sun — still ~27°C, fewer crowds.</span></div>
+        <div class="li good"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span>One airline — bags checked straight through.</span></div>
+      </div></div>
+      <div><h5 class="cav">The catch</h5><div class="dlist">
+        <div class="li cav"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>1 stop in Vienna — 3h layover (same airport).</span></div>
+        <div class="li cav"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg><span>Hold luggage is an add-on; cabin bag included.</span></div>
+      </div></div>
+    </div>
+
+    <div class="sec">
+      <h3>Why it's a good price</h3>
+      <div class="bignote">Cheapest 8% we've seen in 90 days.</div>
+      <div class="spark-wrap"><span class="nowtag">Today €140</span><div class="spark"><i style="height:64%"></i><i style="height:82%"></i><i style="height:58%"></i><i style="height:90%"></i><i style="height:74%"></i><i style="height:100%"></i><i style="height:66%"></i><i style="height:79%"></i><i style="height:55%"></i><i style="height:71%"></i><i style="height:62%"></i><i style="height:50%"></i><i style="height:60%"></i><i class="lo" style="height:30%"></i></div></div>
+      <div class="rangelbl"><span>best <b>€132</b></span><span>typical <b>€301</b></span><span>highest <b>€470</b></span></div>
+    </div>
+
+    <div class="curator"><div class="av"></div><div><div class="txt"><b>I'd grab this one.</b> Larnaca in September is the sweet spot — warm sea, no crowds, and €140 return is the lowest I've seen it since spring. The 3h Vienna layover is the only real downside, but it's the same airport so it's painless.</div><div class="sig">— Jonas, your Yip curator</div></div></div>
+
+    <div class="nudge"><div><h3>Want deals like this? Get them by email.</h3><p>We send the best rare fares in one calm weekly email. No spam.</p></div><div style="display:flex;gap:8px;"><input placeholder="you@email.com"><span class="b">Get free weekly deals</span></div></div>
+
+    <div class="sec-h">More September sun</div>
+    <div class="grid3">
+      <div class="deal"><div class="ph photo ph-sun"><div class="ov"></div><div class="place">Málaga</div></div><div class="b"><div class="m">KUN → AGP · Oct</div><div class="p">€78<s>€132</s></div></div></div>
+      <div class="deal"><div class="ph photo ph-coast"><div class="ov"></div><div class="place">Faro</div></div><div class="b"><div class="m">KUN → FAO · Sep</div><div class="p">€88<s>€160</s></div></div></div>
+      <div class="deal"><div class="ph photo ph-sun"><div class="ov"></div><div class="place">Tenerife</div></div><div class="b"><div class="m">RIX → TFS · Nov</div><div class="p">€119<s>€192</s></div></div></div>
+    </div>
+  </div>
+  <div class="ftr">© 2026 Yip · We link to airlines &amp; OTAs to book — prices change fast · Made in Vilnius 🇱🇹</div>
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Note: the booking button shows the <b>vision</b> ("Book with airBaltic" = airline-direct). v1 ships the honest <b>"Open in Google Flights"</b> handoff; vendor-direct is the flagged fast-follow (needs engine <code>get_booking_options</code>). The <b>curator's note</b> (human, signed) is the kit's trust device; the <b>price-history</b> + freshness are our data layer; <b>similar deals</b> + the <b>email nudge</b> are your additions.</p>
