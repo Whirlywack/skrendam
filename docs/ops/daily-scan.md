@@ -37,3 +37,7 @@ The connection string is read from `SKRENDAM_DATABASE_URL`, falling back to `DAT
 - **Do not also run `skrendam-scheduler`** (the legacy in-process APScheduler entry point): it
   schedules the same 06:00 scan and, alongside this launchd job, would double-scan and
   double-write. launchd is the only sanctioned cadence on this machine.
+
+- **Password with `$` in it:** the `.env` parser here does not unescape `\$` (the dotenv
+  `$`-escape gotcha). If the Neon password ever rotates to one containing `$`, set
+  `SKRENDAM_DATABASE_URL` directly in the plist environment instead of relying on the fallback.
