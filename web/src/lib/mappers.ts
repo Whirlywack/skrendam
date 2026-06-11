@@ -31,7 +31,12 @@ export function toCandidateView(r: QueueRow): CandidateView {
   }
   // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score) * 100);
-  const tier = r.qualityTier ? ('great' as const) : tierForScore(score);
+  // web's Tier is binary (great|maybe): both engine tiers map to 'great'. Use an
+  // explicit allowlist (mirrors site/quality.ts) so an unexpected stored string
+  // can't force 'great' and bypass the score-derived path.
+  const tier = r.qualityTier === 'rare' || r.qualityTier === 'great'
+    ? ('great' as const)
+    : tierForScore(score);
   return {
     id: `m${r.matchId}`, candidateId: c.id, templateId: r.templateId, matchId: r.matchId,
     score,

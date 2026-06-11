@@ -30,8 +30,15 @@ if [ -z "$MB" ]; then
   exit 2
 fi
 
-# Changed paths = committed since branch point ∪ uncommitted working tree.
-CHANGED="$( { git diff --name-only "$MB" HEAD; git status --porcelain | awk '{print $NF}'; } | sort -u )"
+# Changed paths = committed since branch point ∪ uncommitted tracked ∪ untracked.
+# --diff-filter=ACMR drops DELETED files (feeding a deleted path to ruff/eslint is a
+# spurious FAIL). Using `git diff` (not `git status | awk`) keeps space-containing
+# paths intact; core.quotePath=false avoids octal-escaping non-ASCII names.
+CHANGED="$( {
+  git -c core.quotePath=false diff --name-only --diff-filter=ACMR "$MB" HEAD
+  git -c core.quotePath=false diff --name-only --diff-filter=ACMR HEAD
+  git -c core.quotePath=false ls-files --others --exclude-standard
+} | sort -u )"
 N_CHANGED="$(printf '%s\n' "$CHANGED" | grep -c . || true)"
 echo "pr-gate · base=$BASE_REF (merge-base ${MB:0:9}) · $N_CHANGED changed paths · full=$FULL"
 
@@ -97,7 +104,8 @@ if has '^(fli-js/|data/)'; then
   if command -v bun >/dev/null 2>&1; then
     step "bun ci (biome+oxlint+typecheck+test)" bash -c 'cd fli-js && bun run ci'
     if has '^data/'; then
-      step "enum codegen drift" bash -c 'cd fli-js && bun run generate:enums && git diff --exit-code src/models'
+      # git status (not git diff) so a NEWLY-created generated file counts as drift too.
+      step "enum codegen drift" bash -c 'cd fli-js && bun run generate:enums && [ -z "$(git status --porcelain src/models)" ]'
     fi
   else
     echo "  ~ skipped: bun not installed"; SKIP=$((SKIP+1)); SKIPPED_LANES="$SKIPPED_LANES\n  ~ fli-js (bun not installed)"
@@ -144,6 +152,16 @@ if has '^site/'; then
     note "skipped cold build + Playwright — re-run with --full before opening the PR"
   fi
   note "new public surface ⇒ httpOnly/single-use signup token; JSON-LD has NO Offer/price; sitemap/robots live-only."
+fi
+
+# ───────────────────────── coverage catch-all ─────────────────────────
+# Surface changed paths that matched NO lane, so a new top-level package can't
+# pass the gate untested just because no lane regex covers it yet.
+LANE_RE='^(fli/|fli-js/|skrendam/|tests/|alembic/|alembic\.ini|pyproject\.toml|uv\.lock|web/|site/|data/|examples/|scripts/|docs/|mkdocs\.yml|\.github/|\.claude/|\.devcontainer/|\.gitignore|\.dockerignore|\.actrc|Dockerfile|docker-compose\.yml|railway\.toml|nixpacks\.toml|tox\.ini|pytest\.ini|Makefile|LICENSE\.txt|CONTEXT\.md|AGENTS\.md|CLAUDE\.md|.*\.md|.*\.png|.*\.lock|Yip Design System/)'
+UNMATCHED="$(printf '%s\n' "$CHANGED" | grep -vE "$LANE_RE" || true)"
+if [ -n "$UNMATCHED" ]; then
+  echo; echo "⚠ changed paths matched NO lane (NOT verified) — add a lane if these need checks:"
+  printf '%s\n' "$UNMATCHED" | sed 's/^/    /'
 fi
 
 # ───────────────────────── summary ─────────────────────────
