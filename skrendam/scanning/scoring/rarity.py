@@ -1,7 +1,11 @@
 """RarityScorer: scores how rarely a route is ever this cheap, from the full
-recorded-price percentile."""
+recorded-price percentile.
+
+Respects the template's itinerary sanity (unlike ErrorFareScorer, which is
+deliberately lenient): a record-low price on a miserable itinerary is not a deal."""
 
 from skrendam.scanning.scoring.base import Score, ScoringContext
+from skrendam.scanning.scoring.eligibility import itinerary_ok
 
 RARE_PCTILE = 0.10  # price must sit in the cheapest 10% of recorded prices
 MIN_HISTORY = 10
@@ -11,6 +15,8 @@ class RarityScorer:
     name = "rarity"
 
     def score(self, ctx: ScoringContext) -> Score | None:
+        if not itinerary_ok(ctx.fare, ctx.template):
+            return None
         hist = ctx.history
         if hist is None or len(hist.points) < MIN_HISTORY:
             return None

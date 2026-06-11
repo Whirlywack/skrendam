@@ -5,12 +5,26 @@ from skrendam.scanning.scoring.drop import PriceDropScorer
 from skrendam.scanning.types import Baseline, FareItinerary
 
 
-def _ctx(price, previous_price):
+def _tpl(**over):
+    base = {
+        "primary_scorer": "weighted",
+        "max_stops": None,
+        "max_total_duration_minutes": None,
+        "allow_self_transfer": True,
+        "allow_mixed_cabin": True,
+        "allow_airport_change": True,
+        "allow_overnight_layover": True,
+    }
+    base.update(over)
+    return SimpleNamespace(**base)
+
+
+def _ctx(price, previous_price, *, stops=0, tpl=None):
     return ScoringContext(
-        fare=FareItinerary(price=price, currency="EUR", stops=0, duration_minutes=120, legs=[]),
+        fare=FareItinerary(price=price, currency="EUR", stops=stops, duration_minutes=120, legs=[]),
         baseline=Baseline(minimum=price, median=price, decile=price, sample_size=1),
         zone=SimpleNamespace(),
-        template=SimpleNamespace(primary_scorer="weighted"),
+        template=tpl or _tpl(),
         history=None,
         previous_price=previous_price,
     )
@@ -30,3 +44,9 @@ def test_drop_ignores_small_fall():
 
 def test_drop_none_without_previous():
     assert PriceDropScorer().score(_ctx(100.0, previous_price=None)) is None
+
+
+def test_drop_respects_itinerary_gate():
+    # A big drop on a 2-stop fare under a max_stops=1 template must NOT fire.
+    ctx = _ctx(100.0, previous_price=200.0, stops=2, tpl=_tpl(max_stops=1))
+    assert PriceDropScorer().score(ctx) is None
