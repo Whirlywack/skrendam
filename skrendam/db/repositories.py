@@ -32,23 +32,56 @@ def upsert_candidate(session: Session, deal_group_key: str, fields: dict,
 
 
 def upsert_match(session: Session, candidate_id: int, template_id: int,
-                 match_score: float, reason_text: str,
-                 gate_results: dict) -> tuple[models.CandidateTemplateMatch, bool]:
-    """Return (match, created) where created=True when a new row was inserted."""
+                 match_score: float, reason_text: str, gate_results: dict,
+                 score_0_100: int | None = None, quality_tier: str | None = None,
+                 primary_scorer: str | None = None) -> tuple[models.CandidateTemplateMatch, bool]:
+    """Return (match, created). Headline fields default to None for legacy callers."""
     existing = session.scalar(
         select(models.CandidateTemplateMatch).where(
             models.CandidateTemplateMatch.candidate_id == candidate_id,
             models.CandidateTemplateMatch.deal_template_id == template_id))
     if existing is None:
-        m = models.CandidateTemplateMatch(candidate_id=candidate_id, deal_template_id=template_id,
-                                          match_score=match_score, reason_text=reason_text,
-                                          gate_results=gate_results)
+        m = models.CandidateTemplateMatch(
+            candidate_id=candidate_id, deal_template_id=template_id, match_score=match_score,
+            reason_text=reason_text, gate_results=gate_results, score_0_100=score_0_100,
+            quality_tier=quality_tier, primary_scorer=primary_scorer)
         session.add(m)
         session.flush()
         return m, True
     existing.match_score = match_score
     existing.reason_text = reason_text
     existing.gate_results = gate_results
+    existing.score_0_100 = score_0_100
+    existing.quality_tier = quality_tier
+    existing.primary_scorer = primary_scorer
+    session.flush()
+    return existing, False
+
+
+def upsert_score(session: Session, candidate_id: int, template_id: int,
+                 score) -> tuple[models.CandidateScore, bool]:
+    """Insert or update the (candidate, template, scorer) score row.
+
+    `score` is a skrendam.scanning.scoring.base.Score (duck-typed here to avoid a
+    scanning->db import cycle)."""
+    existing = session.scalar(
+        select(models.CandidateScore).where(
+            models.CandidateScore.candidate_id == candidate_id,
+            models.CandidateScore.deal_template_id == template_id,
+            models.CandidateScore.scorer == score.scorer))
+    if existing is None:
+        row = models.CandidateScore(
+            candidate_id=candidate_id, deal_template_id=template_id, scorer=score.scorer,
+            value=score.value, score_0_100=score.score_0_100, quality_tier=score.quality_tier,
+            reason_text=score.reason_text, signals=score.signals)
+        session.add(row)
+        session.flush()
+        return row, True
+    existing.value = score.value
+    existing.score_0_100 = score.score_0_100
+    existing.quality_tier = score.quality_tier
+    existing.reason_text = score.reason_text
+    existing.signals = score.signals
     session.flush()
     return existing, False
 
