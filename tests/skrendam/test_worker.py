@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from skrendam import worker
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
+from skrendam.fli_adapter.health import HealthVerdict
+from skrendam.scanning.orchestrator import ScanSummary
 
 
 def test_scan_request_defaults(session):
@@ -31,9 +33,11 @@ class FakeBackend:
 
     def __init__(self, fares=None):
         """Initialise with an optional list of fare dicts; defaults to one cheap EUR fare."""
-        self._fares = fares if fares is not None else [
-            {"price": 41.0, "currency": "EUR", "booking_url": "https://x", "stops": 0}
-        ]
+        self._fares = (
+            fares
+            if fares is not None
+            else [{"price": 41.0, "currency": "EUR", "booking_url": "https://x", "stops": 0}]
+        )
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
         return list(self._fares)
@@ -47,9 +51,17 @@ def _seed_candidate(session):
     session.add(models.Zone(zone="MED", haul_type="short"))
     session.add(models.Route(id=1, origin="VNO", destination="LCA", zone="MED"))
     cand = models.Candidate(
-        id=1, route_id=1, origin="VNO", destination="LCA", zone="MED",
-        trip_type="oneway", travel_date=date(2026, 10, 14), price=59.0,
-        currency="EUR", status="new", deal_group_key="VNO|LCA|oneway|2026-10-14|59",
+        id=1,
+        route_id=1,
+        origin="VNO",
+        destination="LCA",
+        zone="MED",
+        trip_type="oneway",
+        travel_date=date(2026, 10, 14),
+        price=59.0,
+        currency="EUR",
+        status="new",
+        deal_group_key="VNO|LCA|oneway|2026-10-14|59",
         search_params={"cabin": "ECONOMY"},
     )
     session.add(cand)
@@ -62,8 +74,9 @@ def test_recheck_request_runs_and_marks_done(session):
     req = models.ScanRequest(kind="recheck", candidate_id=cand.id)
     session.add(req)
     session.commit()
+    adapter = _adapter()
     n = worker.process_pending_requests(
-        session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0)
+        session, lambda: adapter, today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0)
     )
     assert n == 1
     session.refresh(req)
@@ -78,8 +91,9 @@ def test_recheck_missing_candidate_marks_error(session):
     req = models.ScanRequest(kind="recheck", candidate_id=999)
     session.add(req)
     session.commit()
+    adapter = _adapter()
     worker.process_pending_requests(
-        session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0)
+        session, lambda: adapter, today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0)
     )
     session.refresh(req)
     assert req.status == "error"
@@ -92,8 +106,9 @@ def test_only_queued_are_claimed_and_limit_respected(session):
         session.add(models.ScanRequest(kind="recheck", candidate_id=1))
     session.add(models.ScanRequest(kind="recheck", candidate_id=1, status="done"))
     session.commit()
+    adapter = _adapter()
     n = worker.process_pending_requests(
-        session, _adapter(), today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0), limit=2
+        session, lambda: adapter, today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0), limit=2
     )
     assert n == 2
     assert session.query(models.ScanRequest).filter_by(status="queued").count() == 1
@@ -122,3 +137,22 @@ def test_poll_loop_processes_one_batch_then_stops(session, monkeypatch):
     # poll_loop closes the (shared) session each iteration, but SQLAlchemy lets us
     # re-query a closed session — it just re-acquires a connection on next use.
     assert session.query(models.ScanRequest).filter_by(status="done").count() == 1
+
+
+def test_full_scan_result_summary_carries_health(session, monkeypatch):
+    import skrendam.worker as worker_mod
+
+    summary = ScanSummary()
+    summary.health = HealthVerdict(status="degraded", reasons=["r1"], metrics={})
+    monkeypatch.setattr(worker_mod, "run_scan", lambda *a, **k: summary)
+    session.add(models.ScanRequest(kind="full_scan"))
+    session.commit()
+    n = worker_mod.process_pending_requests(
+        session, lambda: None, today=date(2026, 6, 2), now=datetime(2026, 6, 2)
+    )
+    assert n == 1
+    req = session.query(models.ScanRequest).one()
+    assert req.status == "done"
+    assert req.result_summary["health"] == "degraded"
+    assert req.result_summary["health_reasons"] == ["r1"]
+    assert req.result_summary["aborted"] is False

@@ -13,6 +13,7 @@ from skrendam.seeds import seed_all
 
 def _real_backend():
     from skrendam.fli_adapter.live_backend import LiveFliBackend
+
     return LiveFliBackend()
 
 
@@ -40,8 +41,7 @@ def run_scan_command(session_factory=None, backend=None, today=None, seed=False)
     adapter = FliAdapter(backend, pace=bucket.acquire)
     if seed:
         seed_all(session)
-    return run_scan(session, today=today, adapter=adapter,
-                    scanner_version=settings.scanner_version)
+    return run_scan(session, today=today, adapter=adapter, scanner_version=settings.scanner_version)
 
 
 def main():
@@ -57,19 +57,31 @@ def main():
 
     if args.cmd == "run-scan":
         s = run_scan_command(seed=args.seed)
-        print(f"scan complete: {s.candidates_found} candidates, {s.matches_created} matches, "
-              f"{s.errors} errors")
+        print(
+            f"scan complete: {s.candidates_found} candidates, {s.matches_created} matches, "
+            f"{s.errors} errors"
+        )
+        if s.aborted:
+            print("WARNING: scan FAILED — the circuit breaker aborted the run partway.")
+            raise SystemExit(2)
+        if s.health is not None and s.health.degraded:
+            print("WARNING: scan DEGRADED — results are not a trustworthy picture of the market:")
+            for reason in s.health.reasons:
+                print(f"  - {reason}")
+            raise SystemExit(2)
     elif args.cmd == "seed":
         session = make_sessionmaker()()
         seed_all(session)
         print("seeded")
     elif args.cmd == "calibrate":
         from skrendam.calibrate import calibrate
+
         calibrate()
     elif args.cmd == "worker":
         worker_command()
     elif args.cmd == "analyze":
         from skrendam import analyze
+
         session = make_sessionmaker()()
         print(analyze.format_report(analyze.analyze(session)))
 
