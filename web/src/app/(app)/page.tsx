@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getQueueRows, getLatestScanRun, getPublishedDeals } from '@/lib/queries';
 import { toCandidateView, toScanView } from '@/lib/mappers';
+import { GREAT_THRESHOLD } from '@/lib/tiers';
 import { DashboardCards } from '@/components/DashboardCards';
 import { ScanButtons } from '@/components/ScanButtons';
 
@@ -14,8 +15,8 @@ export default async function Dashboard() {
   const views = rows.map(toCandidateView);
   const scan = toScanView(run);
 
-  // New high-score candidates: status 'suggested' AND score >= 80
-  const highScore = views.filter((v) => v.status === 'suggested' && v.score >= 80).length;
+  // New high-score candidates: status 'suggested' AND in the GREAT tier
+  const highScore = views.filter((v) => v.status === 'suggested' && v.score >= GREAT_THRESHOLD).length;
 
   // Needs recheck: verifiedAt is null
   const needsRecheck = views.filter((v) => !v.verifiedAt).length;

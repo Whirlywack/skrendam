@@ -1,6 +1,7 @@
 'use client';
 
 import type { ScanView } from '@/lib/types';
+import { GREAT_THRESHOLD } from '@/lib/tiers';
 
 interface DashboardCardsProps {
   highScore: number;
@@ -72,8 +73,8 @@ export function DashboardCards({
         </p>
         <p style={CAPTION}>
           {highScore === 1
-            ? 'candidate · score ≥ 80, not yet reviewed'
-            : 'candidates · score ≥ 80, not yet reviewed'}
+            ? `candidate · score ≥ ${GREAT_THRESHOLD}, not yet reviewed`
+            : `candidates · score ≥ ${GREAT_THRESHOLD}, not yet reviewed`}
         </p>
       </div>
 

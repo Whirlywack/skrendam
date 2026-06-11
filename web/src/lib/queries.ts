@@ -13,6 +13,8 @@ function queueBase() {
     .select({
       matchId: candidateTemplateMatches.id,
       score: candidateTemplateMatches.matchScore,
+      score100: candidateTemplateMatches.score0100,
+      qualityTier: candidateTemplateMatches.qualityTier,
       reason: candidateTemplateMatches.reasonText,
       gates: candidateTemplateMatches.gateResults,
       templateId: dealTemplates.id,

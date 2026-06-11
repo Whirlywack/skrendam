@@ -29,11 +29,13 @@ export function toCandidateView(r: QueueRow): CandidateView {
   if ((c.itinerarySnapshot as { self_transfer?: boolean } | null)?.self_transfer) {
     flags.push('Self-transfer');
   }
-  const score = Math.round(Number(r.score) * 100);
+  // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
+  const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score) * 100);
+  const tier = r.qualityTier ? ('great' as const) : tierForScore(score);
   return {
     id: `m${r.matchId}`, candidateId: c.id, templateId: r.templateId, matchId: r.matchId,
     score,
-    tier: tierForScore(score),
+    tier,
     status: toDisplayStatus(c.status, r.publishedId != null),
     place: city(c.destination), country: country(c.destination), origin: city(c.origin),
     from: c.origin, to: c.destination,
