@@ -88,7 +88,7 @@ const PILL_SAND: React.CSSProperties = {
 
 function runPill(status: string): React.CSSProperties {
   if (status === 'completed') return PILL_SEA;
-  if (status === 'failed' || status === 'error') return PILL_CORAL;
+  if (status === 'failed' || status === 'error' || status === 'degraded') return PILL_CORAL;
   if (status === 'running') return PILL_AMBER;
   return PILL_SAND;
 }
@@ -112,7 +112,7 @@ function ScanRunCard({ run }: { run: ScanRunRow }) {
         borderLeft: `3px solid ${
           run.status === 'completed' && !hasErrors
             ? 'var(--sea-300)'
-            : run.status === 'failed' || run.status === 'error'
+            : run.status === 'failed' || run.status === 'error' || run.status === 'degraded'
               ? 'var(--coral-400)'
               : run.status === 'running'
                 ? 'var(--amber-400)'

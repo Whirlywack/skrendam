@@ -4,6 +4,7 @@ import { toCandidateView, toScanView } from '@/lib/mappers';
 import { GREAT_THRESHOLD } from '@/lib/tiers';
 import { DashboardCards } from '@/components/DashboardCards';
 import { ScanButtons } from '@/components/ScanButtons';
+import { ScanHealthBanner } from '@/components/ScanHealthBanner';
 
 export default async function Dashboard() {
   const [rows, run, published] = await Promise.all([
@@ -50,6 +51,8 @@ export default async function Dashboard() {
       >
         Today
       </h1>
+
+      <ScanHealthBanner status={scan.status} reasons={scan.healthReasons} />
 
       <DashboardCards
         highScore={highScore}

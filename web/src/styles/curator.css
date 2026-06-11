@@ -67,6 +67,7 @@ button { font-family: inherit; cursor: pointer; }
 .stat.suggested { background: var(--amber-100); color: var(--amber-800); }
 .stat.review { background: var(--sea-50); color: var(--sea-700); }
 .stat.rejected { background: var(--sand-100); color: var(--sand-500); }
+.stat.unverified { background: var(--amber-100); color: var(--amber-800); }
 .stat.published { background: var(--sea-500); color: #fff; }
 
 /* ---------- Composer drawer ---------- */
@@ -135,6 +136,17 @@ button { font-family: inherit; cursor: pointer; }
 .maybe-toggle:hover { color: var(--fg-2); }
 .maybe-toggle .chevron { transition: transform var(--dur-fast); display: inline-flex; }
 .maybe-toggle .chevron.open { transform: rotate(180deg); }
+
+/* ---------- Scan health banner ---------- */
+.scan-health-banner {
+  background: var(--danger-tint);
+  border: 1px solid var(--coral-200);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.scan-health-banner ul { margin: 6px 0 0; padding-left: 18px; }
 
 /* toast */
 .toast { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 50;

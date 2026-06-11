@@ -71,13 +71,16 @@ type ScanRunish = {
   startedAt?: string | Date | null;
   candidatesFound?: number | null;
   status?: string | null;
+  health?: unknown;
 };
 
 export function toScanView(run: ScanRunish | null): ScanView {
-  if (!run) return { fares: '0', airports: 0, ago: '—', newToday: 0, status: 'never run' };
+  if (!run) return { fares: '0', airports: 0, ago: '—', newToday: 0, status: 'never run', healthReasons: [] };
+  const reasons = (run.health as { reasons?: unknown } | null | undefined)?.reasons;
   return {
     fares: String(run.apiCalls ?? 0), airports: run.routesScanned ?? 0,
     ago: timeAgo(run.startedAt ? String(run.startedAt) : null),
     newToday: run.candidatesFound ?? 0, status: run.status ?? 'unknown',
+    healthReasons: Array.isArray(reasons) ? reasons.map(String) : [],
   };
 }

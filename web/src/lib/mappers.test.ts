@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toCandidateView, groupByTemplate } from './mappers';
+import { toCandidateView, groupByTemplate, toScanView } from './mappers';
 
 // Minimal mock for the QueueRow shape returned by getQueueRows().
 // Cast via `as unknown as QueueRow` so we don't need a full Drizzle schema import.
@@ -128,6 +128,27 @@ describe('toCandidateView', () => {
   it('null quality_tier with a stored score derives "maybe"', () => {
     const row = makeRow({ score: '0.50', score100: 70, qualityTier: null });
     expect(toCandidateView(row).tier).toBe('maybe');
+  });
+});
+
+describe('toScanView health', () => {
+  it('exposes degraded status and reasons', () => {
+    const v = toScanView({
+      status: 'degraded',
+      health: { reasons: ['6/6 calendar searches returned no data'] },
+    });
+    expect(v.status).toBe('degraded');
+    expect(v.healthReasons).toEqual(['6/6 calendar searches returned no data']);
+  });
+
+  it('defaults healthReasons to empty', () => {
+    expect(toScanView(null).healthReasons).toEqual([]);
+    expect(toScanView({ status: 'completed' }).healthReasons).toEqual([]);
+  });
+
+  it('ignores malformed health payloads', () => {
+    expect(toScanView({ status: 'degraded', health: { reasons: 'nope' } }).healthReasons).toEqual([]);
+    expect(toScanView({ status: 'degraded', health: 42 }).healthReasons).toEqual([]);
   });
 });
 

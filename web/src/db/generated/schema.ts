@@ -129,6 +129,22 @@ export const routes = pgTable("routes", {
 		}),
 ]);
 
+export const scanRuns = pgTable("scan_runs", {
+	id: serial().primaryKey().notNull(),
+	startedAt: timestamp("started_at", { mode: 'string' }).notNull(),
+	finishedAt: timestamp("finished_at", { mode: 'string' }),
+	scannerVersion: varchar("scanner_version").notNull(),
+	templatesScanned: integer("templates_scanned").notNull(),
+	routesScanned: integer("routes_scanned").notNull(),
+	apiCalls: integer("api_calls").notNull(),
+	http429S: integer("http_429s").notNull(),
+	candidatesFound: integer("candidates_found").notNull(),
+	matchesCreated: integer("matches_created").notNull(),
+	errors: integer().notNull(),
+	status: varchar().notNull(),
+	health: json(),
+});
+
 export const candidates = pgTable("candidates", {
 	id: serial().primaryKey().notNull(),
 	runId: integer("run_id"),
@@ -167,21 +183,6 @@ export const candidates = pgTable("candidates", {
 		}),
 ]);
 
-export const scanRuns = pgTable("scan_runs", {
-	id: serial().primaryKey().notNull(),
-	startedAt: timestamp("started_at", { mode: 'string' }).notNull(),
-	finishedAt: timestamp("finished_at", { mode: 'string' }),
-	scannerVersion: varchar("scanner_version").notNull(),
-	templatesScanned: integer("templates_scanned").notNull(),
-	routesScanned: integer("routes_scanned").notNull(),
-	apiCalls: integer("api_calls").notNull(),
-	http429S: integer("http_429s").notNull(),
-	candidatesFound: integer("candidates_found").notNull(),
-	matchesCreated: integer("matches_created").notNull(),
-	errors: integer().notNull(),
-	status: varchar().notNull(),
-});
-
 export const priceLog = pgTable("price_log", {
 	id: serial().primaryKey().notNull(),
 	runId: integer("run_id").notNull(),
@@ -195,7 +196,8 @@ export const priceLog = pgTable("price_log", {
 	scannedAt: timestamp("scanned_at", { mode: 'string' }).notNull(),
 }, (table) => [
 	index("ix_price_log_route_id").using("btree", table.routeId.asc().nullsLast().op("int4_ops")),
-	index("ix_price_log_route_trip_date_scanned").using("btree", table.routeId.asc().nullsLast().op("date_ops"), table.tripType.asc().nullsLast().op("int4_ops"), table.travelDate.asc().nullsLast().op("int4_ops"), table.scannedAt.asc().nullsLast().op("timestamp_ops")),
+	index("ix_price_log_route_trip_date_scanned").using("btree", table.routeId.asc().nullsLast().op("date_ops"), table.tripType.asc().nullsLast().op("int4_ops"), table.travelDate.asc().nullsLast().op("int4_ops"), table.scannedAt.asc().nullsLast().op("int4_ops")),
+	index("ix_price_log_run_id").using("btree", table.runId.asc().nullsLast().op("int4_ops")),
 	index("ix_price_log_scanned_at").using("btree", table.scannedAt.asc().nullsLast().op("timestamp_ops")),
 	index("ix_price_log_travel_date").using("btree", table.travelDate.asc().nullsLast().op("date_ops")),
 	foreignKey({
@@ -207,50 +209,6 @@ export const priceLog = pgTable("price_log", {
 			columns: [table.runId],
 			foreignColumns: [scanRuns.id],
 			name: "price_log_run_id_fkey"
-		}),
-]);
-
-export const publishedDeals = pgTable("published_deals", {
-	id: serial().primaryKey().notNull(),
-	candidateId: integer("candidate_id").notNull(),
-	dealTemplateId: integer("deal_template_id").notNull(),
-	contentDraftId: integer("content_draft_id"),
-	publicLabel: varchar("public_label"),
-	newsletterTag: varchar("newsletter_tag"),
-	headline: text().notNull(),
-	body: text(),
-	tiktokHook: text("tiktok_hook"),
-	origin: varchar().notNull(),
-	destination: varchar().notNull(),
-	zone: varchar(),
-	tripType: varchar("trip_type").notNull(),
-	travelDate: date("travel_date"),
-	returnDate: date("return_date"),
-	price: doublePrecision().notNull(),
-	baselinePrice: doublePrecision("baseline_price"),
-	discountPct: doublePrecision("discount_pct"),
-	bookingUrl: text("booking_url"),
-	validUntil: date("valid_until"),
-	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }),
-	tier: varchar().notNull(),
-	status: varchar().notNull(),
-	publishedAt: timestamp("published_at", { mode: 'string' }).notNull(),
-	goingFast: boolean("going_fast").default(false).notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.candidateId],
-			foreignColumns: [candidates.id],
-			name: "published_deals_candidate_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.contentDraftId],
-			foreignColumns: [contentDrafts.id],
-			name: "published_deals_content_draft_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.dealTemplateId],
-			foreignColumns: [dealTemplates.id],
-			name: "published_deals_deal_template_id_fkey"
 		}),
 ]);
 
@@ -324,6 +282,51 @@ export const candidateTemplateMatches = pgTable("candidate_template_matches", {
 			columns: [table.dealTemplateId],
 			foreignColumns: [dealTemplates.id],
 			name: "candidate_template_matches_deal_template_id_fkey"
+		}),
+]);
+
+export const publishedDeals = pgTable("published_deals", {
+	id: serial().primaryKey().notNull(),
+	candidateId: integer("candidate_id").notNull(),
+	dealTemplateId: integer("deal_template_id").notNull(),
+	contentDraftId: integer("content_draft_id"),
+	publicLabel: varchar("public_label"),
+	newsletterTag: varchar("newsletter_tag"),
+	headline: text().notNull(),
+	body: text(),
+	tiktokHook: text("tiktok_hook"),
+	origin: varchar().notNull(),
+	destination: varchar().notNull(),
+	zone: varchar(),
+	tripType: varchar("trip_type").notNull(),
+	travelDate: date("travel_date"),
+	returnDate: date("return_date"),
+	price: doublePrecision().notNull(),
+	baselinePrice: doublePrecision("baseline_price"),
+	discountPct: doublePrecision("discount_pct"),
+	bookingUrl: text("booking_url"),
+	validUntil: date("valid_until"),
+	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }),
+	tier: varchar().notNull(),
+	status: varchar().notNull(),
+	publishedAt: timestamp("published_at", { mode: 'string' }).notNull(),
+	goingFast: boolean("going_fast").default(false).notNull(),
+	unverifiedSince: timestamp("unverified_since", { mode: 'string' }),
+}, (table) => [
+	foreignKey({
+			columns: [table.candidateId],
+			foreignColumns: [candidates.id],
+			name: "published_deals_candidate_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.contentDraftId],
+			foreignColumns: [contentDrafts.id],
+			name: "published_deals_content_draft_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.dealTemplateId],
+			foreignColumns: [dealTemplates.id],
+			name: "published_deals_deal_template_id_fkey"
 		}),
 ]);
 
