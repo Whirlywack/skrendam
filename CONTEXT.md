@@ -8,3 +8,20 @@
 - **PriceHistory** — read-module over `price_log` returning a route's `PriceHistorySeries` and derived stats (`min_seen`, `percentile`, `previous_price`). `DbPriceHistory` in prod, `InMemoryPriceHistory` in tests.
 - **quality_tier** — `rare` (score_0_100 ≥ 94) | `great` (≥ 88) | `None`. Single source of truth: `skrendam/scanning/scoring/tiering.py`. Distinct from `published_deals.tier` (access tier: free/pro).
 - **primary_scorer** — the `DealTemplate` field (default `weighted`) naming which scorer produces the headline `match_score`. If it doesn't fire, the headline falls back to the highest-scoring strategy that did.
+
+## Scan health
+
+- **CallRecord / CallLog** — one record per *network* call the fli adapter makes (cache hits
+  excluded): kind (`calendar`/`flights`), route, trip_type, outcome, rows; errors carry the
+  classified kind + truncated message. Lives on the adapter for one run.
+- **outcome** — `data` (succeeded, non-empty) | `empty` (succeeded, zero rows) | `error` (raised).
+  Distinguishing `empty` from `data` at the seam is what makes silent fli breakage visible.
+- **HealthVerdict** — pure judgment over a CallLog: `healthy`/`degraded` + reasons + metrics.
+  Computed by `skrendam/fli_adapter/health.py: assess()`; bars are in-module constants.
+- **degraded** — a `scan_runs.status` value: the run finished and its data was committed, but the
+  results should not be trusted as a picture of the market. `failed` (breaker) takes precedence.
+- **unverified_since** — nullable timestamp on `published_deals`: live, but the engine couldn't
+  confirm it since this time. Set by an empty recheck, cleared by a successful one. Empty rechecks
+  NEVER expire deals — expiry is date-based (the sweep) or human.
+- **expiry sweep** — end-of-scan housekeeping expiring live published deals whose `valid_until` or
+  `travel_date` has passed. Pure calendar logic; works identically during an fli outage.
