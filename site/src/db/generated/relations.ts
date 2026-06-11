@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { audienceSegments, dealTemplates, travelMoments, zones, routes, candidates, scanRuns, priceLog, publishedDeals, contentDrafts, verificationChecks, candidateTemplateMatches, scanRequests, candidateScores } from "./schema";
+import { audienceSegments, dealTemplates, travelMoments, zones, routes, candidates, scanRuns, priceLog, contentDrafts, verificationChecks, candidateTemplateMatches, publishedDeals, scanRequests, candidateScores } from "./schema";
 
 export const dealTemplatesRelations = relations(dealTemplates, ({one, many}) => ({
 	audienceSegment: one(audienceSegments, {
@@ -10,9 +10,9 @@ export const dealTemplatesRelations = relations(dealTemplates, ({one, many}) => 
 		fields: [dealTemplates.travelMomentId],
 		references: [travelMoments.id]
 	}),
-	publishedDeals: many(publishedDeals),
 	contentDrafts: many(contentDrafts),
 	candidateTemplateMatches: many(candidateTemplateMatches),
+	publishedDeals: many(publishedDeals),
 	candidateScores: many(candidateScores),
 }));
 
@@ -46,10 +46,10 @@ export const candidatesRelations = relations(candidates, ({one, many}) => ({
 		fields: [candidates.runId],
 		references: [scanRuns.id]
 	}),
-	publishedDeals: many(publishedDeals),
 	contentDrafts: many(contentDrafts),
 	verificationChecks: many(verificationChecks),
 	candidateTemplateMatches: many(candidateTemplateMatches),
+	publishedDeals: many(publishedDeals),
 	scanRequests: many(scanRequests),
 	candidateScores: many(candidateScores),
 }));
@@ -70,23 +70,7 @@ export const priceLogRelations = relations(priceLog, ({one}) => ({
 	}),
 }));
 
-export const publishedDealsRelations = relations(publishedDeals, ({one}) => ({
-	candidate: one(candidates, {
-		fields: [publishedDeals.candidateId],
-		references: [candidates.id]
-	}),
-	contentDraft: one(contentDrafts, {
-		fields: [publishedDeals.contentDraftId],
-		references: [contentDrafts.id]
-	}),
-	dealTemplate: one(dealTemplates, {
-		fields: [publishedDeals.dealTemplateId],
-		references: [dealTemplates.id]
-	}),
-}));
-
 export const contentDraftsRelations = relations(contentDrafts, ({one, many}) => ({
-	publishedDeals: many(publishedDeals),
 	candidate: one(candidates, {
 		fields: [contentDrafts.candidateId],
 		references: [candidates.id]
@@ -95,6 +79,7 @@ export const contentDraftsRelations = relations(contentDrafts, ({one, many}) => 
 		fields: [contentDrafts.dealTemplateId],
 		references: [dealTemplates.id]
 	}),
+	publishedDeals: many(publishedDeals),
 }));
 
 export const verificationChecksRelations = relations(verificationChecks, ({one}) => ({
@@ -111,6 +96,21 @@ export const candidateTemplateMatchesRelations = relations(candidateTemplateMatc
 	}),
 	dealTemplate: one(dealTemplates, {
 		fields: [candidateTemplateMatches.dealTemplateId],
+		references: [dealTemplates.id]
+	}),
+}));
+
+export const publishedDealsRelations = relations(publishedDeals, ({one}) => ({
+	candidate: one(candidates, {
+		fields: [publishedDeals.candidateId],
+		references: [candidates.id]
+	}),
+	contentDraft: one(contentDrafts, {
+		fields: [publishedDeals.contentDraftId],
+		references: [contentDrafts.id]
+	}),
+	dealTemplate: one(dealTemplates, {
+		fields: [publishedDeals.dealTemplateId],
 		references: [dealTemplates.id]
 	}),
 }));
