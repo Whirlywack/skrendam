@@ -47,6 +47,12 @@ def _update_published_for_candidate(
 def recheck_candidate(
     session: Session, candidate: models.Candidate, adapter: FliAdapter, now: datetime
 ) -> models.VerificationCheck:
+    """Re-verify a candidate and record a VerificationCheck row (always).
+
+    Mutates the candidate only on a verified success (available + price); never
+    writes PublishedDeal.status — deals leave the site only via the orchestrator
+    date-sweep or a curator action. Empty results stamp unverified_since instead.
+    """
     available, price, currency, booking_url, notes, raw = False, None, None, None, None, None
     responded = False
     cabin = (candidate.search_params or {}).get("cabin", "ECONOMY")

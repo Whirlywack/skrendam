@@ -134,10 +134,11 @@ def test_recheck_scan_error_leaves_published_deal_live(session):
     pd = session.get(models.PublishedDeal, 1)
     assert pd.status == "live", "ScanError must not expire a live published deal"
     assert pd.going_fast is False  # unchanged from seed default
+    assert pd.unverified_since is None  # errors are no evidence; only emptiness stamps the marker
 
 
 def test_recheck_resets_going_fast_when_price_falls(session):
-    """going_fast must be re-derived each recheck — it must clear when price no longer warrants it."""
+    """going_fast must clear when a recheck price no longer warrants it."""
     cand = _seed(session, price=96.0)
     # Manually set the published deal as going_fast=True (as if a previous recheck flagged it)
     pd = session.get(models.PublishedDeal, 1)
