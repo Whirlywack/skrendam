@@ -61,3 +61,14 @@ def test_run_scan_cli_exits_2_on_breaker_abort(monkeypatch, capsys):
         cli.main()
     assert ei.value.code == 2
     assert "FAILED" in capsys.readouterr().out
+
+
+def test_run_scan_cli_exits_normally_when_healthy(monkeypatch, capsys):
+    import skrendam.cli as cli
+
+    summary = ScanSummary()
+    summary.health = HealthVerdict(status="healthy", reasons=[], metrics={})
+    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False: summary)
+    monkeypatch.setattr("sys.argv", ["skrendam", "run-scan"])
+    cli.main()  # must not raise SystemExit
+    assert "scan complete" in capsys.readouterr().out

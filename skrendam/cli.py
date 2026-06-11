@@ -25,8 +25,11 @@ def worker_command() -> None:
     make_session = make_sessionmaker(settings)
     backend = _real_backend()
 
+    bucket = TokenBucket(settings.min_call_interval_seconds, settings.pacing_jitter_seconds)
+
     def make_adapter():
-        bucket = TokenBucket(settings.min_call_interval_seconds, settings.pacing_jitter_seconds)
+        # fresh adapter per request (CallLog/cache isolation) — but ONE shared bucket,
+        # so pacing holds across the whole batch
         return FliAdapter(backend, pace=bucket.acquire)
 
     poll_loop(make_session, make_adapter, scanner_version=settings.scanner_version)
@@ -63,6 +66,9 @@ def main():
         )
         if s.aborted:
             print("WARNING: scan FAILED — the circuit breaker aborted the run partway.")
+            if s.health is not None:
+                for reason in s.health.reasons:
+                    print(f"  - {reason}")
             raise SystemExit(2)
         if s.health is not None and s.health.degraded:
             print("WARNING: scan DEGRADED — results are not a trustworthy picture of the market:")

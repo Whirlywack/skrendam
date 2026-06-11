@@ -107,10 +107,17 @@ def test_only_queued_are_claimed_and_limit_respected(session):
     session.add(models.ScanRequest(kind="recheck", candidate_id=1, status="done"))
     session.commit()
     adapter = _adapter()
+    factory_calls = []
+
+    def make_adapter():
+        factory_calls.append(1)
+        return adapter
+
     n = worker.process_pending_requests(
-        session, lambda: adapter, today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0), limit=2
+        session, make_adapter, today=date(2026, 6, 2), now=datetime(2026, 6, 2, 8, 0), limit=2
     )
     assert n == 2
+    assert len(factory_calls) == 2
     assert session.query(models.ScanRequest).filter_by(status="queued").count() == 1
 
 
