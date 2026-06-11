@@ -130,6 +130,7 @@ class ScanRun(Base):
     matches_created: Mapped[int] = mapped_column(Integer, default=0)
     errors: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String, default="running")
+    health: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class PriceLog(Base):
@@ -258,6 +259,7 @@ class PublishedDeal(Base):
     booking_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    unverified_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
     going_fast: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
