@@ -2,6 +2,9 @@
 deterministic order; the orchestrator runs every one per in-scope template."""
 
 from skrendam.scanning.scoring.base import Scorer
+from skrendam.scanning.scoring.drop import PriceDropScorer
+from skrendam.scanning.scoring.error_fare import ErrorFareScorer
+from skrendam.scanning.scoring.rarity import RarityScorer
 from skrendam.scanning.scoring.weighted import WeightedScorer
 
 _REGISTRY: dict[str, Scorer] = {}
@@ -20,3 +23,6 @@ def enabled_scorers() -> list[Scorer]:
 
 
 register(WeightedScorer())
+register(PriceDropScorer())
+register(ErrorFareScorer())
+register(RarityScorer())
