@@ -33,3 +33,7 @@ The connection string is read from `SKRENDAM_DATABASE_URL`, falling back to `DAT
   can't happen, but don't treat "exit 2" as exclusively meaning degraded in other contexts.
 - The `skrendam worker` queue-poller (admin enqueue buttons) is NOT covered by this job — start it
   manually when needed: `uv run skrendam worker`.
+
+- **Do not also run `skrendam-scheduler`** (the legacy in-process APScheduler entry point): it
+  schedules the same 06:00 scan and, alongside this launchd job, would double-scan and
+  double-write. launchd is the only sanctioned cadence on this machine.
