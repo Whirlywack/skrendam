@@ -85,6 +85,11 @@ function DealRow({ deal }: { deal: Deal }) {
               valid until {deal.validUntil}
             </span>
           )}
+          {deal.unverifiedSince && (
+            <span className="stat rejected">
+              unverified since {String(deal.unverifiedSince).slice(0, 10)}
+            </span>
+          )}
           {deal.publicLabel && (
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' }}>
               {deal.publicLabel}

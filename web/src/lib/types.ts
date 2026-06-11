@@ -22,5 +22,5 @@ export interface CandidateView {
   copy: { headline: string; hook: string; news: string };
 }
 
-export interface ScanView { fares: string; airports: number; ago: string; newToday: number; status: string; }
+export interface ScanView { fares: string; airports: number; ago: string; newToday: number; status: string; healthReasons: string[]; }
 export interface TemplateGroup { templateId: number; templateLabel: string; items: CandidateView[]; }

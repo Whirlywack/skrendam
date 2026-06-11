@@ -173,7 +173,7 @@ export async function republishDeal(id: number): Promise<void> {
   await requireAdmin();
   await db
     .update(publishedDeals)
-    .set({ status: 'live' })
+    .set({ status: 'live', unverifiedSince: null })
     .where(eq(publishedDeals.id, id));
   revalidatePath('/published');
 }

@@ -4,6 +4,7 @@ import { toCandidateView, toScanView } from '@/lib/mappers';
 import { GREAT_THRESHOLD } from '@/lib/tiers';
 import { DashboardCards } from '@/components/DashboardCards';
 import { ScanButtons } from '@/components/ScanButtons';
+import { ScanHealthBanner } from '@/components/ScanHealthBanner';
 
 export default async function Dashboard() {
   const [rows, run, published] = await Promise.all([
@@ -13,7 +14,7 @@ export default async function Dashboard() {
   ]);
 
   const views = rows.map(toCandidateView);
-  const scan = toScanView(run);
+  const scan = toScanView(run as Parameters<typeof toScanView>[0]);
 
   // New high-score candidates: status 'suggested' AND in the GREAT tier
   const highScore = views.filter((v) => v.status === 'suggested' && v.score >= GREAT_THRESHOLD).length;
@@ -50,6 +51,8 @@ export default async function Dashboard() {
       >
         Today
       </h1>
+
+      <ScanHealthBanner status={scan.status} reasons={scan.healthReasons} />
 
       <DashboardCards
         highScore={highScore}
