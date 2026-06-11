@@ -77,3 +77,14 @@ def test_db_price_history_respects_window():
     s = _seed_session()
     hist = DbPriceHistory(s, now=datetime(2026, 6, 1), window_days=30)  # excludes Jan rows
     assert hist.for_route(1, "oneway").points == ()
+
+
+def test_db_price_history_excludes_current_scan():
+    # Rows are scanned_at Jan 1 (300), Jan 2 (250), Jan 3 (120). With now == Jan 2,
+    # history must be STRICTLY PRIOR: only the Jan 1 row, so the current scan's own
+    # freshly-logged prices can't become a fare's floor/percentile.
+    s = _seed_session()
+    hist = DbPriceHistory(s, now=datetime(2026, 1, 2))
+    series = hist.for_route(1, "oneway")
+    assert [p.scanned_at for p in series.points] == [datetime(2026, 1, 1)]
+    assert series.min_seen() == 300.0

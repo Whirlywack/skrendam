@@ -35,7 +35,13 @@ def upsert_match(session: Session, candidate_id: int, template_id: int,
                  match_score: float, reason_text: str, gate_results: dict,
                  score_0_100: int | None = None, quality_tier: str | None = None,
                  primary_scorer: str | None = None) -> tuple[models.CandidateTemplateMatch, bool]:
-    """Return (match, created). Headline fields default to None for legacy callers."""
+    """Return (match, created).
+
+    The headline fields (score_0_100/quality_tier/primary_scorer) are written on
+    BOTH insert and update; the orchestrator always supplies them. The None
+    defaults exist only so the legacy 3-arg signature still type-checks — a legacy
+    update would null these columns, so don't rely on that path to preserve them.
+    """
     existing = session.scalar(
         select(models.CandidateTemplateMatch).where(
             models.CandidateTemplateMatch.candidate_id == candidate_id,

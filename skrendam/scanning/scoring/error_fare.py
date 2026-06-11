@@ -2,7 +2,6 @@
 recorded for the route. Lenient on itinerary on purpose — an error fare is worth
 surfacing even if ugly."""
 
-from skrendam.scanning.scoring import tiering
 from skrendam.scanning.scoring.base import Score, ScoringContext
 
 MIN_BELOW_MIN_FRAC = 0.30  # at least 30% below the recorded floor
@@ -23,10 +22,8 @@ class ErrorFareScorer:
         if below < MIN_BELOW_MIN_FRAC:
             return None
         value = round(min(1.0, 0.6 + below), 3)  # error fares rank high
-        s100 = tiering.to_score_100(value)
         reason = (f"EUR{ctx.fare.price:.0f} - {round(below * 100)}% below the "
                   f"{len(hist.points)}-point floor of EUR{floor:.0f}. Possible error fare.")
-        return Score(scorer="error_fare", value=value, score_0_100=s100,
-                     quality_tier=tiering.quality_tier(s100), reason_text=reason,
-                     signals={"floor": floor, "below_floor_frac": round(below, 3),
-                              "history_points": len(hist.points)})
+        return Score.from_value("error_fare", value, reason,
+                                {"floor": floor, "below_floor_frac": round(below, 3),
+                                 "history_points": len(hist.points)})

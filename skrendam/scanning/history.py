@@ -64,10 +64,17 @@ class InMemoryPriceHistory:
 class DbPriceHistory:
     """Prod adapter. Prefetches each route's recent price_log series once, then
     serves from memory. Bounded by window_days; relies on the price_log composite
-    index added in the 0006 migration."""
+    index added in the 0006 migration.
+
+    History is STRICTLY PRIOR to ``now``: the orchestrator writes the current
+    scan's price_log rows (scanned_at == now) before scoring, and SQLAlchemy
+    autoflush would otherwise pull them into this query — making a fare its own
+    floor (ErrorFareScorer could never fire) and polluting RarityScorer's
+    percentile. The ``scanned_at < now`` bound excludes the current scan."""
 
     def __init__(self, session: Session, now: datetime, window_days: int = 180):
         self._session = session
+        self._now = now
         self._cutoff = now - timedelta(days=window_days)
         self._cache: dict[tuple[int, str], PriceHistorySeries] = {}
 
@@ -78,7 +85,8 @@ class DbPriceHistory:
                 select(models.PriceLog.scanned_at, models.PriceLog.travel_date, models.PriceLog.price)
                 .where(models.PriceLog.route_id == route_id,
                        models.PriceLog.trip_type == trip_type,
-                       models.PriceLog.scanned_at >= self._cutoff)
+                       models.PriceLog.scanned_at >= self._cutoff,
+                       models.PriceLog.scanned_at < self._now)
                 .order_by(models.PriceLog.scanned_at)
             ).all()
             pts = tuple(HistoryPoint(scanned_at=r[0], travel_date=r[1], price=r[2]) for r in rows)

@@ -1,7 +1,6 @@
 """The default scorer: per-template gates + weighted blend. Parity with the
 historical matching.match() — same gates, same weights, same thresholds."""
 
-from skrendam.scanning.scoring import tiering
 from skrendam.scanning.scoring.base import Score, ScoringContext
 from skrendam.scanning.scoring.eligibility import eff, itinerary_ok
 
@@ -64,6 +63,4 @@ class WeightedScorer:
         reason = (f"EUR{fare.price:.0f} - {pct}% below the {baseline.sample_size}-day median "
                   f"(EUR{baseline.median:.0f}); {'nonstop' if fare.stops == 0 else f'{fare.stops} stop(s)'}.")
         value = round(score, 3)
-        s100 = tiering.to_score_100(value)
-        return Score(scorer="weighted", value=value, score_0_100=s100,
-                     quality_tier=tiering.quality_tier(s100), reason_text=reason, signals=gates)
+        return Score.from_value("weighted", value, reason, gates)

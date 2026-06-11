@@ -17,7 +17,7 @@ from skrendam.scanning.history import DbPriceHistory
 from skrendam.scanning.resolver import resolve
 from skrendam.scanning.scoring.base import ScoringContext
 from skrendam.scanning.scoring.eligibility import in_template_scope
-from skrendam.scanning.scoring.registry import enabled_scorers
+from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
 
@@ -137,11 +137,7 @@ def _persist_fare(session, run, route, zone, spec, point, fare, base, templates,
         scores = [s for sc in enabled_scorers() if (s := sc.score(ctx)) is not None]
         if not scores:
             continue
-        primary_name = tpl.primary_scorer or "weighted"
-        headline = next((s for s in scores if s.scorer == primary_name), None)
-        if headline is None:
-            headline = max(scores, key=lambda s: s.score_0_100)
-        matched.append((tpl, headline, scores))
+        matched.append((tpl, pick_headline(scores, tpl.primary_scorer), scores))
     if not matched:
         return  # nothing flagged -> not a candidate, don't persist an orphan
 

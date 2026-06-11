@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
+from skrendam.scanning.scoring import tiering
 from skrendam.scanning.types import Baseline, FareItinerary
 
 if TYPE_CHECKING:
@@ -20,6 +21,14 @@ class Score:
     quality_tier: str | None
     reason_text: str
     signals: dict
+
+    @classmethod
+    def from_value(cls, scorer: str, value: float, reason_text: str, signals: dict) -> "Score":
+        """Build a Score, normalizing `value` (0..1) to score_0_100 + quality_tier
+        through the single tiering source of truth — so no scorer can mis-normalize."""
+        s100 = tiering.to_score_100(value)
+        return cls(scorer=scorer, value=value, score_0_100=s100,
+                   quality_tier=tiering.quality_tier(s100), reason_text=reason_text, signals=signals)
 
 
 @dataclass(frozen=True)
