@@ -39,6 +39,8 @@ class ScoringContext:
     template: "models.DealTemplate"
     history: "PriceHistorySeries | None" = None
     previous_price: float | None = None
+    # (now - scanned_at).days with now always midnight (orchestrator) — age 0/1 reads
+    # "since the last scan" in drop.py; >1 states the age.
     previous_price_age_days: int | None = None
 
 

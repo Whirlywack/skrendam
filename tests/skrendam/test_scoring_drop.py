@@ -64,3 +64,9 @@ def test_drop_reason_fresh_comparison_keeps_last_scan_copy():
     s = PriceDropScorer().score(_ctx(100.0, previous_price=200.0, previous_price_age_days=1))
     assert s is not None
     assert "since the last scan" in s.reason_text
+
+
+def test_drop_reason_age_zero_is_fresh():
+    s = PriceDropScorer().score(_ctx(100.0, previous_price=200.0, previous_price_age_days=0))
+    assert s is not None
+    assert "since the last scan" in s.reason_text
