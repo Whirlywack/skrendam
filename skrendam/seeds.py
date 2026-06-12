@@ -38,6 +38,7 @@ AUDIENCES = [
     ("flexible_adults", "Flexible adults", "relaxed"),
     ("budget", "Budget travelers", "relaxed"),
     ("city_break", "City-break travelers", "normal"),
+    ("vfr", "Visiting friends & family", "relaxed"),
 ]
 
 MOMENTS = [
@@ -52,6 +53,8 @@ MOMENTS = [
         "relative",
         "Book summer early when the fare is good",
     ),
+    ("vfr_visit", "VFR visit", "relative", "Cheap weekend to visit family abroad"),
+    ("long_haul_chance", "Long-haul chance", "relative", "A long-haul fare worth planning around"),
 ]
 
 
@@ -117,6 +120,7 @@ def seed_all(session: Session) -> None:
             family_friendly_times_only=True,
             max_price_eur=400,
             min_discount_pct=20,
+            min_departure_dates=5,
             public_label="Family sun",
             newsletter_tag="family_sun",
             suggested_headline_template="{origin}->{destination} EUR{price} return - school-holiday sun",
@@ -136,6 +140,7 @@ def seed_all(session: Session) -> None:
             trip_len_max_days=7,
             max_stops=1,
             min_discount_pct=25,
+            min_departure_dates=5,
             public_label="September sun",
             newsletter_tag="sept_sun",
             content_angle="Still warm, fewer families, cheaper",
@@ -173,6 +178,8 @@ def seed_all(session: Session) -> None:
             trip_len_max_days=4,
             max_stops=1,
             prefer_direct=True,
+            min_discount_pct=25,
+            min_departure_dates=5,
             public_label="Christmas markets",
             newsletter_tag="xmas",
             content_angle="Cheap Christmas-market weekends",
@@ -210,9 +217,51 @@ def seed_all(session: Session) -> None:
             trip_len_max_days=14,
             max_stops=1,
             min_discount_pct=30,
+            min_departure_dates=5,
             public_label="Plan-ahead summer",
             newsletter_tag="plan_summer",
             content_angle="Book summer early when the fare is good",
+        ),
+        # included_destinations must stay in sync with the ROUTES seed
+        # (Task 7 coverage test enforces).
+        dict(
+            slug="vfr-watch",
+            name="VFR corridor watch",
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            date_window_type="relative",
+            rel_offset_start_days=7,
+            rel_offset_end_days=90,
+            included_destinations=["STN", "LTN", "LGW", "DUB", "OSL"],
+            trip_len_min_days=3,
+            trip_len_max_days=14,
+            max_stops=1,
+            psychological_price_threshold_eur=80,
+            allow_smaller_discount_if_under_price=True,
+            min_departure_dates=5,
+            public_label="Visit-home fares",
+            newsletter_tag="vfr",
+            suggested_headline_template="{origin}->{destination} EUR{price} return",
+            content_angle="Cheap weekend to visit family abroad",
+        ),
+        dict(
+            slug="long-haul-opportunist",
+            name="Long-haul opportunist",
+            audience="flexible_adults",
+            moment="long_haul_chance",
+            trip_type="roundtrip",
+            date_window_type="relative",
+            rel_offset_start_days=30,
+            rel_offset_end_days=300,
+            included_zones=["LONG_HAUL"],
+            trip_len_min_days=7,
+            trip_len_max_days=21,
+            max_stops=2,
+            min_discount_pct=30,
+            public_label="Long-haul steal",
+            newsletter_tag="long_haul",
+            content_angle="A long-haul fare worth planning around",
         ),
     ]
     for t in templates:

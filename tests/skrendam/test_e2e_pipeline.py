@@ -23,6 +23,7 @@ TODAY = date(2026, 6, 15)
 
 # ─── FakeBackend ─────────────────────────────────────────────────────────────────────
 
+
 def _rd(spec):
     """Return date when roundtrip, else None."""
     if spec.trip_type == "roundtrip":
@@ -46,18 +47,24 @@ class FakeBackend:
         rd1 = None if rd0 is None else rd0 + timedelta(days=1)
         rd2 = None if rd0 is None else rd0 + timedelta(days=2)
         return [
-            (ws,                     rd0, 30.0),
+            (ws, rd0, 30.0),
             (ws + timedelta(days=1), rd1, 210.0),
             (ws + timedelta(days=2), rd2, 215.0),
         ]
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
-        return [{
-            "price": 30.0, "currency": "EUR", "stops": 0, "duration": 215,
-            "legs": [{"airline": {"code": "W6"}, "flight_number": "1"}],
-            "self_transfer": False, "mixed_cabin": False,
-            "booking_url": "https://x",
-        }]
+        return [
+            {
+                "price": 30.0,
+                "currency": "EUR",
+                "stops": 0,
+                "duration": 215,
+                "legs": [{"airline": {"code": "W6"}, "flight_number": "1"}],
+                "self_transfer": False,
+                "mixed_cabin": False,
+                "booking_url": "https://x",
+            }
+        ]
 
 
 def _make_adapter():
@@ -66,14 +73,14 @@ def _make_adapter():
 
 # ─── The single E2E test ─────────────────────────────────────────────────────────────
 
+
 def test_full_pipeline_offline(session):
     seed_all(session)
 
-    summary = run_scan(session, today=TODAY, adapter=_make_adapter(),
-                       scanner_version="e2e-test")
+    summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
-    # ── 1. summary: all 6 templates scanned ──────────────────────────────────────────
-    assert summary.templates_scanned == 6
+    # ── 1. summary: all 8 templates scanned ──────────────────────────────────────────
+    assert summary.templates_scanned == 8
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()
@@ -140,9 +147,7 @@ def test_full_pipeline_offline(session):
 
     # ── 9. publish: simulate curator approval ─────────────────────────────────────────
     first_match = (
-        session.query(models.CandidateTemplateMatch)
-        .filter_by(candidate_id=cand.id)
-        .first()
+        session.query(models.CandidateTemplateMatch).filter_by(candidate_id=cand.id).first()
     )
     assert first_match is not None
     tpl = session.get(models.DealTemplate, first_match.deal_template_id)
@@ -182,8 +187,9 @@ def test_full_pipeline_offline(session):
     session.commit()
 
     # ── 10. re-scan does not resurrect / duplicate approved candidate ─────────────────
-    summary2 = run_scan(session, today=TODAY, adapter=_make_adapter(),
-                        scanner_version="e2e-test-rescan")
+    summary2 = run_scan(
+        session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test-rescan"
+    )
 
     # The approved candidate's deal_group_key already exists; upsert_candidate returns
     # (existing, False) so candidates_found is NOT incremented for it.

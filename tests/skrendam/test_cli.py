@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -10,7 +10,12 @@ from skrendam.scanning.orchestrator import ScanSummary
 
 class FakeBackend:
     def search_calendar(self, spec):
-        return [(date(2026, 7, 29), None, 30.0)]
+        # Return 5 near-price dates so min_departure_dates=5 gate is satisfied.
+        # All at the same price so the baseline median equals the fare price,
+        # keeping s_anom via the under_price/under_psych path (same as the
+        # original single-point backend did on main).
+        base = date(2026, 7, 29)
+        return [(base + timedelta(days=i), None, 30.0) for i in range(5)]
 
     def search_flights(self, o, d, td, rd, cabin):
         return [
@@ -29,7 +34,7 @@ def test_run_scan_command_seeds_and_scans(session):
     summary = run_scan_command(
         session_factory=lambda: session, backend=FakeBackend(), today=date(2026, 6, 2), seed=True
     )
-    assert summary.templates_scanned == 6
+    assert summary.templates_scanned == 8
     assert session.query(models.Candidate).count() >= 1
 
 
