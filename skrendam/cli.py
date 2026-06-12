@@ -32,10 +32,17 @@ def worker_command() -> None:
         # so pacing holds across the whole batch
         return FliAdapter(backend, pace=bucket.acquire)
 
-    poll_loop(make_session, make_adapter, scanner_version=settings.scanner_version)
+    poll_loop(
+        make_session,
+        make_adapter,
+        scanner_version=settings.scanner_version,
+        tail_rotation_days=settings.tail_rotation_days,
+    )
 
 
-def run_scan_command(session_factory=None, backend=None, today=None, seed=False) -> ScanSummary:
+def run_scan_command(
+    session_factory=None, backend=None, today=None, seed=False, all_routes=False
+) -> ScanSummary:
     settings = Settings()
     session = (session_factory or make_sessionmaker(settings))()
     backend = backend or _real_backend()
@@ -44,7 +51,14 @@ def run_scan_command(session_factory=None, backend=None, today=None, seed=False)
     adapter = FliAdapter(backend, pace=bucket.acquire)
     if seed:
         seed_all(session)
-    return run_scan(session, today=today, adapter=adapter, scanner_version=settings.scanner_version)
+    return run_scan(
+        session,
+        today=today,
+        adapter=adapter,
+        scanner_version=settings.scanner_version,
+        tail_rotation_days=settings.tail_rotation_days,
+        all_routes=all_routes,
+    )
 
 
 def main():
@@ -52,6 +66,9 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
     rs = sub.add_parser("run-scan")
     rs.add_argument("--seed", action="store_true")
+    rs.add_argument(
+        "--all-routes", action="store_true", help="scan the full network, ignoring cohort rotation"
+    )
     sub.add_parser("seed")
     sub.add_parser("calibrate")
     sub.add_parser("worker")
@@ -59,7 +76,7 @@ def main():
     args = parser.parse_args()
 
     if args.cmd == "run-scan":
-        s = run_scan_command(seed=args.seed)
+        s = run_scan_command(seed=args.seed, all_routes=args.all_routes)
         print(
             f"scan complete: {s.candidates_found} candidates, {s.matches_created} matches, "
             f"{s.errors} errors"

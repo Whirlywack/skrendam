@@ -181,18 +181,20 @@ def assess(log: CallLog, price_rows: int, prior_price_rows: int | None = None) -
     )
 
 
-def health_json(verdict: HealthVerdict, log: CallLog) -> dict:
+def health_json(verdict: HealthVerdict, log: CallLog, plan: dict | None = None) -> dict:
     """Serialise verdict + error detail to the dict persisted to scan_runs.health.
 
     Args:
         verdict: The HealthVerdict produced by assess().
         log: The CallLog from the same run (used for error detail).
+        plan: Optional cohort-plan counters (``core``, ``tail``, ``specs_planned``).
 
     Returns:
-        Dict with keys ``"reasons"``, ``"metrics"``, and ``"errors"``.
+        Dict with keys ``"plan"``, ``"reasons"``, ``"metrics"``, and ``"errors"``.
 
     """
     return {
+        "plan": plan or {},
         "reasons": list(verdict.reasons),
         "metrics": dict(verdict.metrics),
         "errors": [

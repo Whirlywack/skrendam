@@ -23,6 +23,30 @@ from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 CANDIDATE_TTL_DAYS = 14
 
 
+def due_routes(routes, today: date, rotation_days: int, all_routes: bool = False) -> list:
+    """Routes to scan today: enabled AND (core OR today's rotation slot).
+
+    The tail slice is computed, not stored - retuning rotation_days never
+    rewrites route rows. A width retune can leave a route unscanned for up to
+    old-N days before its new slot comes up: harmless, self-healing, by design.
+
+    Args:
+        routes: All Route rows loaded from the database.
+        today: The date being scanned.
+        rotation_days: Cohort window width N; tail routes scan when id % N == ordinal % N.
+        all_routes: When True, return all enabled routes, bypassing cohort logic.
+
+    Returns:
+        List of Route objects due for scanning today.
+
+    """
+    enabled = [r for r in routes if r.enabled]
+    if all_routes:
+        return enabled
+    slot = today.toordinal() % rotation_days
+    return [r for r in enabled if r.core or r.id % rotation_days == slot]
+
+
 @dataclass
 class ScanSummary:
     templates_scanned: int = 0
@@ -49,6 +73,8 @@ def run_scan(
     adapter: FliAdapter,
     scanner_version: str = "0.1.0",
     circuit_breaker_threshold: int = 5,
+    tail_rotation_days: int = 10,
+    all_routes: bool = False,
 ) -> ScanSummary:
     now = datetime(today.year, today.month, today.day)
     run = models.ScanRun(scanner_version=scanner_version, status="running", started_at=now)
@@ -61,9 +87,18 @@ def run_scan(
     templates = list(
         session.scalars(select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True)))
     )
-    routes = list(session.scalars(select(models.Route)))
+    routes = due_routes(
+        list(session.scalars(select(models.Route))), today, tail_rotation_days, all_routes
+    )
     zones = {z.zone: z for z in session.scalars(select(models.Zone))}
     route_by_pair = {(r.origin, r.destination): r for r in routes if r.enabled}
+
+    core_n = sum(1 for r in routes if r.core)
+    plan = {
+        "core": core_n,
+        "tail": len(routes) - core_n,
+        "specs_planned": sum(len(resolve(tpl, routes, today)) for tpl in templates),
+    }
 
     aborted = False
     for tpl in templates:
@@ -179,7 +214,7 @@ def run_scan(
         run.status = "degraded"
     else:
         run.status = "completed"
-    run.health = health_json(verdict, adapter.call_log)
+    run.health = health_json(verdict, adapter.call_log, plan=plan)
     run.templates_scanned = summary.templates_scanned
     run.routes_scanned = summary.routes_scanned
     run.candidates_found = summary.candidates_found

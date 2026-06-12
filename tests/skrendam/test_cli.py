@@ -40,7 +40,7 @@ def test_run_scan_cli_exits_2_on_degraded(monkeypatch, capsys):
     summary.health = HealthVerdict(
         status="degraded", reasons=["6/6 calendar searches returned no data"], metrics={}
     )
-    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False: summary)
+    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False, all_routes=False: summary)
     monkeypatch.setattr("sys.argv", ["skrendam", "run-scan"])
     with pytest.raises(SystemExit) as ei:
         cli.main()
@@ -55,7 +55,7 @@ def test_run_scan_cli_exits_2_on_breaker_abort(monkeypatch, capsys):
     summary = ScanSummary()
     summary.aborted = True
     summary.health = HealthVerdict(status="healthy", reasons=[], metrics={})
-    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False: summary)
+    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False, all_routes=False: summary)
     monkeypatch.setattr("sys.argv", ["skrendam", "run-scan"])
     with pytest.raises(SystemExit) as ei:
         cli.main()
@@ -68,7 +68,7 @@ def test_run_scan_cli_exits_normally_when_healthy(monkeypatch, capsys):
 
     summary = ScanSummary()
     summary.health = HealthVerdict(status="healthy", reasons=[], metrics={})
-    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False: summary)
+    monkeypatch.setattr(cli, "run_scan_command", lambda seed=False, all_routes=False: summary)
     monkeypatch.setattr("sys.argv", ["skrendam", "run-scan"])
     cli.main()  # must not raise SystemExit
     assert "scan complete" in capsys.readouterr().out

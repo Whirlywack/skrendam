@@ -29,6 +29,7 @@ def process_pending_requests(
     today: date,
     now: datetime,
     scanner_version: str = "0.1.0",
+    tail_rotation_days: int = 10,
     limit: int = 5,
 ) -> int:
     """Claim up to `limit` queued scan_requests (oldest first) and execute each.
@@ -44,6 +45,7 @@ def process_pending_requests(
         today: The current date (injected for testability).
         now: The current datetime (injected for testability).
         scanner_version: Version string stamped onto scan_runs rows.
+        tail_rotation_days: Cohort rotation window width passed through to run_scan.
         limit: Maximum number of queued requests to claim in one batch.
 
     V1 assumes a SINGLE worker process: the claim (SELECT queued -> UPDATE running)
@@ -75,7 +77,11 @@ def process_pending_requests(
                 req.result_summary = {"available": check.available, "price": check.price}
             elif req.kind == "full_scan":
                 summary = run_scan(
-                    session, today=today, adapter=adapter, scanner_version=scanner_version
+                    session,
+                    today=today,
+                    adapter=adapter,
+                    scanner_version=scanner_version,
+                    tail_rotation_days=tail_rotation_days,
                 )
                 req.result_summary = {
                     "candidates_found": summary.candidates_found,
@@ -104,6 +110,7 @@ def poll_loop(
     *,
     interval_seconds: float = 15.0,
     scanner_version: str = "0.1.0",
+    tail_rotation_days: int = 10,
     now_fn=_utcnow,
     today_fn=date.today,
     stop=None,
@@ -119,6 +126,7 @@ def poll_loop(
                     today=today_fn(),
                     now=now_fn(),
                     scanner_version=scanner_version,
+                    tail_rotation_days=tail_rotation_days,
                 )
             finally:
                 session.close()

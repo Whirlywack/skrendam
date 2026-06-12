@@ -9,3 +9,11 @@ def test_settings_read_from_env(monkeypatch):
     assert s.fli_timeout == 25.0
     assert s.min_call_interval_seconds >= 1.0  # default pacing
     assert s.scanner_version  # non-empty
+
+
+def test_tail_rotation_days_default_and_env(monkeypatch):
+    from skrendam.config import Settings
+
+    assert Settings().tail_rotation_days == 10
+    monkeypatch.setenv("SKRENDAM_TAIL_ROTATION_DAYS", "3")
+    assert Settings().tail_rotation_days == 3
