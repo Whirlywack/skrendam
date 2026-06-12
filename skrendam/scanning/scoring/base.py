@@ -39,6 +39,7 @@ class ScoringContext:
     template: "models.DealTemplate"
     history: "PriceHistorySeries | None" = None
     previous_price: float | None = None
+    previous_price_age_days: int | None = None
 
 
 class Scorer(Protocol):

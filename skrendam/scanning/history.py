@@ -36,12 +36,17 @@ class PriceHistorySeries:
         at_or_below = sum(1 for p in self.points if p.price <= price)
         return at_or_below / len(self.points)
 
-    def previous_price(self, travel_date: date, before: datetime) -> float | None:
-        """Most recent recorded price for this travel_date strictly before `before`."""
+    def previous_point(self, travel_date: date, before: datetime) -> HistoryPoint | None:
+        """Most recent recorded point for this travel_date strictly before `before`."""
         cands = [p for p in self.points if p.travel_date == travel_date and p.scanned_at < before]
         if not cands:
             return None
-        return max(cands, key=lambda p: p.scanned_at).price
+        return max(cands, key=lambda p: p.scanned_at)
+
+    def previous_price(self, travel_date: date, before: datetime) -> float | None:
+        """Most recent recorded price for this travel_date strictly before `before`."""
+        pt = self.previous_point(travel_date, before)
+        return pt.price if pt else None
 
 
 class PriceHistory(Protocol):

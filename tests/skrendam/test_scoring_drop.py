@@ -19,7 +19,7 @@ def _tpl(**over):
     return SimpleNamespace(**base)
 
 
-def _ctx(price, previous_price, *, stops=0, tpl=None):
+def _ctx(price, previous_price, *, stops=0, tpl=None, previous_price_age_days=None):
     return ScoringContext(
         fare=FareItinerary(price=price, currency="EUR", stops=stops, duration_minutes=120, legs=[]),
         baseline=Baseline(minimum=price, median=price, decile=price, sample_size=1),
@@ -27,6 +27,7 @@ def _ctx(price, previous_price, *, stops=0, tpl=None):
         template=tpl or _tpl(),
         history=None,
         previous_price=previous_price,
+        previous_price_age_days=previous_price_age_days,
     )
 
 
@@ -50,3 +51,16 @@ def test_drop_respects_itinerary_gate():
     # A big drop on a 2-stop fare under a max_stops=1 template must NOT fire.
     ctx = _ctx(100.0, previous_price=200.0, stops=2, tpl=_tpl(max_stops=1))
     assert PriceDropScorer().score(ctx) is None
+
+
+def test_drop_reason_states_age_when_stale():
+    s = PriceDropScorer().score(_ctx(100.0, previous_price=200.0, previous_price_age_days=12))
+    assert s is not None
+    assert "12 days ago" in s.reason_text
+    assert s.signals["previous_price_age_days"] == 12
+
+
+def test_drop_reason_fresh_comparison_keeps_last_scan_copy():
+    s = PriceDropScorer().score(_ctx(100.0, previous_price=200.0, previous_price_age_days=1))
+    assert s is not None
+    assert "since the last scan" in s.reason_text

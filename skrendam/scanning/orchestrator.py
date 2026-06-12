@@ -243,7 +243,9 @@ def _persist_fare(
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
     hist_series = history.for_route(route.id, spec.trip_type)
-    prev = hist_series.previous_price(point.travel_date, now)
+    prev_pt = hist_series.previous_point(point.travel_date, now)
+    prev = prev_pt.price if prev_pt else None
+    prev_age = (now - prev_pt.scanned_at).days if prev_pt else None
     matched = []  # (tpl, headline_score, all_scores)
     for tpl in templates:
         if tpl.trip_type != spec.trip_type:
@@ -257,6 +259,7 @@ def _persist_fare(
             template=tpl,
             history=hist_series,
             previous_price=prev,
+            previous_price_age_days=prev_age,
         )
         scores = [s for sc in enabled_scorers() if (s := sc.score(ctx)) is not None]
         if not scores:
