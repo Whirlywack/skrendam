@@ -1,4 +1,11 @@
-"""The only module that talks to a flight-search backend. Pure plumbing + caching."""
+"""The only module that talks to a flight-search backend. Pure plumbing + caching.
+
+Both ``search_calendar`` and ``search_flights`` maintain an in-process LRU-style
+dict cache keyed on the full parameter tuple. Cache hits are returned before
+``_pace()`` is called and do not increment ``api_calls`` or add a ``call_log``
+record. Errors are never cached so a retry from the next template gets a fresh
+attempt.
+"""
 
 from collections.abc import Callable
 from datetime import date
@@ -42,7 +49,9 @@ def _classify(exc: Exception) -> ScanError:
 class FliAdapter:
     """Adapter between the scanning orchestrator and a flight-search backend.
 
-    Handles caching, rate pacing, outcome logging, and typed error wrapping.
+    Handles caching (calendar and flights), rate pacing, outcome logging, and
+    typed error wrapping. Both search methods cache successful results keyed on
+    their full parameter tuple; errors are never cached.
     """
 
     def __init__(self, backend, pace: Callable[[], None]) -> None:
@@ -56,6 +65,7 @@ class FliAdapter:
         self._backend = backend
         self._pace = pace
         self._cache: dict[tuple, list[CalendarPoint]] = {}
+        self._flights_cache: dict[tuple, list[FareItinerary]] = {}
         self.api_calls = 0
         self.call_log = CallLog()
 
@@ -135,6 +145,9 @@ class FliAdapter:
             ScanError: Or a subclass if the backend raises any exception.
 
         """
+        key = (origin, destination, travel_date, return_date, cabin)
+        if key in self._flights_cache:
+            return self._flights_cache[key]
         route = f"{origin}-{destination}"
         trip_type = "roundtrip" if return_date is not None else "oneway"
         self._pace()
@@ -166,6 +179,7 @@ class FliAdapter:
         self.call_log.record(
             "flights", route, trip_type, "data" if fares else "empty", rows=len(fares)
         )
+        self._flights_cache[key] = fares
         return fares
 
     @staticmethod

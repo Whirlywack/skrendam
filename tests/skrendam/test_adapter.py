@@ -133,3 +133,34 @@ def test_parse_error_is_recorded_with_its_type():
         adapter.search_flights("VNO", "BCN", date(2026, 7, 29), None, "ECONOMY")
     (rec,) = adapter.call_log.records
     assert rec.outcome == "error" and rec.error_kind == "ParseError"
+
+
+def test_search_flights_cached_per_itinerary_key():
+    calls = []
+
+    class CountingBackend:
+        def search_flights(self, origin, destination, travel_date, return_date, cabin):
+            calls.append((origin, destination, travel_date, return_date, cabin))
+            return [
+                {
+                    "price": 100.0,
+                    "currency": "EUR",
+                    "stops": 0,
+                    "duration": 100,
+                    "legs": [],
+                    "self_transfer": False,
+                    "mixed_cabin": False,
+                    "booking_url": None,
+                }
+            ]
+
+    a = FliAdapter(CountingBackend(), pace=lambda: None)
+    d = date(2026, 9, 1)
+    first = a.search_flights("VNO", "BCN", d, None, "ECONOMY")
+    second = a.search_flights("VNO", "BCN", d, None, "ECONOMY")  # cache hit
+    a.search_flights("VNO", "BCN", d, date(2026, 9, 8), "ECONOMY")  # different key
+
+    assert len(calls) == 2  # second identical call never hit the network
+    assert a.api_calls == 2  # cache hits don't count as api calls
+    assert a.call_log.count("flights") == 2  # ...nor as call-log records
+    assert first == second
