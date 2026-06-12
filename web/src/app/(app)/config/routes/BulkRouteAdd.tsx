@@ -7,6 +7,7 @@ import { bulkAddRoutes, type BulkAddSummary } from '@/app/config-actions';
 export function BulkRouteAdd({ zones }: { zones: { zone: string }[] }) {
   const [text, setText] = useState('');
   const [result, setResult] = useState<BulkAddSummary | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const preview = text.trim() ? parseBulkRoutes(text, zones.map((z) => z.zone)) : null;
@@ -15,8 +16,13 @@ export function BulkRouteAdd({ zones }: { zones: { zone: string }[] }) {
     const form = new FormData();
     form.set('routes_text', text);
     startTransition(async () => {
-      setResult(await bulkAddRoutes(form));
-      setText('');
+      try {
+        setResult(await bulkAddRoutes(form));
+        setAddError(null);
+        setText('');
+      } catch {
+        setAddError('Add failed — try again');
+      }
     });
   }
 
@@ -38,6 +44,7 @@ export function BulkRouteAdd({ zones }: { zones: { zone: string }[] }) {
         onChange={(e) => {
           setText(e.target.value);
           setResult(null);
+          setAddError(null);
         }}
         rows={8}
         placeholder={'VNO,FAO,MEDITERRANEAN\nKUN,DUB,CITY_BREAKS,core'}
@@ -83,6 +90,9 @@ export function BulkRouteAdd({ zones }: { zones: { zone: string }[] }) {
             {result.skippedExisting.length > 0 &&
               ` — skipped ${result.skippedExisting.length} existing (untouched)`}
           </span>
+        )}
+        {addError && (
+          <span style={{ fontSize: 13, color: 'var(--coral-600)' }}>{addError}</span>
         )}
       </div>
     </div>

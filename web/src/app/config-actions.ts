@@ -306,6 +306,7 @@ export async function bulkAddRoutes(form: FormData): Promise<BulkAddSummary> {
   const existing = await db
     .select({ origin: routes.origin, destination: routes.destination })
     .from(routes);
+  // Read-then-insert is unguarded by a DB unique constraint — acceptable for a single-admin tool; revisit with UNIQUE(origin,destination) + onConflictDoNothing if concurrency ever appears.
   const existingKeys = new Set(existing.map((r) => `${r.origin}-${r.destination}`));
 
   const now = new Date().toISOString();
