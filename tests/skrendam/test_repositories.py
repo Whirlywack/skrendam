@@ -51,3 +51,52 @@ def test_upsert_candidate_refreshes_expires_at_for_non_decided(session):
     assert c2.id == c1.id
     # expires_at MUST be refreshed for non-decided candidates
     assert c2.expires_at == datetime(2026, 6, 17)
+
+
+def test_upsert_candidate_refreshes_departure_date_count_for_non_decided(session):
+    session.add(models.Route(id=3, origin="VNO", destination="AMS", zone="WEU"))
+    session.flush()
+    fields = dict(route_id=3, origin="VNO", destination="AMS", zone="WEU", trip_type="oneway",
+                  travel_date=date(2026, 8, 10), return_date=None, price=60.0, currency="EUR",
+                  baseline_price=90.0, discount_pct=33.0,
+                  expires_at=datetime(2026, 6, 16), departure_date_count=3)
+    key = "VNO|AMS|oneway|2026-08-10|60"
+    now = datetime(2026, 6, 2)
+
+    c1, created1 = repo.upsert_candidate(session, key, fields, now)
+    assert created1 is True
+    assert c1.departure_date_count == 3
+    # status remains "new" (non-decided)
+
+    c2, created2 = repo.upsert_candidate(
+        session, key, {**fields, "departure_date_count": 7},
+        datetime(2026, 6, 3))
+    assert created2 is False
+    assert c2.id == c1.id
+    # departure_date_count MUST be refreshed for non-decided candidates
+    assert c2.departure_date_count == 7
+
+
+def test_upsert_candidate_preserves_departure_date_count_for_approved(session):
+    session.add(models.Route(id=4, origin="VNO", destination="LHR", zone="WEU"))
+    session.flush()
+    fields = dict(route_id=4, origin="VNO", destination="LHR", zone="WEU", trip_type="oneway",
+                  travel_date=date(2026, 9, 1), return_date=None, price=55.0, currency="EUR",
+                  baseline_price=85.0, discount_pct=35.0,
+                  expires_at=datetime(2026, 6, 16), departure_date_count=3)
+    key = "VNO|LHR|oneway|2026-09-01|55"
+    now = datetime(2026, 6, 2)
+
+    c1, created1 = repo.upsert_candidate(session, key, fields, now)
+    assert created1 is True
+    c1.status = "approved"            # curator decision
+    session.flush()
+
+    c2, created2 = repo.upsert_candidate(
+        session, key, {**fields, "departure_date_count": 7},
+        datetime(2026, 6, 3))
+    assert created2 is False
+    assert c2.id == c1.id
+    assert c2.status == "approved"
+    # departure_date_count must NOT be refreshed for a curator-decided candidate
+    assert c2.departure_date_count == 3
