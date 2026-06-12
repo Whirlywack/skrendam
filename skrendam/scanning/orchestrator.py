@@ -21,6 +21,7 @@ from skrendam.scanning.scoring.eligibility import in_template_scope
 from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
+NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
 
 
 def due_routes(routes, today: date, rotation_days: int, all_routes: bool = False) -> list:
@@ -139,6 +140,7 @@ def run_scan(
             if base is None:
                 continue
             for p in _flagged(points, base, zone):
+                near_dates = sum(1 for q in points if q.price <= p.price * NEAR_PRICE_FRAC)
                 try:
                     fares = adapter.search_flights(
                         spec.origin, spec.destination, p.travel_date, p.return_date, spec.cabin
@@ -170,6 +172,7 @@ def run_scan(
                     scanner_version,
                     summary,
                     history,
+                    near_dates,
                 )
             if aborted:
                 break
@@ -240,6 +243,7 @@ def _persist_fare(
     scanner_version,
     summary,
     history,
+    departure_date_count,
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
     hist_series = history.for_route(route.id, spec.trip_type)
@@ -252,6 +256,9 @@ def _persist_fare(
             continue
         if not in_template_scope(tpl, route, point, today=now.date()):
             continue
+        if (tpl.min_departure_dates is not None
+                and departure_date_count < tpl.min_departure_dates):
+            continue  # marketability gate: not enough near-price dates to plan around
         ctx = ScoringContext(
             fare=fare,
             baseline=base,
@@ -296,6 +303,7 @@ def _persist_fare(
         search_params={"cabin": spec.cabin},
         scanner_version=scanner_version,
         expires_at=now + timedelta(days=CANDIDATE_TTL_DAYS),
+        departure_date_count=departure_date_count,
     )
     cand, created = repo.upsert_candidate(session, key, fields, now)
     if created:

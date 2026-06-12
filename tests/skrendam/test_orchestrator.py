@@ -384,3 +384,57 @@ def test_plan_block_in_health_json(session):
     run_scan(session, today=today, adapter=adapter, tail_rotation_days=10)
     run = session.query(models.ScanRun).one()
     assert run.health["plan"] == {"core": 1, "tail": 0, "specs_planned": 1}
+
+
+class SpreadBackend:
+    """5 near-priced cheap dates (<=110% of the 30.0 fare) + 6 expensive ones.
+
+    The 6 expensive dates keep the window median in the expensive cluster (~90 EUR)
+    so the 30 EUR flagged fare carries enough discount to pass scoring gates.
+    """
+
+    def search_calendar(self, spec):
+        d = date(2026, 7, 20)
+        cheap = [(d.fromordinal(d.toordinal() + i), None, 30.0 + i * 0.5) for i in range(5)]
+        dear = [
+            (date(2026, 7, 28), None, 90.0),
+            (date(2026, 7, 29), None, 95.0),
+            (date(2026, 7, 30), None, 100.0),
+            (date(2026, 7, 31), None, 105.0),
+            (date(2026, 8, 1), None, 110.0),
+            (date(2026, 8, 2), None, 115.0),
+        ]
+        return cheap + dear
+
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        return [{"price": 30.0, "currency": "EUR", "stops": 0, "duration": 215,
+                 "legs": [{"airline": {"code": "W6"}}], "self_transfer": False,
+                 "mixed_cabin": False, "booking_url": "https://x"}]
+
+
+def test_gate_passes_when_enough_near_price_dates(session):
+    _seed(session)
+    session.query(models.DealTemplate).update({"min_departure_dates": 5})
+    session.commit()
+    adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
+    assert summary.matches_created >= 1
+    cand = session.query(models.Candidate).filter_by(price=30.0).first()
+    assert cand.departure_date_count == 5
+
+
+def test_gate_blocks_template_below_minimum(session):
+    _seed(session)
+    session.query(models.DealTemplate).update({"min_departure_dates": 6})
+    session.commit()
+    adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
+    assert summary.matches_created == 0
+    assert summary.candidates_found == 0  # no match -> no orphan candidate
+
+
+def test_null_gate_template_unaffected(session):
+    _seed(session)  # min_departure_dates stays NULL
+    adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
+    assert summary.matches_created >= 1
