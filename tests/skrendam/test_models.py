@@ -42,8 +42,8 @@ def test_can_persist_core_rows(session):
 
 
 def test_0008_columns_exist(session):
-    r = models.Route(origin="VNO", destination="BCN", zone="MED")
     session.add(models.Zone(zone="MED", haul_type="short"))
+    r = models.Route(origin="VNO", destination="BCN", zone="MED")
     session.add(r)
     session.flush()
     assert r.core is False  # default

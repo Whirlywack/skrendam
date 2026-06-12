@@ -1,4 +1,4 @@
-"""Route expansion: routes.core, min_departure_dates, departure_date_count.
+"""Add routes.core, deal_templates.min_departure_dates, candidates.departure_date_count.
 
 Revision ID: 0008_route_expansion
 Revises: 0007_fli_resilience
