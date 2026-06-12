@@ -7,7 +7,6 @@ drafts, curator grouping query, recheck, publish, and idempotency on re-scan.
 
 from datetime import date, datetime, timedelta
 
-import pytest
 from sqlalchemy import func, select
 
 from skrendam.db import models
@@ -32,8 +31,9 @@ def _rd(spec):
 
 
 class FakeBackend:
-    """Returns 3 calendar points rooted at spec.window_start (always inside the
-    resolving template's window) plus one cheap detail fare.
+    """Window-aware calendar fake: 3 points rooted at spec.window_start.
+
+    Always inside the resolving template's window, plus one cheap detail fare.
 
     The three points vary travel_date by +0/+1/+2 days so they are distinct rows
     in price_log; having three prices means baseline.decile == the minimum, which
@@ -187,9 +187,7 @@ def test_full_pipeline_offline(session):
     session.commit()
 
     # ── 10. re-scan does not resurrect / duplicate approved candidate ─────────────────
-    summary2 = run_scan(
-        session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test-rescan"
-    )
+    run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test-rescan")
 
     # The approved candidate's deal_group_key already exists; upsert_candidate returns
     # (existing, False) so candidates_found is NOT incremented for it.

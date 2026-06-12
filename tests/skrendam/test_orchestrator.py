@@ -15,8 +15,9 @@ def _seed(session):
             min_discount_pct=20,
         )
     )
-    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True,
-                             core=True))
+    session.add(
+        models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True, core=True)
+    )
     aud = models.AudienceSegment(id=1, slug="budget", name="Budget")
     mom = models.TravelMoment(id=1, slug="lm", name="Last minute", moment_type="relative")
     session.add_all([aud, mom])
@@ -92,8 +93,9 @@ def test_match_less_fare_creates_no_candidate(session):
             min_discount_pct=20,
         )
     )
-    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True,
-                             core=True))
+    session.add(
+        models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True, core=True)
+    )
     aud = models.AudienceSegment(id=1, slug="budget", name="Budget")
     mom = models.TravelMoment(id=1, slug="lm", name="LM", moment_type="relative")
     session.add_all([aud, mom])
@@ -154,8 +156,9 @@ def _seed_many_routes(session, n=6):
     )
     dests = ["BCN", "AGP", "PMI", "LIS", "FAO", "ATH"][:n]
     for i, d in enumerate(dests, start=1):
-        session.add(models.Route(id=i, origin="VNO", destination=d, zone="MED", enabled=True,
-                                 core=True))
+        session.add(
+            models.Route(id=i, origin="VNO", destination=d, zone="MED", enabled=True, core=True)
+        )
     session.add_all(
         [
             models.AudienceSegment(id=1, slug="budget", name="Budget"),
@@ -316,18 +319,43 @@ def test_cliff_reason_uses_last_trustworthy_run(session):
 
 def _seed_two_routes(session):
     """Zone + template scoped to MED, route 1 core, route 2 tail."""
-    session.add(models.Zone(zone="MED", haul_type="short", threshold_price_eur=60,
-                            min_abs_savings_eur=20, min_discount_pct=20))
-    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED",
-                             enabled=True, core=True))
-    session.add(models.Route(id=2, origin="VNO", destination="AGP", zone="MED",
-                             enabled=True, core=False))
-    session.add_all([models.AudienceSegment(id=1, slug="budget", name="B"),
-                     models.TravelMoment(id=1, slug="lm", name="LM", moment_type="relative")])
-    session.add(models.DealTemplate(
-        id=1, slug="lastminute", name="LM", enabled=True, audience_segment_id=1,
-        travel_moment_id=1, trip_type="oneway", date_window_type="relative",
-        rel_offset_start_days=1, rel_offset_end_days=60, included_zones=["MED"], max_stops=1))
+    session.add(
+        models.Zone(
+            zone="MED",
+            haul_type="short",
+            threshold_price_eur=60,
+            min_abs_savings_eur=20,
+            min_discount_pct=20,
+        )
+    )
+    session.add(
+        models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True, core=True)
+    )
+    session.add(
+        models.Route(id=2, origin="VNO", destination="AGP", zone="MED", enabled=True, core=False)
+    )
+    session.add_all(
+        [
+            models.AudienceSegment(id=1, slug="budget", name="B"),
+            models.TravelMoment(id=1, slug="lm", name="LM", moment_type="relative"),
+        ]
+    )
+    session.add(
+        models.DealTemplate(
+            id=1,
+            slug="lastminute",
+            name="LM",
+            enabled=True,
+            audience_segment_id=1,
+            travel_moment_id=1,
+            trip_type="oneway",
+            date_window_type="relative",
+            rel_offset_start_days=1,
+            rel_offset_end_days=60,
+            included_zones=["MED"],
+            max_stops=1,
+        )
+    )
     session.commit()
 
 
@@ -358,8 +386,9 @@ def test_tail_route_scans_on_its_slot_day(session):
 def test_all_routes_overrides_rotation(session):
     _seed_two_routes(session)
     adapter = FliAdapter(FakeBackend(), pace=lambda: None)
-    run_scan(session, today=date(2026, 6, 2), adapter=adapter,
-             tail_rotation_days=10, all_routes=True)
+    run_scan(
+        session, today=date(2026, 6, 2), adapter=adapter, tail_rotation_days=10, all_routes=True
+    )
     scanned = {r[0] for r in session.query(models.PriceLog.route_id).distinct()}
     assert scanned == {1, 2}
 
@@ -409,9 +438,18 @@ class SpreadBackend:
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
         # Fare deliberately diverges from calendar price (28.0 vs 30.0) to lock the
         # design: departure_date_count anchors on the CALENDAR point price, not the fare.
-        return [{"price": 28.0, "currency": "EUR", "stops": 0, "duration": 215,
-                 "legs": [{"airline": {"code": "W6"}}], "self_transfer": False,
-                 "mixed_cabin": False, "booking_url": "https://x"}]
+        return [
+            {
+                "price": 28.0,
+                "currency": "EUR",
+                "stops": 0,
+                "duration": 215,
+                "legs": [{"airline": {"code": "W6"}}],
+                "self_transfer": False,
+                "mixed_cabin": False,
+                "booking_url": "https://x",
+            }
+        ]
 
 
 def test_gate_passes_when_enough_near_price_dates(session):
