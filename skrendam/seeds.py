@@ -161,6 +161,7 @@ ROUTES = [
     ("RIX", "LJU", "CITY_BREAKS", False),
     ("RIX", "DUB", "WESTERN_EUROPE", False),
     ("RIX", "LGW", "WESTERN_EUROPE", True),  # core: VFR corridor (in vfr-watch destinations)
+    # London from RIX zoned WESTERN_EUROPE (VFR/low-cost framing); VNO/KUN London is CITY_BREAKS.
     ("RIX", "STN", "WESTERN_EUROPE", False),
     ("RIX", "MAN", "WESTERN_EUROPE", False),
     ("RIX", "EDI", "WESTERN_EUROPE", False),
@@ -272,7 +273,8 @@ def seed_all(session: Session) -> None:
             min_departure_dates=5,
             public_label="Family sun",
             newsletter_tag="family_sun",
-            suggested_headline_template="{origin}->{destination} EUR{price} return - school-holiday sun",
+            suggested_headline_template="{origin}->{destination} EUR{price} return"
+            " - school-holiday sun",
             content_angle="School-holiday sun without package prices",
         ),
         dict(
@@ -349,7 +351,8 @@ def seed_all(session: Session) -> None:
             max_stops=1,
             public_label="Leave this weekend",
             newsletter_tag="last_minute",
-            suggested_headline_template="{origin}->{destination} just EUR{price} - leave this weekend",
+            suggested_headline_template="{origin}->{destination} just EUR{price}"
+            " - leave this weekend",
             content_angle="Leave this weekend",
         ),
         dict(
@@ -414,11 +417,12 @@ def seed_all(session: Session) -> None:
         ),
     ]
     for t in templates:
+        slug = str(t.pop("slug"))
         a, m = aud[str(t.pop("audience"))], mom[str(t.pop("moment"))]
         _get_or_create(
             session,
             models.DealTemplate,
             dict(audience_segment_id=a.id, travel_moment_id=m.id, enabled=True, **t),
-            slug=str(t.pop("slug")),
+            slug=slug,
         )
     session.commit()

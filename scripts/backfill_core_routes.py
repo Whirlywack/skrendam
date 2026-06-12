@@ -18,16 +18,19 @@ CORE_PAIRS = sorted({(o, d) for o, d, _z, core in ROUTES if core})
 def main() -> None:
     """Set core=True on existing routes matching the seed's core picks."""
     session = make_sessionmaker(Settings())()
-    changed = 0
-    for origin, destination in CORE_PAIRS:
-        route = session.scalar(
-            select(models.Route).filter_by(origin=origin, destination=destination)
-        )
-        if route is not None and not route.core:
-            route.core = True
-            changed += 1
-    session.commit()
-    print(f"core backfill: {changed} routes updated, {len(CORE_PAIRS)} core pairs total")
+    try:
+        changed = 0
+        for origin, destination in CORE_PAIRS:
+            route = session.scalar(
+                select(models.Route).filter_by(origin=origin, destination=destination)
+            )
+            if route is not None and not route.core:
+                route.core = True
+                changed += 1
+        session.commit()
+        print(f"core backfill: {changed} routes updated, {len(CORE_PAIRS)} core pairs total")
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":
