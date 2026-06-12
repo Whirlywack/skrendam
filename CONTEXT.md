@@ -25,3 +25,21 @@
   NEVER expire deals — expiry is date-based (the sweep) or human.
 - **expiry sweep** — end-of-scan housekeeping expiring live published deals whose `valid_until` or
   `travel_date` has passed. Pure calendar logic; works identically during an fli outage.
+
+## Route scanning
+
+- **cohort** — the set of routes due on a given day: all core routes plus today's tail slice. A
+  cohort is what a single `run-scan` invocation fetches and scores.
+- **core route** — a route flagged `routes.core`; included in every daily cohort regardless of
+  rotation. Use for high-priority or always-on routes.
+- **departure date count** — the number of calendar dates priced at or below 110 % of the flagged
+  calendar point, measured within the discovering spec's window. Stored on the candidate; used by
+  the marketability gate.
+- **marketability gate** — per-template minimum on a candidate's `departure_date_count`, set in
+  `deal_templates.min_departure_dates` (NULL = exempt). A candidate that clears the score
+  threshold but fails this gate is blocked from the queue — the fare must be plannable before it
+  is surfaced.
+- **tail rotation** — the computed daily slice of non-core routes selected for scanning:
+  `route.id % rotation_days == today.toordinal() % rotation_days`. Width is controlled by
+  `SKRENDAM_TAIL_ROTATION_DAYS` (default 10), meaning each non-core route scans roughly once
+  every ten days.

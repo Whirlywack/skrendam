@@ -2,7 +2,7 @@
 
 Things deliberately deferred during the Plan 1 (deal engine) build + QA gauntlet. "Remembered and marked" so nothing is silently lost. Each item notes *why* it's deferred and *when/where* it should be picked up.
 
-_Last updated: 2026-06-04, after T11/T12 security hardening (confirmed-row immutable upsert, RETURNING-gated email, httpOnly cookie token transport)._
+_Last updated: 2026-06-12, after route-expansion cohort workstream (fli-resilience = PR #7 merged; multi-strategy scoring = merged; route-expansion cohort deferred items logged below)._
 
 ---
 
@@ -106,3 +106,35 @@ _Added 2026-06-03. The public "opportunity inbox" is built in `site/` (separate 
 - **Demo seed** — `scripts/seed_demo_published_deals.py` seeds live deals into the dev DB for the homepage; not for production.
 
 **Security (verified clean by the security-review):** the public app writes ONLY `subscribers` (zod-validated, parameterized, idempotent); booking `href`s are scheme-allowlisted (no `javascript:` XSS); no `dangerouslySetInnerHTML`; no secrets committed.
+
+---
+
+## 9. Degraded-day cohort requeue — log-only stance
+
+_Added 2026-06-12, route-expansion workstream._
+
+When a cohort scan produces a `degraded` health verdict, the routes are NOT automatically requeued for a retry. Retrying into a gating window adds heat exactly when Google is hot, worsening the signal-to-noise ratio and making the next run more likely to degrade too. Tail rotation self-heals: the same routes appear again on their next scheduled day. Revisit only if `scan_runs` health data shows systematic degraded-day clustering (e.g. a specific route cohort consistently degrading on the same weekday).
+
+---
+
+## 10. Mid-run periodic commits
+
+_Added 2026-06-12, route-expansion workstream._
+
+A 31-minute scan on 2026-06-12 lost all of its candidates to a single transient Neon connection error at end-of-run (single end-of-run transaction). Periodic mid-run commits (flush after each cohort batch) would shrink the blast radius. Deferred: cohort scanning already reduces the per-run window significantly, making the risk acceptable; the implementation adds complexity around partial-run state tracking. Revisit if end-of-run transaction failures recur at a meaningful rate.
+
+---
+
+## 11. Drop-confidence decay for stale comparisons
+
+_Added 2026-06-12, route-expansion workstream._
+
+When a candidate's comparison baseline is old (e.g. the route had no fresh data in the preceding N days), the confidence score could be decayed proportionally to staleness. Deferred: no calibration data exists to fit a decay curve yet — the current `reason_text` already states the comparison age, giving the curator enough context to judge manually. Add decay once enough historical runs accumulate to fit a curve.
+
+---
+
+## 12. Roundtrip return-date overshoot at the 305-day horizon
+
+_Added 2026-06-12, route-expansion workstream._
+
+`resolver._window` clips the departure window to `today + 305` days (fli's ceiling), but a late departure combined with a long `trip_len` can push the return date past fli's ceiling — e.g. a long-haul-opportunist template with a day-300 departure and a 7-day trip yields a return at day 307. The resolver does not currently clip the return date. Impact is ≤ 2 calendar days at the tail of the window (rare). Fix belongs in `resolver._window` with its own unit test; deferred as low-impact until the window-tail behaviour is validated against live data.
