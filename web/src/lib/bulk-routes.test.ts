@@ -37,6 +37,27 @@ describe('parseBulkRoutes', () => {
   it('rejects unknown core markers', () => {
     const r = parseBulkRoutes('VNO,BCN,MEDITERRANEAN,sometimes', ZONES);
     expect(r.routes).toEqual([]);
-    expect(r.issues[0].problem).toMatch(/core/i);
+    expect(r.issues[0].problem).toMatch(/unknown core marker/i);
+  });
+
+  it('accepts non-core markers: false, no, 0 → core=false, not an issue', () => {
+    const text = [
+      'VNO,BCN,MEDITERRANEAN,false',
+      'KUN,BCN,MEDITERRANEAN,no',
+      'RIX,BCN,MEDITERRANEAN,0',
+    ].join('\n');
+    const r = parseBulkRoutes(text, ZONES);
+    expect(r.issues).toEqual([]);
+    expect(r.routes).toHaveLength(3);
+    expect(r.routes[0]).toMatchObject({ origin: 'VNO', destination: 'BCN', core: false });
+    expect(r.routes[1]).toMatchObject({ origin: 'KUN', destination: 'BCN', core: false });
+    expect(r.routes[2]).toMatchObject({ origin: 'RIX', destination: 'BCN', core: false });
+  });
+
+  it('keeps unknown markers (e.g. sometimes) as issues, not as non-core routes', () => {
+    const r = parseBulkRoutes('VNO,BCN,MEDITERRANEAN,sometimes', ZONES);
+    expect(r.routes).toEqual([]);
+    expect(r.issues).toHaveLength(1);
+    expect(r.issues[0].problem).toMatch(/unknown core marker.*sometimes/i);
   });
 });

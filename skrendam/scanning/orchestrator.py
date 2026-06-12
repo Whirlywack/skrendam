@@ -95,18 +95,19 @@ def run_scan(
     route_by_pair = {(r.origin, r.destination): r for r in routes if r.enabled}
 
     core_n = sum(1 for r in routes if r.core)
+    spec_lists = [(tpl, resolve(tpl, routes, today)) for tpl in templates]
     plan = {
         "core": core_n,
         "tail": len(routes) - core_n,
-        "specs_planned": sum(len(resolve(tpl, routes, today)) for tpl in templates),
+        "specs_planned": sum(len(s) for _, s in spec_lists),
     }
 
     aborted = False
-    for tpl in templates:
+    for _tpl, specs in spec_lists:  # _tpl reserved for future per-template plan metadata
         if aborted:
             break
         summary.templates_scanned += 1
-        for spec in resolve(tpl, routes, today):
+        for spec in specs:
             summary.routes_scanned += 1
             try:
                 points = adapter.search_calendar(spec)
@@ -140,6 +141,9 @@ def run_scan(
             if base is None:
                 continue
             for p in _flagged(points, base, zone):
+                # Window-relative: counted against THIS spec's calendar points; a second
+                # template with a different window stores whichever spec found the candidate
+                # first (see Candidate.departure_date_count).
                 near_dates = sum(1 for q in points if q.price <= p.price * NEAR_PRICE_FRAC)
                 try:
                     fares = adapter.search_flights(
@@ -256,8 +260,7 @@ def _persist_fare(
             continue
         if not in_template_scope(tpl, route, point, today=now.date()):
             continue
-        if (tpl.min_departure_dates is not None
-                and departure_date_count < tpl.min_departure_dates):
+        if tpl.min_departure_dates is not None and departure_date_count < tpl.min_departure_dates:
             continue  # marketability gate: not enough near-price dates to plan around
         ctx = ScoringContext(
             fare=fare,

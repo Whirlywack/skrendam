@@ -24,6 +24,7 @@ export interface BulkParseResult {
 
 const IATA = /^[A-Z]{3}$/;
 const CORE_MARKERS = new Set(['core', '1', 'true', 'yes']);
+const NON_CORE_MARKERS = new Set(['false', 'no', '0']);
 
 export function parseBulkRoutes(text: string, validZones: string[]): BulkParseResult {
   const zones = new Set(validZones);
@@ -60,11 +61,18 @@ export function parseBulkRoutes(text: string, validZones: string[]): BulkParseRe
     let core = false;
     if (fields.length === 4) {
       const marker = fields[3].toLowerCase();
-      if (!CORE_MARKERS.has(marker)) {
-        issues.push({ line, raw, problem: `unknown core marker '${fields[3]}' (use 'core')` });
+      if (CORE_MARKERS.has(marker)) {
+        core = true;
+      } else if (NON_CORE_MARKERS.has(marker)) {
+        core = false;
+      } else {
+        issues.push({
+          line,
+          raw,
+          problem: `unknown core marker '${fields[3]}' (use 'core' or leave blank)`,
+        });
         return;
       }
-      core = true;
     }
 
     const key = `${origin}-${destination}`;
