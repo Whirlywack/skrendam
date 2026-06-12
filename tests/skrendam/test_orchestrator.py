@@ -407,7 +407,9 @@ class SpreadBackend:
         return cheap + dear
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
-        return [{"price": 30.0, "currency": "EUR", "stops": 0, "duration": 215,
+        # Fare deliberately diverges from calendar price (28.0 vs 30.0) to lock the
+        # design: departure_date_count anchors on the CALENDAR point price, not the fare.
+        return [{"price": 28.0, "currency": "EUR", "stops": 0, "duration": 215,
                  "legs": [{"airline": {"code": "W6"}}], "self_transfer": False,
                  "mixed_cabin": False, "booking_url": "https://x"}]
 
@@ -418,8 +420,12 @@ def test_gate_passes_when_enough_near_price_dates(session):
     session.commit()
     adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
     summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
-    assert summary.matches_created >= 1
-    cand = session.query(models.Candidate).filter_by(price=30.0).first()
+    # Decile 30.5 flags two calendar points (30.0 and 30.5), each yielding one candidate.
+    assert summary.candidates_found == 2
+    assert summary.matches_created == 2
+    # Calendar-anchor proof: fare is 28.0 but near_dates counts from calendar price 30.0
+    # (ceiling 33.0 → 5 qualifying dates), not from fare 28.0 (ceiling 30.8 → 2 dates).
+    cand = session.query(models.Candidate).filter_by(price=28.0).first()
     assert cand.departure_date_count == 5
 
 
@@ -437,4 +443,5 @@ def test_null_gate_template_unaffected(session):
     _seed(session)  # min_departure_dates stays NULL
     adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
     summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
-    assert summary.matches_created >= 1
+    # Decile 30.5 flags two calendar points (30.0 and 30.5); NULL gate never blocks.
+    assert summary.matches_created == 2
