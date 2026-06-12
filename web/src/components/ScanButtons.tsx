@@ -60,7 +60,7 @@ export function ScanButtons() {
             <Icon name="CheckCircle" size={16} /> Scan queued
           </>
         ) : (
-          'Run scan'
+          'Scan today\'s cohort'
         )}
       </button>
 

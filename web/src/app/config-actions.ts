@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';
 import { db } from '@/db';
 import { dealTemplates, zones, audienceSegments, travelMoments, routes } from '@/db/generated/schema';
+import { parseBulkRoutes } from '@/lib/bulk-routes';
 
 // ---------------------------------------------------------------------------
 // Auth guard — re-checked inside EVERY action.
@@ -88,6 +89,7 @@ export async function upsertRoute(form: FormData): Promise<void> {
     destination: (form.get('destination') ?? '').toString().trim().toUpperCase(),
     zone: (form.get('zone') ?? '').toString().trim(),
     cabin,
+    core: form.get('core') === 'on',
   };
 
   if (!editableValues.origin || !editableValues.destination || !editableValues.zone) {
@@ -100,7 +102,7 @@ export async function upsertRoute(form: FormData): Promise<void> {
       .set({ ...editableValues, updatedAt: now })
       .where(eq(routes.id, id));
   } else {
-    // INSERT: must supply all NOT-NULL columns (origin, destination, zone, enabled, cabin, createdAt, updatedAt)
+    // INSERT: must supply all NOT-NULL columns (origin, destination, zone, enabled, cabin, core, createdAt, updatedAt)
     await db.insert(routes).values({
       ...editableValues,
       enabled: true,
@@ -283,4 +285,58 @@ export async function upsertMoment(form: FormData): Promise<void> {
   }
 
   revalidatePath('/config/moments');
+}
+
+// ---------------------------------------------------------------------------
+// BULK ADD ROUTES — insert-only. Existing (origin, destination) pairs are never
+// updated, so founder zone edits and disabled flags are never clobbered.
+// ---------------------------------------------------------------------------
+export interface BulkAddSummary {
+  inserted: number;
+  skippedExisting: string[]; // 'VNO-BCN' pairs already in the DB (left untouched)
+  issues: { line: number; problem: string }[];
+}
+
+export async function bulkAddRoutes(form: FormData): Promise<BulkAddSummary> {
+  await requireAdmin();
+  const text = (form.get('routes_text') ?? '').toString();
+  const zoneRows = await db.select({ zone: zones.zone }).from(zones);
+  const parsed = parseBulkRoutes(text, zoneRows.map((z) => z.zone));
+
+  const existing = await db
+    .select({ origin: routes.origin, destination: routes.destination })
+    .from(routes);
+  const existingKeys = new Set(existing.map((r) => `${r.origin}-${r.destination}`));
+
+  const now = new Date().toISOString();
+  const skippedExisting: string[] = [];
+  const fresh = parsed.routes.filter((r) => {
+    const key = `${r.origin}-${r.destination}`;
+    if (existingKeys.has(key)) {
+      skippedExisting.push(key);
+      return false;
+    }
+    return true;
+  });
+
+  if (fresh.length > 0) {
+    await db.insert(routes).values(
+      fresh.map((r) => ({
+        origin: r.origin,
+        destination: r.destination,
+        zone: r.zone,
+        core: r.core,
+        enabled: true,
+        cabin: 'ECONOMY',
+        createdAt: now,
+        updatedAt: now,
+      })),
+    );
+  }
+  revalidatePath('/config/routes');
+  return {
+    inserted: fresh.length,
+    skippedExisting,
+    issues: parsed.issues.map(({ line, problem }) => ({ line, problem })),
+  };
 }

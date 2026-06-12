@@ -15,6 +15,7 @@ interface RouteRow {
   zone: string;
   enabled: boolean;
   cabin: string;
+  core: boolean;
 }
 
 interface RouteFormProps {
@@ -99,6 +100,27 @@ export function RouteForm({ route, zones }: RouteFormProps) {
           >
             {route.cabin}
           </span>
+
+          {/* Core pill — amber, only when route.core */}
+          {route.core && (
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '.06em',
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                borderRadius: 'var(--radius-pill)',
+                background: 'var(--amber-50)',
+                color: 'var(--amber-700)',
+                border: '1px solid var(--amber-100)',
+                flex: 'none',
+              }}
+            >
+              core
+            </span>
+          )}
 
           {/* Enabled pill */}
           <span
@@ -216,6 +238,34 @@ export function RouteForm({ route, zones }: RouteFormProps) {
               <option value="BUSINESS">Business</option>
               <option value="FIRST">First</option>
             </select>
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              justifyContent: 'flex-end',
+            }}
+          >
+            <span style={labelTextStyle}>Core</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, height: 38 }}>
+              <input
+                type="checkbox"
+                name="core"
+                defaultChecked={route?.core ?? false}
+                style={{ width: 15, height: 15, accentColor: 'var(--brand)', cursor: 'pointer' }}
+              />
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 12,
+                  color: 'var(--fg-3)',
+                }}
+              >
+                Core routes scan every day; others rotate.
+              </span>
+            </div>
           </label>
         </div>
 
