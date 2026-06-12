@@ -164,3 +164,36 @@ def test_search_flights_cached_per_itinerary_key():
     assert a.api_calls == 2  # cache hits don't count as api calls
     assert a.call_log.count("flights") == 2  # ...nor as call-log records
     assert first == second
+
+
+def test_search_flights_error_is_not_cached():
+    calls = []
+
+    class FlakyBackend:
+        def search_flights(self, origin, destination, travel_date, return_date, cabin):
+            calls.append(1)
+            if len(calls) == 1:
+                raise RuntimeError("transient failure")
+            return [
+                {
+                    "price": 42.0,
+                    "currency": "EUR",
+                    "stops": 0,
+                    "duration": 120,
+                    "legs": [],
+                    "self_transfer": False,
+                    "mixed_cabin": False,
+                    "booking_url": None,
+                }
+            ]
+
+    adapter = FliAdapter(FlakyBackend(), pace=lambda: None)
+    d = date(2026, 9, 1)
+
+    with pytest.raises(ScanError):
+        adapter.search_flights("VNO", "BCN", d, None, "ECONOMY")
+
+    fares = adapter.search_flights("VNO", "BCN", d, None, "ECONOMY")
+
+    assert len(calls) == 2  # backend was called again — error was not cached
+    assert fares[0].price == 42.0
