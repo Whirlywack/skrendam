@@ -27,7 +27,7 @@ All standard commands are in the `Makefile` and `CLAUDE.md`. Key ones:
 
 Before opening any PR, run the gate and complete its ritual — see
 [`docs/PR-GATE.md`](docs/PR-GATE.md). It is **lane-aware**: it runs only the
-verification lanes your diff touches (Python / fli-js / web / site / migration).
+verification lanes your diff touches (Python / web / site / migration).
 
 ```bash
 scripts/pr-gate.sh            # mechanical lanes (tests, typecheck, lint, migration no-diff)

@@ -49,7 +49,7 @@ test-all:
 
 # Run CI locally using act (requires Docker and act: https://github.com/nektos/act)
 ci:
-	act -j lint -j test --workflows .github/workflows/test.yml
+	act -j lint -j test --workflows .github/workflows/ci.yml
 
 # Run CI in Docker container (mounts source and Docker socket for act)
 ci-docker:

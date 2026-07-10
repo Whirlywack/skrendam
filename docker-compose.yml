@@ -1,6 +1,8 @@
 services:
   fli-mcp:
-    image: ghcr.io/punitarani/fli:latest
+    # Build the fork's own image — upstream's ghcr image would silently bypass
+    # every local patch this repo vendors fli for.
+    build: .
     ports:
       - "8000:8000"
     environment:

@@ -18,6 +18,7 @@ from skrendam.db.models import Candidate, CandidateTemplateMatch, PublishedDeal 
 
 
 def main() -> None:
+    """Seed demo published_deals rows into the target database."""
     db_url = os.environ.get("SKRENDAM_DATABASE_URL")
     if not db_url:
         print("ERROR: SKRENDAM_DATABASE_URL not set", file=sys.stderr)
@@ -35,39 +36,35 @@ def main() -> None:
 
         # --- find top-2 candidates from great-tier matches ---------------------
         threshold = 0.88
-        rows = (
-            session.execute(
+        rows = session.execute(
+            select(Candidate, CandidateTemplateMatch)
+            .join(
+                CandidateTemplateMatch,
+                CandidateTemplateMatch.candidate_id == Candidate.id,
+            )
+            .where(CandidateTemplateMatch.match_score >= threshold)
+            .order_by(CandidateTemplateMatch.match_score.desc())
+            .limit(20)  # fetch more to dedupe by candidate_id
+        ).all()
+
+        if not rows:
+            # Lower threshold if no great-tier candidates exist
+            threshold = 0.0
+            print("No candidates at ≥0.88 — lowering threshold to 0.0 to find any match.")
+            rows = session.execute(
                 select(Candidate, CandidateTemplateMatch)
                 .join(
                     CandidateTemplateMatch,
                     CandidateTemplateMatch.candidate_id == Candidate.id,
                 )
-                .where(CandidateTemplateMatch.match_score >= threshold)
                 .order_by(CandidateTemplateMatch.match_score.desc())
-                .limit(20)  # fetch more to dedupe by candidate_id
-            )
-            .all()
-        )
+                .limit(20)
+            ).all()
 
         if not rows:
-            # Lower threshold if no great-tier candidates exist
-            threshold = 0.0
-            print(f"No candidates at ≥0.88 — lowering threshold to 0.0 to find any match.")
-            rows = (
-                session.execute(
-                    select(Candidate, CandidateTemplateMatch)
-                    .join(
-                        CandidateTemplateMatch,
-                        CandidateTemplateMatch.candidate_id == Candidate.id,
-                    )
-                    .order_by(CandidateTemplateMatch.match_score.desc())
-                    .limit(20)
-                )
-                .all()
+            print(
+                "ERROR: No candidates with template matches found — cannot seed.", file=sys.stderr
             )
-
-        if not rows:
-            print("ERROR: No candidates with template matches found — cannot seed.", file=sys.stderr)
             sys.exit(1)
 
         # deduplicate by candidate_id, take top 2
