@@ -15,12 +15,15 @@ import {
 
 interface ComposerProps {
   c: CandidateView;
-  onClose: () => void;
+  /** Omit in inline mode — the detail page is a Server Component and functions
+   *  don't cross the RSC boundary; there's no drawer to dismiss anyway. */
+  onClose?: () => void;
   /** When true: render in-flow (no scrim, no close button) for the detail page. */
   inline?: boolean;
 }
 
-export function Composer({ c, onClose, inline = false }: ComposerProps) {
+export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerProps) {
+  const onClose = onCloseProp ?? (() => {});
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<string | null>(null);
   const [recheckQueued, setRecheckQueued] = useState(false);

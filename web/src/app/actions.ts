@@ -105,7 +105,6 @@ export async function publishDeal(input: {
   headline: string;
   body?: string;
   tiktokHook?: string;
-  channel?: 'public' | 'newsletter';
   validUntil?: string | null;
 }): Promise<void> {
   await requireAdmin();

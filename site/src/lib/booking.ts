@@ -2,7 +2,9 @@ export type BookingKind = 'airline' | 'ota' | 'google';
 export interface BookingCta { kind: BookingKind; button: string; sub: string; url: string; }
 
 function isSafeUrl(u: string): boolean {
-  try { const { protocol } = new URL(u); return protocol === 'https:' || protocol === 'http:'; }
+  // https only: booking links are outbound hrefs on public pages; a stray
+  // http:// link must not downgrade the visitor to cleartext.
+  try { return new URL(u).protocol === 'https:'; }
   catch { return false; }
 }
 
