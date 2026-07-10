@@ -72,6 +72,13 @@ if _env_timeout is not None:
 else:
     REQUEST_TIMEOUT = DEFAULT_TIMEOUT
 
+# Browser-impersonation profile override (fork patch). Call sites pass
+# ``impersonate="chrome"`` (the newest profile), whose Encrypted Client Hello
+# is dropped by TLS-inspecting egress proxies (corp networks, CI sandboxes)
+# with an opaque connection reset. Set FLI_IMPERSONATE to a pre-ECH profile
+# (e.g. ``chrome116``) in such environments; unset keeps upstream behaviour.
+IMPERSONATE_OVERRIDE: str | None = os.environ.get("FLI_IMPERSONATE") or None
+
 
 class Client:
     """HTTP client with built-in rate limiting, retry and user agent impersonation functionality.
@@ -127,6 +134,8 @@ class Client:
         """Make a rate-limited GET request with automatic retries."""
         self._rate_limiter.acquire()
         kwargs.setdefault("timeout", REQUEST_TIMEOUT)
+        if IMPERSONATE_OVERRIDE and "impersonate" in kwargs:
+            kwargs["impersonate"] = IMPERSONATE_OVERRIDE
         try:
             response = self._session().get(url, **kwargs)
             response.raise_for_status()
@@ -139,6 +148,8 @@ class Client:
         """Make a rate-limited POST request with automatic retries."""
         self._rate_limiter.acquire()
         kwargs.setdefault("timeout", REQUEST_TIMEOUT)
+        if IMPERSONATE_OVERRIDE and "impersonate" in kwargs:
+            kwargs["impersonate"] = IMPERSONATE_OVERRIDE
         try:
             response = self._session().post(url, **kwargs)
             response.raise_for_status()

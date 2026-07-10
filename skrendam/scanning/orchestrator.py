@@ -6,7 +6,8 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from skrendam.db import models, repositories as repo
+from skrendam.db import models
+from skrendam.db import repositories as repo
 from skrendam.fli_adapter.adapter import FliAdapter
 from skrendam.fli_adapter.errors import RateLimitedError, ScanError
 from skrendam.fli_adapter.health import HealthVerdict, assess, health_json
@@ -49,8 +50,13 @@ def run_scan(
     adapter: FliAdapter,
     scanner_version: str = "0.1.0",
     circuit_breaker_threshold: int = 5,
+    now: datetime | None = None,
 ) -> ScanSummary:
-    now = datetime(today.year, today.month, today.day)
+    # Production callers (cli, worker) pass the real wall clock so same-day runs
+    # get distinct timestamps (earlier runs stay visible in price history and
+    # last_seen_at never moves backwards). The midnight default keeps direct
+    # test calls deterministic.
+    now = now if now is not None else datetime(today.year, today.month, today.day)
     run = models.ScanRun(scanner_version=scanner_version, status="running", started_at=now)
     session.add(run)
     session.flush()
@@ -207,7 +213,7 @@ def _persist_fare(
     history,
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
-    hist_series = history.for_route(route.id, spec.trip_type)
+    hist_series = history.for_route(route.id, spec.trip_type, spec.duration_days)
     prev = hist_series.previous_price(point.travel_date, now)
     matched = []  # (tpl, headline_score, all_scores)
     for tpl in templates:

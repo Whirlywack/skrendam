@@ -1,5 +1,6 @@
 """PriceHistory: a read-module over price_log that turns the write-only log into
-queryable route memory. DbPriceHistory in prod, InMemoryPriceHistory in tests."""
+queryable route memory. DbPriceHistory in prod, InMemoryPriceHistory in tests.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ class HistoryPoint:
     scanned_at: datetime
     travel_date: date
     price: float
+    return_date: date | None = None
 
 
 @dataclass(frozen=True)
@@ -45,16 +47,24 @@ class PriceHistorySeries:
 
 
 class PriceHistory(Protocol):
-    def for_route(self, route_id: int, trip_type: str) -> PriceHistorySeries: ...
+    def for_route(
+        self, route_id: int, trip_type: str, duration_days: int | None = None
+    ) -> PriceHistorySeries: ...
 
 
 class InMemoryPriceHistory:
-    """Test adapter. Backed by a dict of (route_id, trip_type) -> PriceHistorySeries."""
+    """Test adapter. Backed by a dict of (route_id, trip_type) -> PriceHistorySeries.
+
+    duration_days is accepted for protocol parity but not filtered here — tests
+    control the series contents directly.
+    """
 
     def __init__(self, series_by_route: dict[tuple[int, str], PriceHistorySeries]):
         self._series = series_by_route
 
-    def for_route(self, route_id: int, trip_type: str) -> PriceHistorySeries:
+    def for_route(
+        self, route_id: int, trip_type: str, duration_days: int | None = None
+    ) -> PriceHistorySeries:
         return self._series.get(
             (route_id, trip_type),
             PriceHistorySeries(route_id=route_id, trip_type=trip_type, points=()),
@@ -70,25 +80,46 @@ class DbPriceHistory:
     scan's price_log rows (scanned_at == now) before scoring, and SQLAlchemy
     autoflush would otherwise pull them into this query — making a fare its own
     floor (ErrorFareScorer could never fire) and polluting RarityScorer's
-    percentile. The ``scanned_at < now`` bound excludes the current scan."""
+    percentile. The ``scanned_at < now`` bound excludes the current scan.
+
+    Round-trip series are partitioned by trip duration: two templates scanning
+    the same route with different trip lengths log different products (3-day vs
+    14-day totals), so percentile/min/previous-price must never blend them.
+    """
 
     def __init__(self, session: Session, now: datetime, window_days: int = 180):
         self._session = session
         self._now = now
         self._cutoff = now - timedelta(days=window_days)
-        self._cache: dict[tuple[int, str], PriceHistorySeries] = {}
+        self._cache: dict[tuple[int, str, int | None], PriceHistorySeries] = {}
 
-    def for_route(self, route_id: int, trip_type: str) -> PriceHistorySeries:
-        key = (route_id, trip_type)
+    def for_route(
+        self, route_id: int, trip_type: str, duration_days: int | None = None
+    ) -> PriceHistorySeries:
+        key = (route_id, trip_type, duration_days)
         if key not in self._cache:
             rows = self._session.execute(
-                select(models.PriceLog.scanned_at, models.PriceLog.travel_date, models.PriceLog.price)
-                .where(models.PriceLog.route_id == route_id,
-                       models.PriceLog.trip_type == trip_type,
-                       models.PriceLog.scanned_at >= self._cutoff,
-                       models.PriceLog.scanned_at < self._now)
+                select(
+                    models.PriceLog.scanned_at,
+                    models.PriceLog.travel_date,
+                    models.PriceLog.price,
+                    models.PriceLog.return_date,
+                )
+                .where(
+                    models.PriceLog.route_id == route_id,
+                    models.PriceLog.trip_type == trip_type,
+                    models.PriceLog.scanned_at >= self._cutoff,
+                    models.PriceLog.scanned_at < self._now,
+                )
                 .order_by(models.PriceLog.scanned_at)
             ).all()
-            pts = tuple(HistoryPoint(scanned_at=r[0], travel_date=r[1], price=r[2]) for r in rows)
-            self._cache[key] = PriceHistorySeries(route_id=route_id, trip_type=trip_type, points=pts)
+            pts = tuple(
+                HistoryPoint(scanned_at=r[0], travel_date=r[1], price=r[2], return_date=r[3])
+                for r in rows
+                if duration_days is None
+                or (r[3] is not None and (r[3] - r[1]).days == duration_days)
+            )
+            self._cache[key] = PriceHistorySeries(
+                route_id=route_id, trip_type=trip_type, points=pts
+            )
         return self._cache[key]

@@ -30,6 +30,7 @@ def process_pending_requests(
     now: datetime,
     scanner_version: str = "0.1.0",
     limit: int = 5,
+    circuit_breaker_threshold: int = 5,
 ) -> int:
     """Claim up to `limit` queued scan_requests (oldest first) and execute each.
 
@@ -45,6 +46,7 @@ def process_pending_requests(
         now: The current datetime (injected for testability).
         scanner_version: Version string stamped onto scan_runs rows.
         limit: Maximum number of queued requests to claim in one batch.
+        circuit_breaker_threshold: Consecutive-failure count that aborts a full scan.
 
     V1 assumes a SINGLE worker process: the claim (SELECT queued -> UPDATE running)
     is not atomic, so concurrent workers could double-claim, and a crash mid-batch
@@ -75,7 +77,12 @@ def process_pending_requests(
                 req.result_summary = {"available": check.available, "price": check.price}
             elif req.kind == "full_scan":
                 summary = run_scan(
-                    session, today=today, adapter=adapter, scanner_version=scanner_version
+                    session,
+                    today=today,
+                    adapter=adapter,
+                    scanner_version=scanner_version,
+                    circuit_breaker_threshold=circuit_breaker_threshold,
+                    now=now,
                 )
                 req.result_summary = {
                     "candidates_found": summary.candidates_found,
@@ -89,11 +96,18 @@ def process_pending_requests(
                 raise ValueError(f"unknown kind {req.kind!r}")
             req.status = "done"
         except Exception as exc:  # noqa: BLE001 — record and continue
+            # Discard the failed request's half-flushed writes BEFORE recording the
+            # outcome: committing them would persist a partial scan as if it finished.
+            session.rollback()
             req.status = "error"
             req.error = str(exc)
         finally:
-            req.finished_at = _utcnow()
-            session.commit()
+            try:
+                req.finished_at = _utcnow()
+                session.commit()
+            except Exception:  # noqa: BLE001 — a poisoned session must not kill the batch
+                _log.exception("failed to record outcome for scan_request %s", req.id)
+                session.rollback()
         processed += 1
     return processed
 
@@ -104,6 +118,7 @@ def poll_loop(
     *,
     interval_seconds: float = 15.0,
     scanner_version: str = "0.1.0",
+    circuit_breaker_threshold: int = 5,
     now_fn=_utcnow,
     today_fn=date.today,
     stop=None,
@@ -119,6 +134,7 @@ def poll_loop(
                     today=today_fn(),
                     now=now_fn(),
                     scanner_version=scanner_version,
+                    circuit_breaker_threshold=circuit_breaker_threshold,
                 )
             finally:
                 session.close()
