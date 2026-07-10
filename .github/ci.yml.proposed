@@ -1,0 +1,304 @@
+# PROPOSED replacement for .github/workflows/ci.yml — apply manually:
+#
+#   git mv .github/ci.yml.proposed .github/workflows/ci.yml && git commit && git push
+#
+# (The automation credential that produced this branch lacks the `workflow`
+# OAuth scope, so it cannot edit files under .github/workflows/ itself.)
+# Without this file applied, the old ci.yml still references the deleted
+# fli-js/ directory and its jobs will fail on this branch.
+#
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref (tag/branch/SHA) to check out. Defaults to the caller ref.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.filter.outputs.python || 'true' }}
+      web: ${{ steps.filter.outputs.web || 'true' }}
+      site: ${{ steps.filter.outputs.site || 'true' }}
+      workflows: ${{ steps.filter.outputs.workflows || 'true' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            python:
+              - 'fli/**'
+              - 'skrendam/**'
+              - 'tests/**'
+              - 'alembic/**'
+              - 'scripts/**'
+              - 'data/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'pytest.ini'
+              - 'railway.toml'
+              - 'nixpacks.toml'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            site:
+              - 'site/**'
+              - '.github/workflows/ci.yml'
+            workflows:
+              - '.github/workflows/**'
+              - '.github/actionlint.yaml'
+
+  actionlint:
+    name: Actionlint
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          # Show inline annotations on the PR diff for any findings
+          matcher: true
+
+  lint:
+    name: Lint Python
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.10
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Check formatting
+        run: uv run ruff format . --check
+
+      - name: Check style
+        run: uv run ruff check .
+
+  railway-build:
+    name: Railway build validation
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Create local bin directory
+        run: mkdir -p "$HOME/.local/bin"
+
+      - name: Install Nixpacks CLI
+        run: |
+          NIXPACKS_VERSION="1.41.0"
+          curl -fsSL "https://github.com/railwayapp/nixpacks/releases/download/v${NIXPACKS_VERSION}/nixpacks-v${NIXPACKS_VERSION}-x86_64-unknown-linux-musl.tar.gz" | tar xz -C "$HOME/.local/bin"
+
+      - name: Add local bin to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Validate Railway and Nixpacks config
+        run: |
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          railway = tomllib.loads(Path("railway.toml").read_text())
+          nixpacks = tomllib.loads(Path("nixpacks.toml").read_text())
+
+          assert railway["build"]["builder"] == "NIXPACKS"
+          assert "nixpacksPlan" not in railway["build"]
+          assert railway["deploy"]["startCommand"] == "fli-mcp-http"
+          assert nixpacks["variables"]["NIXPACKS_UV_VERSION"]
+          assert nixpacks["start"]["cmd"] == "fli-mcp-http"
+          PY
+
+      - name: Generate Nixpacks plan
+        run: nixpacks plan . > /tmp/nixpacks-plan.json
+
+      - name: Assert plan pins uv for install
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          plan = json.loads(Path("/tmp/nixpacks-plan.json").read_text())
+          install_cmds = plan["phases"]["install"]["cmds"]
+          joined = "\n".join(install_cmds)
+
+          assert "pip install uv==$NIXPACKS_UV_VERSION" in joined
+          assert "uv sync --active --no-dev --frozen --extra mcp" in joined
+          PY
+
+      - name: Smoke test Railway production install
+        run: |
+          uv venv /tmp/fli-railway-venv --python 3.12
+          . /tmp/fli-railway-venv/bin/activate
+          uv sync --active --no-dev --frozen --extra mcp
+          python -c "import fastmcp, fli.mcp.server"
+
+  test:
+    name: test
+    needs: [ changes, lint, railway-build ]
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12", "3.13" ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra mcp
+
+      - name: Run tests
+        run: |
+          uv run pytest tests/ --all -v \
+            --ignore=tests/search/ \
+            -k "not test_search_dates_round_trip" \
+            --junitxml=junit.xml
+        env:
+          FORCE_COLOR: 1
+
+      - name: Upload Test Results
+        if: always() && !env.ACT
+        uses: actions/upload-artifact@v7
+        with:
+          name: Test Results (Python ${{ matrix.python-version }})
+          path: junit.xml
+
+  web:
+    name: web / Deal Desk
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npx next build
+        env:
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          AUTH_SECRET: "ci-only-secret-not-used-in-prod"
+
+  site:
+    name: site / Public site
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npx next build
+        env:
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+
+  publish-test-results:
+    name: Publish Test Results
+    needs: [ test ]
+    runs-on: ubuntu-latest
+    if: always() && needs.test.result != 'skipped'
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: "artifacts/**/junit.xml"
+          check_name: "Test Results"
+          comment_mode: always
+          compare_to_earlier_commit: true
