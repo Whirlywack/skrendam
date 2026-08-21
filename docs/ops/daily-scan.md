@@ -3,6 +3,13 @@
 The engine's designed heartbeat is one scan per day at 06:00 (Europe/Vilnius). Until there is a
 hosted scheduler, it runs on the dev Mac via a launchd user agent.
 
+## ⚠️ Keep the repo out of ~/Documents
+
+macOS TCC denies launchd-spawned bash any access to `~/Documents`, `~/Desktop` and
+`~/Downloads`, with **no prompt and no error you would ever see** — the job simply fails
+every day. This cost 70 days of scans in 2026. The repo now lives at `~/Skrendam`, and
+`install-daily-scan.sh` refuses to install if you move it back into a protected folder.
+
 ## Install (from the PRIMARY checkout, after merge)
 
     scripts/install-daily-scan.sh
@@ -15,6 +22,13 @@ This renders `scripts/launchd/com.skrendam.daily-scan.plist` with absolute paths
 `scripts/daily-scan.sh` → `uv run skrendam run-scan` against the Neon dev-branch DB.
 The connection string is read from `SKRENDAM_DATABASE_URL`, falling back to `DATABASE_URL` in
 `web/.env.local` (gitignored). The secret never enters the repo or the plist.
+
+## Two jobs get installed
+
+| Job | When | What it does |
+|---|---|---|
+| `com.skrendam.daily-scan` | 06:00 | the scan; posts a notification with its outcome |
+| `com.skrendam.watchdog` | 09:00 | dead-man's switch — silent unless the scan went missing, went degraded, or the job got unloaded |
 
 ## Where to look
 
