@@ -16,6 +16,45 @@ admin and the health detection all work correctly — the *data supply* is what 
 
 ---
 
+## 0.5 START HERE — state at session close (2026-08-21 evening)
+
+**Everything is merged and green.** Open Claude Code from `~/Skrendam` (memory lives at
+that path key). The working checkout is `main`, in sync with origin.
+
+| | |
+|---|---|
+| `main` | PR #9 (audit fixes + repo move + monitoring, 21 commits) and PR #10 (CI green fix) merged; **CI fully green** on the merge commit — full Python matrix 3.10–3.13, web, site |
+| Open PRs | only **#8** (route expansion 14→146) — **deliberately held**, see below |
+| launchd | `com.skrendam.daily-scan` 06:00 + `com.skrendam.watchdog` 09:00, both armed, pointing at `~/Skrendam` |
+| DB | dev Neon; 9 fresh candidates in the queue; 1 live deal; **0 subscribers** (test rows deleted, sequence reset) |
+
+### The first thing that happens next: the 06:00 scan
+
+It is the **first clean, uncontaminated reading** since the BotGuard gate was discovered
+(all of 2026-08-21's numbers were polluted by our own probing). The founder gets a
+notification; `scripts/status.sh` has the detail. Interpretation:
+
+- **exit 0 / healthy** → the gating was partly self-inflicted heat; supply may be workable
+  at gentle pace. Re-evaluate: unfreeze PR #8 (founder reviews route list + 11 core picks
+  + post-merge runbook in the PR body), then Workstream B (digest).
+- **exit 2 / degraded with "N/40 calendar searches returned no data"** → BotGuard is the
+  steady state (~15% throughput). The supply decision can no longer wait:
+  **(a) headful-browser path** (Playwright + real Chromium — the only approach with
+  evidence of working, 6/6 in upstream's A/B; headless scores WORSE than nothing) or
+  **(b) paid API** (SerpApi etc.) for the core routes — this is the long-flagged R1
+  migration arriving early. Cheap experiments first: force-IPv4 (`CurlOpt.IPRESOLVE`,
+  upstream #200) and the curl_cffi string-proxy patch (#50) — an hour each.
+
+### Standing queue after the supply decision
+
+1. PR #8 — held until the steady-state gating rate is known.
+2. Workstream B (digest email) — the pilot's centerpiece; sender-home decision still open
+   (Python job vs Next cron vs `scan_requests` kind).
+3. R0: the funnel has **zero real humans** ever through it — TikTok + signup is untested.
+4. Deferred review findings with triggers: §6 below.
+
+---
+
 ## 1. What this product is (for whoever reads this cold)
 
 Skrendam/Yip is a **curated flight-deal newsletter** for the Baltics — a robot proposes,
@@ -255,7 +294,7 @@ matches our 6/40 = 15% almost exactly.
   146 routes yields ~15% of expected data while multiplying request volume.
   Also note PR #8 re-adds `fli_timeout` (unused), which the audit deleted — it will
   re-break `test_fli_timeout_setting_removed` on merge.
-- **`fix/audit-findings`** — **merged to `main` 2026-08-21** (PR #9): the July 20-agent audit fix pass + everything in this handoff (repo move fallout, test repairs, monitoring stack, four-reviewer code-review fixes). The primary checkout is back on `main`; day-to-day work continues from `main` at `~/Skrendam`.
+- **`fix/audit-findings`** — **merged to `main` 2026-08-21** (PR #9): the July 20-agent audit fix pass + everything in this handoff (repo move fallout, test repairs, monitoring stack, four-reviewer code-review fixes). The primary checkout is back on `main`; day-to-day work continues from `main` at `~/Skrendam`. Merging #9 triggered the rewritten CI's first real run and exposed two never-executed jobs (missing `--extra skrendam` in the test install; site build prerendering DB-backed pages against CI's dummy URL) — fixed and merged as **PR #10**; `main` CI is green.
 
 ---
 
