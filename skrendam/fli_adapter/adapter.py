@@ -1,5 +1,6 @@
 """The only module that talks to a flight-search backend. Pure plumbing + caching."""
 
+import logging
 from collections.abc import Callable
 from datetime import date
 
@@ -13,6 +14,18 @@ from skrendam.fli_adapter.errors import (
 )
 from skrendam.fli_adapter.health import CallLog
 from skrendam.scanning.types import CalendarPoint, FareItinerary, SearchSpec
+
+_log = logging.getLogger(__name__)
+
+# Sanity ceiling on rows accepted from one backend call. Legitimate calendar
+# responses are ~61 days per chunk; the row count is otherwise entirely
+# response-controlled bytes, and a corrupted payload must not drive unbounded
+# ORM inserts or tier-2 fan-out.
+MAX_ROWS_PER_CALL = 500
+
+# Booking links originate from Google-controlled response bytes and end up as
+# public hrefs on published deals; anything but a Google Flights URL is dropped.
+_BOOKING_URL_PREFIX = "https://www.google.com/"
 
 
 def _classify(exc: Exception) -> ScanError:
@@ -88,6 +101,14 @@ class FliAdapter:
         self.api_calls += 1
         try:
             rows = self._backend.search_calendar(spec)
+            if len(rows) > MAX_ROWS_PER_CALL:
+                _log.warning(
+                    "calendar %s returned %d rows; truncating to %d",
+                    route,
+                    len(rows),
+                    MAX_ROWS_PER_CALL,
+                )
+                rows = rows[:MAX_ROWS_PER_CALL]
             points = [CalendarPoint(td, rd, float(p)) for (td, rd, p) in rows]
         except ScanError as err:
             self.call_log.record(
@@ -141,6 +162,14 @@ class FliAdapter:
         self.api_calls += 1
         try:
             raw = self._backend.search_flights(origin, destination, travel_date, return_date, cabin)
+            if len(raw) > MAX_ROWS_PER_CALL:
+                _log.warning(
+                    "flights %s returned %d fares; truncating to %d",
+                    route,
+                    len(raw),
+                    MAX_ROWS_PER_CALL,
+                )
+                raw = raw[:MAX_ROWS_PER_CALL]
             fares = [self._to_itinerary(r) for r in raw]
         except ScanError as err:  # e.g. ParseError from _to_itinerary
             self.call_log.record(
@@ -171,6 +200,10 @@ class FliAdapter:
     @staticmethod
     def _to_itinerary(r: dict) -> FareItinerary:
         try:
+            booking_url = r.get("booking_url")
+            if booking_url is not None and not str(booking_url).startswith(_BOOKING_URL_PREFIX):
+                _log.warning("dropping non-Google booking_url: %.100s", booking_url)
+                booking_url = None
             return FareItinerary(
                 price=float(r["price"]),
                 currency=r.get("currency", "EUR"),
@@ -179,7 +212,14 @@ class FliAdapter:
                 legs=r.get("legs", []),
                 self_transfer=bool(r.get("self_transfer", False)),
                 mixed_cabin=bool(r.get("mixed_cabin", False)),
-                booking_url=r.get("booking_url"),
+                airport_change=bool(r.get("airport_change", False)),
+                overnight_layover=bool(r.get("overnight_layover", False)),
+                max_layover_minutes=(
+                    int(r["max_layover_minutes"])
+                    if r.get("max_layover_minutes") is not None
+                    else None
+                ),
+                booking_url=booking_url,
                 raw=r,
             )
         except (KeyError, TypeError, ValueError) as exc:

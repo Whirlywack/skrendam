@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { getQueueRows, getLatestScanRun, getPublishedDeals } from '@/lib/queries';
 import { toCandidateView, toScanView } from '@/lib/mappers';
-import { GREAT_THRESHOLD } from '@/lib/tiers';
 import { DashboardCards } from '@/components/DashboardCards';
 import { ScanButtons } from '@/components/ScanButtons';
 import { ScanHealthBanner } from '@/components/ScanHealthBanner';
@@ -17,7 +16,8 @@ export default async function Dashboard() {
   const scan = toScanView(run);
 
   // New high-score candidates: status 'suggested' AND in the GREAT tier
-  const highScore = views.filter((v) => v.status === 'suggested' && v.score >= GREAT_THRESHOLD).length;
+  // (v.tier honors the engine-written quality_tier; the threshold is only its fallback)
+  const highScore = views.filter((v) => v.status === 'suggested' && v.tier === 'great').length;
 
   // Needs recheck: verifiedAt is null
   const needsRecheck = views.filter((v) => !v.verifiedAt).length;

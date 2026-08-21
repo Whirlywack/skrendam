@@ -4,11 +4,14 @@ from skrendam.fli_adapter.pacing import CircuitBreaker, TokenBucket
 def test_token_bucket_waits_until_interval(monkeypatch):
     clock = {"t": 0.0}
     sleeps = []
-    bucket = TokenBucket(min_interval=1.5, jitter=0.0,
-                         now=lambda: clock["t"], sleep=lambda s: (sleeps.append(s),
-                                                                  clock.__setitem__("t", clock["t"] + s)))
-    bucket.acquire()            # first call: no wait
-    bucket.acquire()            # immediately after: must wait ~1.5s
+    bucket = TokenBucket(
+        min_interval=1.5,
+        jitter=0.0,
+        now=lambda: clock["t"],
+        sleep=lambda s: (sleeps.append(s), clock.__setitem__("t", clock["t"] + s)),
+    )
+    bucket.acquire()  # first call: no wait
+    bucket.acquire()  # immediately after: must wait ~1.5s
     assert sleeps and abs(sleeps[-1] - 1.5) < 1e-6
 
 

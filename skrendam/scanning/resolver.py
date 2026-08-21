@@ -19,13 +19,25 @@ def _window(tpl: "models.DealTemplate", today: date) -> tuple[date, date]:
             raise ValueError("seasonal template missing season_start_mmdd / season_end_mmdd")
         sm, sd = (int(x) for x in tpl.season_start_mmdd.split("-"))
         em, ed = (int(x) for x in tpl.season_end_mmdd.split("-"))
-        wraps = (em, ed) < (sm, sd)           # season crosses year-end (e.g. Dec -> Feb)
-        start = date(today.year, sm, sd)
-        end = date(today.year + 1 if wraps else today.year, em, ed)
-        if end < today:                       # whole window already passed -> roll to next year
-            start = date(start.year + 1, sm, sd)
-            end = date(end.year + 1, em, ed)
-        start = max(start, today)             # never scan the past
+        wraps = (em, ed) < (sm, sd)  # season crosses year-end (e.g. Dec -> Feb)
+        if wraps:
+            # Two occurrences straddle today: the one that began last year
+            # (tail runs to this year's end-mmdd) and the one beginning this
+            # year. Mid-season in January must scan the REMAINING tail, not
+            # skip eleven months ahead to the next occurrence.
+            if today <= date(today.year, em, ed):
+                start = date(today.year - 1, sm, sd)
+                end = date(today.year, em, ed)
+            else:
+                start = date(today.year, sm, sd)
+                end = date(today.year + 1, em, ed)
+        else:
+            start = date(today.year, sm, sd)
+            end = date(today.year, em, ed)
+            if end < today:  # whole window already passed -> roll to next year
+                start = date(start.year + 1, sm, sd)
+                end = date(end.year + 1, em, ed)
+        start = max(start, today)  # never scan the past
     elif tpl.date_window_type == "fixed":
         fixed_start, fixed_end = tpl.fixed_start_date, tpl.fixed_end_date
         if fixed_start is None or fixed_end is None:
@@ -50,8 +62,9 @@ def _destinations_ok(tpl: "models.DealTemplate", route: "models.Route") -> bool:
     return True
 
 
-def resolve(tpl: "models.DealTemplate", routes: list["models.Route"],
-            today: date) -> list[SearchSpec]:
+def resolve(
+    tpl: "models.DealTemplate", routes: list["models.Route"], today: date
+) -> list[SearchSpec]:
     start, end = _window(tpl, today)
     if start > end:
         return []
@@ -60,6 +73,9 @@ def resolve(tpl: "models.DealTemplate", routes: list["models.Route"],
     for r in routes:
         if not r.enabled or not _destinations_ok(tpl, r):
             continue
-        specs.append(SearchSpec(r.origin, r.destination, tpl.trip_type,
-                                start, end, duration, tpl.cabin or "ECONOMY"))
+        specs.append(
+            SearchSpec(
+                r.origin, r.destination, tpl.trip_type, start, end, duration, tpl.cabin or "ECONOMY"
+            )
+        )
     return specs

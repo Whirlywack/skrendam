@@ -4,13 +4,14 @@
 // ---------------------------------------------------------------------------
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_MAX_LENGTH = 254; // RFC 5321 ceiling; also bounds what we persist
 
 export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
 export function isValidEmail(email: string): boolean {
-  return EMAIL_RE.test(email);
+  return email.length <= EMAIL_MAX_LENGTH && EMAIL_RE.test(email);
 }
 
 // ---------------------------------------------------------------------------

@@ -192,3 +192,6 @@ site/playwright-report/
 site/test-results/
 !site/src/lib/
 !site/src/lib/**
+
+# Generated Playwright journey screenshots (journey-capture.spec.ts writes these)
+site/e2e/journey-shots/

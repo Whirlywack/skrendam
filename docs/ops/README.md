@@ -60,6 +60,14 @@ instead). The engine now tells the difference between "quiet market" and "broken
 | `degraded` | Scan finished but most searches came back empty — **Google is gating** | Don't trust "no deals today"; **don't run bulk "recheck live"**; wait for the next scan |
 | `failed` | Circuit breaker aborted mid-run (loud errors like timeouts) | Check the log; usually transient — next scan recovers |
 
+You are told automatically — you don't have to go looking:
+
+- **A desktop notification** when each scan finishes ("Skrendam scan OK / DEGRADED / FAILED").
+- **A 09:00 watchdog** that stays quiet unless something is wrong. It is the only thing that
+  can catch a scan which *never ran* — a job that doesn't start reports nothing, which is
+  exactly how the June–August 2026 outage hid for 70 days.
+- **`scripts/status.sh`** any time you want the full picture in one command.
+
 Where the signal shows up (all three say the same thing):
 
 - **Deal Desk dashboard** — a red banner when the latest run is degraded/failed, with the
@@ -103,6 +111,7 @@ and reacting to a banner.
 Run from the repository root (`uv` handles the Python environment):
 
 ```bash
+scripts/status.sh               # ← START HERE: at-a-glance health, no dev server needed
 uv run skrendam run-scan        # one scan now (exit 0 healthy / 2 degraded-or-failed)
 uv run skrendam worker          # start the queue poller (admin buttons need this running)
 uv run skrendam analyze         # tuning stats over collected data

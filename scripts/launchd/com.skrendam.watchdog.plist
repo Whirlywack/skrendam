@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.skrendam.watchdog</string>
+  <!-- Dead-man's switch. The daily scan can only report failure when it RUNS;
+       a job that never starts is silent, which is how the 2026-06/08 outage
+       hid for 70 days. This fires three hours after the scan window and speaks
+       up only when something is actually wrong. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>__REPO_DIR__/scripts/status.sh</string>
+    <string>--alert</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+  <!-- launchd replays calendar jobs missed during SLEEP, but not while powered
+       off. RunAtLoad closes that gap at every login; alert mode is silent when
+       healthy, so this costs nothing. -->
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/skrendam/watchdog.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/skrendam/watchdog.log</string>
+</dict>
+</plist>

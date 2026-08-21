@@ -1,6 +1,8 @@
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { loginLimiter } from '@/lib/rate-limit';
 
 export default async function LoginPage({
   searchParams,
@@ -11,6 +13,15 @@ export default async function LoginPage({
 
   async function login(formData: FormData) {
     'use server';
+    // Brute-force guard: one admin account exists, so throttle attempts
+    // per (ip, username) before the credential check ever runs.
+    const h = await headers();
+    const ip = (h.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+    const username = (formData.get('username') ?? '').toString().slice(0, 64);
+    if (!loginLimiter.allow(`${ip}|${username}`)) {
+      console.warn(`login rate-limited (ip=${ip})`);
+      redirect('/login?error=locked');
+    }
     try {
       await signIn('credentials', {
         username: formData.get('username'),
@@ -58,7 +69,9 @@ export default async function LoginPage({
         </h1>
         {error ? (
           <p style={{ margin: 0, color: 'var(--coral-600)', fontSize: 13 }}>
-            Invalid username or password.
+            {error === 'locked'
+              ? 'Too many attempts — wait 15 minutes and try again.'
+              : 'Invalid username or password.'}
           </p>
         ) : null}
         <input

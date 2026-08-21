@@ -1,5 +1,3 @@
-'use client';
-
 import type { ScanView } from '@/lib/types';
 import { GREAT_THRESHOLD } from '@/lib/tiers';
 

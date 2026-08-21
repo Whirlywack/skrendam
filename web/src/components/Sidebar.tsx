@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Inbox, Send, BarChart3, Settings, LayoutTemplate, Users, Map, CalendarDays, Plane } from 'lucide-react';
+import { Inbox, Send, BarChart3, Settings, LayoutTemplate, Users, Map, CalendarDays, Plane, LogOut } from 'lucide-react';
+import { logoutAction } from '@/app/auth-actions';
 import { Wordmark } from './Wordmark';
 
 type NavItem = {
@@ -59,6 +60,17 @@ export function Sidebar() {
           <div className="nm">Curator</div>
           <div className="ro">Curator · Yip</div>
         </div>
+        <form action={logoutAction} style={{ marginLeft: 'auto' }}>
+          <button
+            type="submit"
+            className="navi"
+            title="Sign out"
+            aria-label="Sign out"
+            style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+          >
+            <LogOut size={16} />
+          </button>
+        </form>
       </div>
     </aside>
   );

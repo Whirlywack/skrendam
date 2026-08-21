@@ -21,3 +21,7 @@ test('rejects javascript: url → google fallback', () => {
   const c = bookingCta('javascript:alert(document.cookie)');
   expect(c.url).toBe('https://www.google.com/travel/flights');
 });
+test('rejects http: url → google fallback (no cleartext downgrade)', () => {
+  const c = bookingCta('http://example.com/deal');
+  expect(c.url).toBe('https://www.google.com/travel/flights');
+});

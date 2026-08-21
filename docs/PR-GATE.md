@@ -1,9 +1,9 @@
 # PR Gate
 
 The ritual every branch passes **before** a PR is opened. It exists to catch
-regressions and keep the repo's bookkeeping honest — across all four toolchains
-in this monorepo (Python `fli`+`skrendam`, `fli-js` on Bun, the `web` and `site`
-Next.js apps on Neon/Drizzle).
+regressions and keep the repo's bookkeeping honest — across the monorepo's
+toolchains (Python `fli`+`skrendam`, the `web` and `site` Next.js apps on
+Neon/Drizzle).
 
 **Principle: lane-aware.** You only run the verification lanes your diff
 touches. A skrendam-only change does not rebuild the Next.js apps; a CSS tweak
@@ -43,7 +43,6 @@ reminds you about at the end. The script's green is necessary, not sufficient.
 | **P · Python** | `fli/` `skrendam/` `tests/` `alembic/` `pyproject.toml` | pytest (offline), `ruff format --check`, `ruff check` |
 | **M · Migration** | `alembic/versions/` | model⇄migration no-diff, + live-apply / Drizzle-repull checklist |
 | **MCP** | `fli/mcp/` | param-naming + error-envelope + doc reminder |
-| **J · fli-js** | `fli-js/` `data/` | `bun run ci`, enum-codegen drift |
 | **W · web** | `web/` | vitest, `tsc --noEmit`, eslint, cold build, `'use server'`/auth reminder |
 | **S · site** | `site/` | vitest, `tsc --noEmit`, eslint, cold build, Playwright, signup/SEO reminder |
 
@@ -91,16 +90,6 @@ record all agree.
 - Errors return `{"success": false, "error": …}`; success payloads carry a
   deterministic `booking_url`.
 - Update the **MCP Tool Reference** in `CLAUDE.md`.
-
-### Lane J — `fli-js` / `data/`
-
-- `cd fli-js && bun run ci` (Biome format-check + oxlint + `tsc` + `bun test`).
-- If `data/*.csv` changed: `bun run generate:enums` must leave **no diff** in
-  `fli-js/src/models/` — the generated airport/airline enums track the CSVs, and
-  CI fails on drift.
-- Wire parity: if you changed encoding/tokens on either side, the snapshot tests
-  (`tests/integration/filter_format_snapshots`, `tests/search/proto`) must keep
-  Python and JS byte-identical.
 
 ### Lane W — `web` (curator admin)
 
