@@ -117,6 +117,27 @@ codebase-research were **never committed**. One `git clean` would have destroyed
 pilot strategy. Now tracked, along with `site/e2e/journey-capture.spec.ts`;
 `site/e2e/journey-shots/` is now gitignored.
 
+### 2.5 Built the monitoring stack (so silence can never hide again)
+
+- **Desktop notification** when each scan finishes ("Skrendam scan OK / DEGRADED / FAILED"),
+  scoped to *this* run's log slice so a crash can't display yesterday's numbers.
+- **`scripts/status.sh`** — one-command dashboard (last scan + age + health reasons, job
+  armed?, worker up?, queue depth, live deals, subscribers). `--alert` mode is silent when
+  healthy.
+- **`com.skrendam.watchdog` (09:00, RunAtLoad)** — the dead-man's switch. Alerts when no
+  scan *finished* in 26h, when either launchd job is unloaded, or on a degraded/failed run.
+  It fails loud (never silent) on its own errors: missing psql, missing DB URL, unreachable
+  DB. Writes a daily heartbeat line so a dead watchdog is distinguishable from a healthy one.
+- **`install-daily-scan.sh`** installs/uninstalls both jobs and **refuses** to install from a
+  TCC-protected folder (physical path, so symlinks can't sneak past).
+
+### 2.6 Deleted the 16 fake subscribers
+
+All 16 `subscribers` rows were `qa+...@example.com` Playwright e2e residue — **zero real
+people ever signed up**. (Earlier docs called them "16 real subscribers"; corrected in place.)
+Rows deleted, ID sequence reset — the first real signup will be id 1. Sharper truth left
+behind: R0 (acquisition) is entirely unproven; the funnel has never been touched by a human.
+
 ---
 
 ## 3. The BotGuard finding — the thing that actually matters
@@ -223,7 +244,7 @@ matches our 6/40 = 15% almost exactly.
 | `price_log` | 6,144 rows; history is June 3–13 plus today |
 | Candidates | 9 new, 377 expired, 1 approved |
 | Published deals | **1** live (VNO→LCA €140, travel 2026-09-30) — price unverified for 70 days |
-| Subscribers | **0 real.** All 16 rows are Playwright e2e residue (`qa+...@example.com`, matching the fixtures in `site/e2e/`) written before the `E2E_DATABASE_URL` guard landed |
+| Subscribers | **0** — table emptied 2026-08-21 (all 16 rows were Playwright e2e residue; sequence reset so the first real signup is id 1) |
 | Email | **OFF** — no `RESEND_API_KEY`; site runs single opt-in |
 | Digest sender | **does not exist** — nothing reads `subscribers.prefs` |
 
@@ -234,7 +255,7 @@ matches our 6/40 = 15% almost exactly.
   146 routes yields ~15% of expected data while multiplying request volume.
   Also note PR #8 re-adds `fli_timeout` (unused), which the audit deleted — it will
   re-break `test_fli_timeout_setting_removed` on merge.
-- **`fix/audit-findings`** — 14 commits, still **no PR opened**.
+- **`fix/audit-findings`** — **merged to `main` 2026-08-21** (PR #9): the July 20-agent audit fix pass + everything in this handoff (repo move fallout, test repairs, monitoring stack, four-reviewer code-review fixes). The primary checkout is back on `main`; day-to-day work continues from `main` at `~/Skrendam`.
 
 ---
 
