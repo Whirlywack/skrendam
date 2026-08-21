@@ -190,7 +190,9 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --extra dev --extra mcp
+        # skrendam extra: tests/skrendam imports sqlalchemy/alembic — without it
+        # collection fails with ModuleNotFoundError (first red main run, 2026-08-21)
+        run: uv sync --extra dev --extra mcp --extra skrendam
 
       - name: Run tests
         run: |
@@ -267,7 +269,11 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Build
-        run: npx next build
+        # compile-only: the collection pages prerender at build time and query the
+        # DB; CI has no database, so a full build always fails with NeonDbError.
+        # Compile mode validates bundling/routes without static generation —
+        # production builds (which have a real DATABASE_URL) are unaffected.
+        run: npx next build --experimental-build-mode compile
         env:
           DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
 
