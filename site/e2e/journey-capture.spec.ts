@@ -20,7 +20,7 @@
  * Already-confirmed rows in the DB block cookie issuance (setWhere: confirmed=false).
  */
 
-import { test, expect, Browser, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -143,7 +143,6 @@ test('Journey 1 — similar deal or nudge', async ({ page }) => {
   if (similarCount > 0) {
     // Click first similar deal
     const similarCard = page.locator('.grid3 .deal, .grid3 .feat').first();
-    const similarHref = await similarCard.getAttribute('href');
     await similarCard.click();
     await page.waitForURL(/\/deal\/\d+/, { timeout: TIMEOUT });
     await page.waitForLoadState('networkidle', { timeout: NETWORKIDLE_TIMEOUT });
@@ -483,7 +482,6 @@ test('Journey 5 — early alerts page', async ({ page }) => {
   // Try the EarlyAlertsBand "Get early alerts →" button
   const earlyBandLink = page.locator('.early').getByRole('link', { name: /get early alerts/i });
   const heroEarlyLink = page.locator('.cap').getByRole('link', { name: /get early alerts/i });
-  const headerEarlyLink = page.getByRole('link', { name: /early alerts/i }).first();
 
   let ctaUsed = '';
   if (await earlyBandLink.count() > 0) {

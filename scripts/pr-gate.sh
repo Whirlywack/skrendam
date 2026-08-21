@@ -143,7 +143,7 @@ fi
 # ───────────────────────── coverage catch-all ─────────────────────────
 # Surface changed paths that matched NO lane, so a new top-level package can't
 # pass the gate untested just because no lane regex covers it yet.
-LANE_RE='^(fli/|skrendam/|tests/|alembic/|alembic\.ini|pyproject\.toml|uv\.lock|web/|site/|data/|examples/|scripts/|docs/|mkdocs\.yml|\.github/|\.claude/|\.devcontainer/|\.gitignore|\.dockerignore|Dockerfile|docker-compose\.yml|railway\.toml|nixpacks\.toml|pytest\.ini|Makefile|LICENSE\.txt|CONTEXT\.md|AGENTS\.md|CLAUDE\.md|.*\.md|.*\.png|.*\.lock|Yip Design System/)'
+LANE_RE='^(fli/|skrendam/|tests/|alembic/|alembic\.ini|pyproject\.toml|uv\.lock|web/|site/|examples/|scripts/|docs/|mkdocs\.yml|\.github/|\.claude/|\.devcontainer/|\.gitignore|\.dockerignore|Dockerfile|docker-compose\.yml|railway\.toml|nixpacks\.toml|pytest\.ini|Makefile|LICENSE\.txt|CONTEXT\.md|AGENTS\.md|CLAUDE\.md|.*\.md|.*\.png|.*\.lock|Yip Design System/)'
 UNMATCHED="$(printf '%s\n' "$CHANGED" | grep -vE "$LANE_RE" || true)"
 if [ -n "$UNMATCHED" ]; then
   echo; echo "⚠ changed paths matched NO lane (NOT verified) — add a lane if these need checks:"

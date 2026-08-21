@@ -15,6 +15,10 @@
   </array>
   <key>StartCalendarInterval</key>
   <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+  <!-- launchd replays calendar jobs missed during SLEEP, but not while powered
+       off. RunAtLoad closes that gap at every login; alert mode is silent when
+       healthy, so this costs nothing. -->
+  <key>RunAtLoad</key><true/>
   <key>StandardOutPath</key><string>__HOME__/Library/Logs/skrendam/watchdog.log</string>
   <key>StandardErrorPath</key><string>__HOME__/Library/Logs/skrendam/watchdog.log</string>
 </dict>

@@ -281,7 +281,30 @@ At ~15% supply, the pilot's deal-supply assumption no longer holds. Options, che
 
 ---
 
-## 6. Gotchas for the next session
+## 6. Code review (2026-08-21, four parallel reviewers) — outcome
+
+Four independent reviewers (correctness / ops / security / scalability+leanness) went over
+the full `main...HEAD` diff. **No critical defects.** Security: "net improvement, no
+committed secrets." Correctness: every audit engine fix verified clean. The real findings
+clustered in the day-one ops scripts and were **fixed the same day** (loud missing-DB-URL
+path, in-flight-scan suppression, wake-retry, `RunAtLoad` watchdog, slice-scoped
+notification summary, `STALE_HOURS` validation, heartbeat line, `pwd -P` TCC guard,
+label-based bootout, stale ci.yml header, pr-gate `data/` lane hole, eslint zero).
+
+### Deferred follow-ups (recorded so they're not lost — none block current work)
+
+| # | Finding | When it matters |
+|---|---|---|
+| 1 | `history.py:99` caches per `(route, trip_type, duration)` but the SQL ignores duration → same 180-day window fetched up to 3× per route per scan (~4-line fix: cache raw rows per `(route, trip_type)`) | at PR #8 scale (146 routes); harmless at 14 |
+| 2 | `live_backend.py:180` — a `price=None` fare (documented for premium-cabin multi-pax) raises through `_to_itinerary` and kills the whole flights call | only if a BUSINESS/FIRST template ships; all templates ECONOMY today |
+| 3 | `season_end_mmdd="02-29"` crashes the whole scan in non-leap years — no mmdd validation anywhere | if a curator ever saves a leap-day season boundary |
+| 4 | Rate limiters key on the client-spoofable leftmost `x-forwarded-for`; the 10k-key `gc()` full-clear compounds it | **at deploy time** — derive IP from the platform's trusted header (Vercel `x-real-ip`) |
+| 5 | Booking-URL allowlist is prefix-only — `https://www.google.com/url?q=…` (open redirector) passes | before deals with third-party URLs ship |
+| 6 | `price_log` composite index never serves the history query (gap column); plain route-id index + heap filter today | when price_log reaches millions of rows: add `(route_id, trip_type, scanned_at)` |
+| 7 | Worker batch shares one `now` — two full-scans in one poll batch can't see each other's rows | rare double-queue; cosmetic |
+| 8 | Neon DSN appears in `psql` argv in status.sh (visible in `ps`) | accepted on a single-user Mac |
+
+## 7. Gotchas for the next session
 
 - **The repo is at `/Users/superoptimised/Skrendam`.** Start Claude Code from there.
 - **Never run tests while a scan is in flight** — concurrent `uv run` invocations mutate the

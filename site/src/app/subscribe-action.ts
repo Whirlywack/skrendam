@@ -204,7 +204,7 @@ export async function savePreferencesAction(formData: FormData): Promise<void> {
 // joinEarlyAlertsAction — opt subscriber into early alerts by token
 // ---------------------------------------------------------------------------
 
-export async function joinEarlyAlertsAction(formData: FormData): Promise<void> {
+export async function joinEarlyAlertsAction(): Promise<void> {
   // Read token from httpOnly cookie, NOT formData (token must not appear in URL/form).
   const c = await cookies();
   const token = c.get(COOKIE_NAME)?.value ?? '';
