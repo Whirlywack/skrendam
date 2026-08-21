@@ -99,10 +99,70 @@ permanently empty), though note that signal is currently confounded with BotGuar
 
 ## 5. Open questions for the founder
 
-1. **Tallinn as origin?** The 2026-08-21 conversation mentioned "Vilnius, Riga and
-   Tallinn" as origins, but the PR #8 pilot scope is VNO/KUN/RIX with TLL explicitly
-   excluded (founder decision, June). If TLL-as-origin is back, that is a scope change
-   to make explicit — separate research pass needed for the TLL network.
+1. ~~Tallinn as origin?~~ **Answered 2026-08-21:** long-term plan is VNO + KUN + RIX +
+   TLL. Network research pass done — see §6. Route seeding still waits on the supply
+   decision like everything else.
 2. Which of VFR / winter-sun / ski to seed first (recommendation above: that order)?
+   **Update:** all three drafted in
+   [2026-08-21-template-drafts-vfr-winter-sun.md](2026-08-21-template-drafts-vfr-winter-sun.md).
 3. Does the ALPS zone justify a new `zones` row, or is `included_destinations` on the
-   ski template enough for v1? (Lean: template-only for v1.)
+   ski template enough for v1? (Lean: template-only for v1 — that's what the draft does.)
+
+## 6. TLL network research pass (2026-08-21)
+
+Sources: 2lnr.com (data 2026-08-19), aerocorner.com (2026-08-02),
+directflightsfrom.com (2026-05-26). ~44–52 nonstop destinations, ~20 carriers.
+
+**Structure differs from VNO in one important way: airBaltic dominates (25 routes, ~38%;
+Ryanair 6, Wizz 5).** A single-carrier-heavy network produces fewer fare wars than VNO's
+three-way LCC fight — expect fewer drop-type deals per route. Multi-carrier routes (the
+volatile ones): OSL, LGW, BER, BCN, CPH, AYT.
+
+Persona-relevant clusters (destinations confirmed current):
+
+| Cluster | TLL destinations | Fit |
+|---|---|---|
+| Winter sun | AGP (year-round), TFS, PMI, MLA, AYT, plus Paphos returning | `winter-sun-escape` works from TLL as-is |
+| Ski | **SZG (Salzburg — TLL-only, no Baltic sibling)**, GVA (airBaltic winter), ZRH, MUC, MXP as gateways | `ski-alps` draft already includes SZG |
+| VFR | OSL, LGW, DUB (returning), CPH, ARN; HEL is the mega-corridor (9–11×/day Finnair) but ferry-competitive | vfr-watch destination list would need an EE variant (OSL/LGW/CPH/ARN vs the LT list) |
+| City breaks | BER, PRG, VIE, CDG, AMS, FCO, VCE, MXP, NCE, BCN, WAW, GDN, IST, KUT | standard |
+| Shoulder Balkans/Greece | RHO, SPU, BOJ, TIA | same Aug–Oct shape as VNO |
+| Charter-only (invisible to fli) | SSH, HRG, AQJ, some TFS | skip |
+
+**Scope status:** founder says "maybe" — research done, no TLL routes seeded, decision
+rides with the post-supply-verdict route refresh. Estonian-language/market implications
+(site copy, GDPR notices are EE vs LT) are out of scope for the engine and belong to a
+later product decision.
+
+## 7. Connecting flights — founder decision (2026-08-21)
+
+Decision: **connecting deals are in scope.** Rationale: Lithuania has almost no long-haul
+directs (only DXB/IST/TLV from VNO), so a directs-only newsletter structurally cannot
+serve the long-haul appetite.
+
+Two regimes, treated differently:
+
+1. **Protected connections (single ticket, what fli/Google price).** Standard product.
+   No disclaimer needed — a missed connection is the airline's to fix (rebooking,
+   EU261 care). The `long-haul-opportunist` template (PR #8, `max_stops=2`) is the
+   existing vehicle; the missing piece is routes: an aspirational one-stop cohort
+   (~5–10: e.g. BKK, JFK, NRT, DXB-beyond via IST/FRA/WAW hubs), added post-supply-
+   decision like everything else.
+2. **Self-transfer combos (two separate tickets).** Only ever published with explicit
+   own-risk framing: "separate tickets — if you miss the connection it's your problem;
+   we recommend N-hour buffers / carry-on only / travel insurance." The engine cannot
+   price these today (one-way pairing, discovery doc §5.5, is unbuilt). Deferred — but
+   the copy rule is decided now so it doesn't get relitigated per-deal.
+
+## 8. Deal imagery — founder decision (2026-08-21)
+
+Approved approach: **pre-generated destination image library**, not per-deal generation.
+One-time batch of ~60 destinations × 3–4 images (fal.ai / Gemini image gen; cents per
+image), prompts style-locked to the Yip brand (apply the `yip-design-system` skill's
+imagery-treatment rules when building). Stored once; admin picks at publish time.
+Accuracy explicitly not required — evocative over literal ("Italy, somewhere near water").
+
+Why not per-deal generation: latency, per-send cost, API-down failure mode, and style
+drift across emails — for zero benefit. Sequencing: independent of everything else, but
+only useful once a digest sender exists (Workstream B); the library batch can be run any
+quiet afternoon before that.
