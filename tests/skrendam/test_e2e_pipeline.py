@@ -80,7 +80,7 @@ def test_full_pipeline_offline(session):
     summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
     # ── 1. summary: all 6 templates scanned ──────────────────────────────────────────
-    assert summary.templates_scanned == 6
+    assert summary.templates_scanned == 8
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()

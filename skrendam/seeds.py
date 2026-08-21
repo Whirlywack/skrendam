@@ -40,6 +40,8 @@ MOMENTS = [
     ("xmas_markets", "Christmas markets", "fixed_dates", "Cheap Christmas-market weekends"),
     ("last_minute", "Last-minute weekends", "relative", "Leave this weekend"),
     ("plan_ahead_summer", "Plan-ahead summer", "relative", "Book summer early when the fare is good"),
+    ("winter_sun", "Winter sun", "seasonal", "Escape the dark months for real warmth"),
+    ("ski_season", "Ski season", "seasonal", "The Alps at a Baltic-friendly price"),
 ]
 
 
@@ -108,6 +110,28 @@ def seed_all(session: Session) -> None:
              included_zones=["MEDITERRANEAN", "CANARIES"], trip_len_min_days=7, trip_len_max_days=14,
              max_stops=1, min_discount_pct=30, public_label="Plan-ahead summer",
              newsletter_tag="plan_summer", content_angle="Book summer early when the fare is good"),
+        # Discount-gated, no max_price: Med p10 ~EUR170 vs Canaries p10 ~EUR407, one cap
+        # can't serve both. Revisit ~Dec 1 with real winter history (research 2026-08-21).
+        dict(slug="winter-sun-escape", name="Winter sun escape",
+             audience="flexible_adults", moment="winter_sun", trip_type="roundtrip",
+             date_window_type="seasonal", season_start_mmdd="11-01", season_end_mmdd="03-31",
+             included_zones=["MEDITERRANEAN", "CANARIES", "MIDDLE_EAST"],
+             trip_len_min_days=4, trip_len_max_days=10,
+             max_stops=1, allow_overnight_layover=False, allow_airport_change=False,
+             min_discount_pct=25, public_label="Winter sun", newsletter_tag="winter_sun",
+             suggested_headline_template="{origin}->{destination} EUR{price} return - winter sun",
+             content_angle="Escape the dark months for real warmth"),
+        # Inert until Alps routes are seeded (route refresh rides with PR #8).
+        # Deal copy must mention LCC ski-bag fees (EUR40-60 each way).
+        dict(slug="ski-alps", name="Ski trip to the Alps",
+             audience="flexible_adults", moment="ski_season", trip_type="roundtrip",
+             date_window_type="seasonal", season_start_mmdd="12-01", season_end_mmdd="03-31",
+             included_destinations=["GVA", "GNB", "TRN", "SZG", "ZRH", "MUC"],
+             trip_len_min_days=3, trip_len_max_days=8,
+             max_stops=1, allow_overnight_layover=False, allow_airport_change=False,
+             min_discount_pct=25, public_label="Ski season", newsletter_tag="ski",
+             suggested_headline_template="{origin}->{destination} EUR{price} return - ski the Alps",
+             content_angle="The Alps at a Baltic-friendly price"),
     ]
     for t in templates:
         a, m = aud[str(t.pop("audience"))], mom[str(t.pop("moment"))]

@@ -29,7 +29,7 @@ def test_run_scan_command_seeds_and_scans(session):
     summary = run_scan_command(
         session_factory=lambda: session, backend=FakeBackend(), today=date(2026, 6, 2), seed=True
     )
-    assert summary.templates_scanned == 6
+    assert summary.templates_scanned == 8
     assert session.query(models.Candidate).count() >= 1
 
 
