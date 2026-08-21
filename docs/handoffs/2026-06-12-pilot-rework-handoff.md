@@ -286,7 +286,8 @@ overriding anything contradictory above or in older notes.
 + completed 1,846 rows/158 candidates; Jun 11 degraded 293 rows/0 candidates). **The
 launchd daily scan is not firing** — no runs Jun 4–10 or Jun 12. Deepest route history:
 2 days. `drop`/`error_fare`/`rarity` are dormant until daily cadence resumes. 1 live
-deal, 16 subscribers. **First action for the founder, before any rework: run
+deal, 16 subscribers *(**CORRECTION 2026-08-21**: all 16 are `qa+...@example.com` Playwright
+e2e residue, not real people — there are zero real subscribers)*. **First action for the founder, before any rework: run
 `scripts/install-daily-scan.sh` and verify tomorrow's log.** Also: the weekly
 upstream-watch agent (docs/ops/upstream-watch.md says "create with /schedule") was
 never actually created — no scheduled task exists.

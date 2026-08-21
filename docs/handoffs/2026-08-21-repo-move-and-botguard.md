@@ -156,11 +156,22 @@ says that is too absolute.** Today's scan produced 9 candidates carrying genuine
 itineraries (real airlines, flight numbers, durations). Both endpoints still work — just
 rarely.
 
-The honest reading: **the gate is probabilistic, not absolute.** We get the residual
-~15% pass rate that clients without a `bgr` token get. That matches our 6/40 exactly.
+The honest reading: **the gate is not absolute — but it is also not worth retrying.** Two
+measurements that look contradictory and are not:
+
+- Across 40 **different** specs in one scan: **6 succeeded (15%)**.
+- Retrying **one identical** request 12 times, 3s apart: **0/12**.
+
+So a given request either passes or it doesn't, and that verdict is stable — but which
+requests pass varies. Retrying the same call is wasted effort; this is why upstream's retry
+PRs would not help us.
 
 > **The product is degraded, not dead.** But at ~15% throughput, per-route history accrues
 > ~6× slower, and three of four scorers need 8–10 points per route before they fire.
+
+⚠️ **Caveat on the 15% figure:** it was measured at 17:41. Later probing the same afternoon
+returned **0%** across every attempt. Today's numbers are contaminated by our own testing —
+tomorrow's cold 06:00 run is the first trustworthy reading.
 
 ### What this does NOT mean
 
@@ -212,7 +223,7 @@ matches our 6/40 = 15% almost exactly.
 | `price_log` | 6,144 rows; history is June 3–13 plus today |
 | Candidates | 9 new, 377 expired, 1 approved |
 | Published deals | **1** live (VNO→LCA €140, travel 2026-09-30) — price unverified for 70 days |
-| Subscribers | **16** (15 confirmed), signed up June 3–4, have received **nothing** |
+| Subscribers | **0 real.** All 16 rows are Playwright e2e residue (`qa+...@example.com`, matching the fixtures in `site/e2e/`) written before the `E2E_DATABASE_URL` guard landed |
 | Email | **OFF** — no `RESEND_API_KEY`; site runs single opt-in |
 | Digest sender | **does not exist** — nothing reads `subscribers.prefs` |
 
@@ -259,8 +270,11 @@ At ~15% supply, the pilot's deal-supply assumption no longer holds. Options, che
 
 ### Unchanged blockers from previous handoffs
 
-- **16 subscribers have received nothing for 79 days.** Independent of the gating — the June
-  queue is stale but a hand-written email costs nothing and the runbook explicitly endorses it.
+- **There is no audience yet.** The "16 subscribers" cited in the June handoff and the pilot
+  runbook are **test data**, not people — every address is `qa+...@example.com` from the e2e
+  specs. Nothing to send, nobody waiting, no GDPR exposure. The real point stands and is
+  sharper: the signup funnel has never been touched by a real human, so **R0 (acquisition)
+  is entirely unproven**. Consider deleting the 16 rows so they stop inflating the scorecard.
 - **Pro tier would leak**: `publishDeal` hardcodes `tier:'free'` *and* `site/src/lib/queries.ts`
   has no tier filter. Both must change together, before any paid list exists.
 - **Digest sender home** still undecided (Python job / Next cron / `scan_requests` kind).

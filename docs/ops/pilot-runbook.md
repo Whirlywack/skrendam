@@ -70,6 +70,8 @@ The pilot runs on two independent clocks — don't let one block the other:
 **Weekly (~1 hr):**
 - Send/approve the digest (manual compose until B ships — even a hand-written email
   to the first 16 subscribers beats silence; it also pilots the template copy).
+  **CORRECTION 2026-08-21:** those 16 are e2e test rows (`qa+...@example.com`), not people.
+  There is no list to write to yet — the first real subscriber is still ahead of us.
 - Fill the scorecard (§7). If two consecutive weeks miss a kill bar, iterate the
   content format before touching the build order.
 

@@ -26,5 +26,18 @@ fi
   cd "$REPO_DIR" && uv run skrendam run-scan
   code=$?
   echo "===== $(date -Iseconds) finished with exit $code ====="
-  exit $code
 } >> "$LOG_FILE" 2>&1
+
+# Tell the founder the outcome instead of making them go read a log.
+# ponytail: osascript notification, no daemon, no menu-bar app. Best effort —
+# never let notification trouble change the job's exit code.
+summary="$(grep -a '^scan complete:' "$LOG_FILE" | tail -1)"
+case "$code" in
+  0) title="Skrendam scan OK";       msg="${summary:-completed}" ;;
+  2) title="Skrendam scan DEGRADED"; msg="${summary:-no data} — don't trust today's queue" ;;
+  1) title="Skrendam scan FAILED";   msg="setup problem — scan never started" ;;
+  *) title="Skrendam scan exit $code"; msg="${summary:-see daily-scan.log}" ;;
+esac
+osascript -e "display notification \"${msg//\"/}\" with title \"$title\"" >/dev/null 2>&1 || true
+
+exit $code
