@@ -168,6 +168,38 @@ The honest reading: **the gate is probabilistic, not absolute.** We get the resi
 - ✗ Not TLS fingerprinting — six profiles, identical failure.
 - ✗ Not IP reputation *primarily* — our residential IP was clean in June and is ~85% gated now.
   The timeline tracks Google's change, not any IP change.
+- ✗ **Not a stale vendored fork.** Our `fli/` sits at upstream `daf9e9a7`; the only later commit
+  on upstream `main` is `121d34fe`, a TypeScript-only change to `fli-js` (which we deleted).
+  There is nothing Python-side to pull.
+- ✗ **Not the wrong fli surface.** CLI, MCP and library all funnel through the same
+  `fli/search/client.py` and the same three RPCs. No surface can be less blocked than another.
+  (There is no REPL; the CLI has exactly four commands: `airports`, `dates`, `flights`, `multi`.)
+
+### Things investigated and ruled out (so nobody re-runs them)
+
+| Hypothesis | Verdict | Evidence |
+|---|---|---|
+| Retrying the blocked call helps | **No** | 12 identical requests, 3s apart → **0/12**. The block is deterministic per request, not probabilistic per attempt. Upstream PRs #201/#205/#208 all retry; none would help. |
+| Byte-vs-char chunk framing is eating our data | **No — refuted** | Upstream PR #224 claims Google's length header counts *characters* while `_wire.py:86` slices *bytes*, which would destroy any non-ASCII response (a real risk for Málaga/Köln/Zürich). Reproduced the failure synthetically — then tested the **7 real captured Google bodies** in `tests/search/fixtures/`: 6 contain multi-byte UTF-8 and **all decode correctly**. Google counts bytes. Our decoder is right. |
+| `GetExploreDestinations` (PR #226) dodges the gate | **No** | Same `FlightsFrontendService` family, same `f.req` POST shape. PR #226's own author captured a live Explore rejection with the identical error-13 envelope. It would be a *volume* win (one call replaces N×M route calls), not a gate win. |
+| An HTML-scrape fallback already exists | **No** | `Client.get` (`client.py:133`) is **dead code** — zero callers across `fli/`, `skrendam/`, `tests/`. |
+
+### Untested leads worth ~an hour each
+
+- **Force IPv4.** Upstream issue #200 (`MalcolmWardlaw`, 2026-07-13, reconfirmed 07-15) reports
+  empty results "entirely fixed by forcing IPv4" via `CurlOpt.IPRESOLVE = 1` on the session.
+  Single reporter, mechanism unexplained, ~5 lines, opt-in behind an env var like the existing
+  `FLI_IMPERSONATE` hook. Cheap to A/B.
+- **Proxy support.** fli has none (the word appears once, in a comment). Issue #50 carries a
+  working `curl_cffi` monkey-patch; note `proxy=` takes a **string**, not `requests`' dict.
+
+### Independent corroboration of the ~15% figure
+
+Issue #200, `silvalucas9031` (2026-06-16) ran a controlled A/B through one proxy IP, same
+minute, same `f.req`: raw fetch ≈1/6 data; curl_cffi Chrome TLS ≈1/6 (**TLS is not the gate**);
+headless Chromium 0/3 (*worse* — BotGuard encodes the automation signal); **headful Chromium
+6/6**; headful with the bgr header stripped → 1/4. Their no-bgr baseline of **1/6 = 16.7%**
+matches our 6/40 = 15% almost exactly.
 
 ---
 
