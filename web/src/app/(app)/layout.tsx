@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     (d) =>
       d.status === 'live' &&
       (d.unverifiedSince ||
-        now.getTime() - parseEngineTs(d.publishedAt).getTime() > sevenDaysMs),
+        now.getTime() - parseEngineTs(d.lastSeenAt ?? d.publishedAt).getTime() > sevenDaysMs),
   ).length;
 
   return (

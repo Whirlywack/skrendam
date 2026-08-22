@@ -3,6 +3,7 @@ import { getQueueRows, getLatestScanRun, getPublishedDeals } from '@/lib/queries
 import { toCandidateView } from '@/lib/mappers';
 import { parseEngineTs, timeAgo } from '@/lib/format';
 import { ScanButtons } from '@/components/ScanButtons';
+import { ScanHealthBanner } from '@/components/ScanHealthBanner';
 import { RecheckButton } from '@/components/RecheckButton';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 12 };
@@ -40,14 +41,20 @@ export default async function Dashboard() {
       (answeredPct != null ? ` Google answered ${answeredPct}% of searches` : '') +
       (priceRows != null ? ` · ${priceRows.toLocaleString('en-GB')} prices logged.` : '.');
 
+  const healthReasons =
+    ((run?.health as { reasons?: string[] } | null)?.reasons ?? []).map(String);
+
   // Live deals whose price nobody has re-checked (B4) — the real emergencies.
+  // lastSeenAt moves whenever a scan re-confirms the fare, so a deal the scanner
+  // still sees daily is fresh no matter how long ago it was published
+  // (review 2026-08-22); publishedAt is the fallback for never-re-seen deals.
   const now = new Date();
   const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
   const liveDeals = published.filter((d) => d.status === 'live');
   const stale = liveDeals.filter(
     (d) =>
       d.unverifiedSince ||
-      now.getTime() - parseEngineTs(d.publishedAt).getTime() > sevenDaysMs,
+      now.getTime() - parseEngineTs(d.lastSeenAt ?? d.publishedAt).getTime() > sevenDaysMs,
   );
 
   const today = now.toLocaleDateString('en-GB', {
@@ -68,6 +75,10 @@ export default async function Dashboard() {
       <p style={{ ...MONO, fontSize: 11, color: 'var(--fg-3)', margin: '0 0 20px' }}>
         {today} · as of {asOf}
       </p>
+
+      {/* Degraded/failed scans surface their reasons here — the banner was
+          orphaned by the Phase 2 rebuild (review 2026-08-22). */}
+      <ScanHealthBanner status={run?.status ?? 'unknown'} reasons={healthReasons} />
 
       {/* Verdict */}
       <div

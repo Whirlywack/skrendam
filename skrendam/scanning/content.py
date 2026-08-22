@@ -4,6 +4,10 @@ from datetime import date
 
 from skrendam.db import models
 
+# Keep in sync with web/src/lib/format.ts and site/src/lib/format-rules.ts
+# (WAS_PRICE_MIN_DROP_PCT = 30).
+WAS_PRICE_MIN_DISCOUNT = 0.30
+
 
 def build_content_draft(
     origin: str,
@@ -33,9 +37,9 @@ def build_content_draft(
 
     # Reference-price rule (deal-detection synthesis 2026-08-22): a was-price
     # only helps on deep deals; on shallow ones it spends credibility. Suppress
-    # the "usually" clause below 30% discount in the generic fallback headline.
+    # the "usually" clause below the threshold in the generic fallback headline.
     # (Template-authored headlines are the curator's own copy and are not touched.)
-    deep_enough = bool(baseline) and (baseline - price) / baseline >= 0.30
+    deep_enough = bool(baseline) and (baseline - price) / baseline >= WAS_PRICE_MIN_DISCOUNT
     headline = fill(template.suggested_headline_template) or (
         f"{origin}->{destination} just EUR{price:.0f}"
         + (f" (usually EUR{baseline:.0f})" if deep_enough else "")

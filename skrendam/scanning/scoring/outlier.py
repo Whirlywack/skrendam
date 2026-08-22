@@ -14,7 +14,10 @@ from skrendam.scanning.scoring.base import Score, ScoringContext
 from skrendam.scanning.scoring.eligibility import itinerary_ok
 
 Z_FLAG = -3.5        # robust-outlier gate (modified z)
-Z_ERROR = -5.0       # error-fare magnitude
+Z_ERROR = -5.0       # error-fare z magnitude...
+Z_ERROR_MIN_DISC = 0.30  # ...but only alongside a real discount: on ultra-calm
+                         # routes (MAD ~3% of median) a modest dip crosses z=-5
+                         # without being remotely an error fare (review 2026-08-22)
 DISC_ERROR = 0.60    # or >=60% below the month median
 
 
@@ -22,20 +25,29 @@ class OutlierScorer:
     name = "outlier"
 
     def score(self, ctx: ScoringContext) -> Score | None:
-        fare, baseline = ctx.fare, ctx.baseline
+        fare, tpl, baseline = ctx.fare, ctx.template, ctx.baseline
         z = baseline.robust_z(fare.price, ctx.travel_date)
         if z is None or z > Z_FLAG:
             return None
         if not itinerary_ok(fare, ctx.template):
             return None
+        # Respect the template's absolute price ceiling: an outlier-priced fare
+        # that still exceeds e.g. last-warm-days' EUR150 cap must not attach to
+        # that template (review 2026-08-22). Discount gates stay out by design —
+        # the z-score replaces them.
+        if tpl.max_price_eur is not None and fare.price > tpl.max_price_eur:
+            return None
 
         local_median = baseline.local_median(ctx.travel_date)
         discount = baseline.local_discount(fare.price, ctx.travel_date)
-        error_fare = z <= Z_ERROR or discount >= DISC_ERROR
+        error_fare = (z <= Z_ERROR and discount >= Z_ERROR_MIN_DISC) or discount >= DISC_ERROR
 
         # z=-3.5 -> ~0.87, deepens with |z|, capped; error fares pin to the top.
         value = 0.98 if error_fare else min(0.96, 0.75 + 0.035 * min(-z, 6.0))
-        month = f"{ctx.travel_date:%B}" if ctx.travel_date is not None else "the window"
+        # Name the month only when month stats actually backed the z; a thin
+        # month falls back to window stats and must say so.
+        month_backed = ctx.travel_date is not None and baseline.month_stats(ctx.travel_date)
+        month = f"{ctx.travel_date:%B}" if month_backed else "the window"
         if error_fare:
             reason = (
                 f"EUR{fare.price:.0f} is extreme for {month} (z={z:.1f}, median "

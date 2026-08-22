@@ -1,3 +1,9 @@
+// Strikethrough was-prices only help on deep deals (reference-price research,
+// deal-detection synthesis 2026-08-22). Single source for the web app; the site
+// (site/src/lib/format-rules.ts) and the engine (skrendam/scanning/content.py)
+// carry the same value with cross-references.
+export const WAS_PRICE_MIN_DROP_PCT = 30;
+
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function d(iso: string) { const [, m, day] = iso.split('-'); return { day: Number(day), mon: MONTHS[Number(m) - 1] }; }
 export function formatDates(travel: string, ret: string | null): string {

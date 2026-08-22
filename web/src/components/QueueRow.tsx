@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { CandidateView } from '@/lib/types';
 import { setCandidateStatus } from '@/app/actions';
+import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format';
 import { StatusPill } from './StatusPill';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' };
@@ -95,8 +96,8 @@ export function QueueRow({
         </div>
         {c.usual != null && (
           <div style={{ ...MONO, fontSize: 11, color: 'var(--fg-3)' }}>
-            {/* strikethrough only on deep deals (reference-price rule, ≥30%) */}
-            {c.drop >= 30 && <><s>€{c.usual}</s>{' '}</>}
+            {/* strikethrough only on deep deals (reference-price rule) */}
+            {c.drop >= WAS_PRICE_MIN_DROP_PCT && <><s>€{c.usual}</s>{' '}</>}
             <span style={{ color: 'var(--sea-600)', fontWeight: 700 }}>−{c.drop}%</span>
           </div>
         )}
