@@ -94,3 +94,38 @@ Read both before changing scorers._
   badge framing split, badge rate limits. Touches templates/site copy, no engine risk.
 - **Wave 3 — as data accrues:** days-since-drop feature, zone priors (before the PR #8 route
   expansion), KM lifetimes under two imputation rules, curve-shape classes at ~150 routes.
+
+---
+
+## Wave 0 results (2026-08-22, run against the 227-candidate batch + 2,410-price scan)
+
+_Script: session scratchpad `wave0.py`; read-only against dev Neon._
+
+**T1 — Quantization: CONFIRMED.** Only 41% of today's 2,410 prices are distinct values;
+VNO-AGP shows €112 twenty-six times across a 360-point calendar. Fares sit at discrete bucket
+levels — "a drop is a bucket reopening" is visible in our own data. (Bucket-gap deltas usable
+as a feature later.)
+
+**T2 — Dispersion: one global threshold is provably unfair.** MAD/median per series spans
+**3.1% (RIX-PRG) to 43.8% (VNO-STN)** — a 14× spread. A fare 25% below median is **0.6 MADs on
+VNO-STN (ordinary noise, floods the queue) but 8.1 MADs on RIX-PRG (a screaming anomaly the
+current rule barely notices)**. Volatility-aware thresholds (modified z on per-series MAD) are
+mandatory, not optional. Loudest finding of the five.
+
+**T3 — January bug quantified: 24% of the batch.** Month-local scoring (≥25% below the travel
+month's own median) demotes **53/225 candidates** from "deal" to "cheap month". Sample: KUN-AGP
+Nov 28 claimed −47% vs window but is only 22% below its month median. Notably **winter sun
+survives well (145/180 = 81% genuine)** — the January catch is mostly real; the was-prices are
+what's inflated. Plan-ahead summer is the worst offender (42 demotions — consistent with its
+missing months constraint).
+
+**T4 — Depth: was-price suppression would apply to 24%** (55/227 below 30% discount;
+17 below 20%). Distribution: 7% / 17% / 19% / 34% / 22% across <20/20-30/30-40/40-50/50+.
+
+**T5 — Days-since-last-drop: not computable yet.** Longest consecutive daily-scan streak is 3
+(June 12–13 gap, Aug 21–22). Needs ~14+ consecutive daily scans; accrues automatically.
+
+**Consequence for Wave 1 order:** (1) per-series modified-z with month-local neighborhood —
+T2+T3 are one combined change to `compute_baseline`/matching; (2) date-clone collapse (the 227
+still contain many adjacent-date twins); (3) error-fare magnitude tier; (4) was-price
+suppression rule at publish time (T4). Quantization feature and drought hazard wait for data.
