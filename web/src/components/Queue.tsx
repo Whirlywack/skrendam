@@ -3,23 +3,22 @@ import { QueueRow } from './QueueRow';
 
 export function Queue({
   candidates,
+  alsoMatches,
   onOpen,
 }: {
   candidates: CandidateView[];
+  alsoMatches: Map<number, string[]>;
   onOpen: (id: number) => void;
 }) {
   return (
     <div className="queue">
-      <div className="qhead">
-        <span>Score</span>
-        <span>Deal</span>
-        <span>Template</span>
-        <span>Drop</span>
-        <span>Price</span>
-        <span>Status</span>
-      </div>
       {candidates.map((c) => (
-        <QueueRow key={c.id} c={c} onOpen={onOpen} />
+        <QueueRow
+          key={c.id}
+          c={c}
+          also={(alsoMatches.get(c.candidateId) ?? []).filter((t) => t !== c.template)}
+          onOpen={onOpen}
+        />
       ))}
     </div>
   );

@@ -312,6 +312,8 @@ export const publishedDeals = pgTable("published_deals", {
 	publishedAt: timestamp("published_at", { mode: 'string' }).notNull(),
 	goingFast: boolean("going_fast").default(false).notNull(),
 	unverifiedSince: timestamp("unverified_since", { mode: 'string' }),
+	postedTiktokAt: timestamp("posted_tiktok_at", { mode: 'string' }),
+	postedInstagramAt: timestamp("posted_instagram_at", { mode: 'string' }),
 }, (table) => [
 	foreignKey({
 			columns: [table.candidateId],

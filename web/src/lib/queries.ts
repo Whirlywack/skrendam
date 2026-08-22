@@ -36,12 +36,13 @@ function queueBase() {
     .leftJoin(publishedDeals, eq(publishedDeals.candidateId, candidates.id));
 }
 
-export async function getQueueRows() {
+export async function getQueueRows(includeExpired = false) {
   // Expired candidates are engine history, not review work — they polluted every
-  // count and queue group (B3). Phase 2 re-exposes them behind an "Everything" scope.
-  const rows = await queueBase()
-    .where(ne(candidates.status, 'expired'))
-    .orderBy(desc(candidateTemplateMatches.matchScore));
+  // count and queue group (B3). The Review page's "History" scope opts back in.
+  const base = includeExpired
+    ? queueBase()
+    : queueBase().where(ne(candidates.status, 'expired'));
+  const rows = await base.orderBy(desc(candidateTemplateMatches.matchScore));
   // A candidate with multiple published_deals rows fans out the same matchId.
   // Keep only the first occurrence per matchId.
   const seen = new Set<number>();
