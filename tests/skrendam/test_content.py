@@ -39,3 +39,18 @@ def test_missing_templates_fall_back_to_generic_headline():
         template=tpl,
     )
     assert "KUN" in draft["headline"] and "25" in draft["headline"]
+
+
+def test_shallow_discount_suppresses_was_price_in_fallback():
+    # Reference-price rule: below 30% the "usually EURx" clause spends
+    # credibility for nothing — the generic headline must omit it.
+    tpl = models.DealTemplate(slug="y", name="y", trip_type="oneway")
+    draft = build_content_draft(
+        origin="VNO",
+        destination="CPH",
+        price=80,
+        baseline=100,  # only 20% below
+        travel_date=date(2026, 7, 12),
+        template=tpl,
+    )
+    assert "usually" not in draft["headline"]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import TYPE_CHECKING, Protocol
 
 from skrendam.scanning.scoring import tiering
@@ -39,6 +40,9 @@ class ScoringContext:
     template: "models.DealTemplate"
     history: "PriceHistorySeries | None" = None
     previous_price: float | None = None
+    # Travel date of the fare being scored — lets scorers use month-local
+    # baseline stats (compare January with January). None = window stats.
+    travel_date: "date | None" = None
 
 
 class Scorer(Protocol):

@@ -95,7 +95,8 @@ export function QueueRow({
         </div>
         {c.usual != null && (
           <div style={{ ...MONO, fontSize: 11, color: 'var(--fg-3)' }}>
-            <s>€{c.usual}</s>{' '}
+            {/* strikethrough only on deep deals (reference-price rule, ≥30%) */}
+            {c.drop >= 30 && <><s>€{c.usual}</s>{' '}</>}
             <span style={{ color: 'var(--sea-600)', fontWeight: 700 }}>−{c.drop}%</span>
           </div>
         )}

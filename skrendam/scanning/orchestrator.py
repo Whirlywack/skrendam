@@ -37,11 +37,17 @@ class ScanSummary:
 
 
 def _flagged(points, baseline, _zone):
-    # Flag the window's relatively-cheap dates (<= 10th-percentile). This is the
-    # tier-2 trigger and is naturally bounded (~10% of the window). The absolute
-    # "interesting price" ceiling (zone.threshold_price_eur / template.max_price_eur)
-    # is enforced later in matching, not here, so tier-2 fetches stay bounded.
-    return [p for p in points if p.price <= baseline.decile]
+    # Flag relatively-cheap dates (<= 10th-percentile) — but per travel MONTH,
+    # not per window: a whole-window decile is monopolized by the cheap season
+    # (all-January flags on a Nov-Mar template), starving other months of
+    # tier-2 fetches. Month-local deciles keep the ~10% bound while spreading
+    # flags across seasons; thin months (<5 pts) fall back to the window decile.
+    # Absolute price ceilings are enforced later in matching, not here.
+    def cutoff(p):
+        m = baseline.month_stats(p.travel_date)
+        return m.decile if m is not None else baseline.decile
+
+    return [p for p in points if p.price <= cutoff(p)]
 
 
 def run_scan(
@@ -228,6 +234,7 @@ def _persist_fare(
             template=tpl,
             history=hist_series,
             previous_price=prev,
+            travel_date=point.travel_date,
         )
         scores = [s for sc in enabled_scorers() if (s := sc.score(ctx)) is not None]
         if not scores:
@@ -236,8 +243,14 @@ def _persist_fare(
     if not matched:
         return  # nothing flagged -> not a candidate, don't persist an orphan
 
+    # Persist the honest, month-local numbers: baseline_price is the travel
+    # month's median (fallback: window), so the published was-price never
+    # borrows a Christmas peak to flatter a January fare.
+    local_median = base.local_median(point.travel_date)
     discount = (
-        None if base.median <= 0 else round((base.median - fare.price) / base.median * 100, 1)
+        None
+        if local_median <= 0
+        else round((local_median - fare.price) / local_median * 100, 1)
     )
     key = deal_group_key(
         spec.origin,
@@ -258,7 +271,7 @@ def _persist_fare(
         return_date=point.return_date,
         price=fare.price,
         currency=fare.currency,
-        baseline_price=base.median,
+        baseline_price=local_median,
         discount_pct=discount,
         itinerary_snapshot=fare.raw,
         search_params={"cabin": spec.cabin},
@@ -286,7 +299,7 @@ def _persist_fare(
         for sc in scores:
             repo.upsert_score(session, cand.id, tpl.id, sc)
         draft = content_mod.build_content_draft(
-            spec.origin, spec.destination, fare.price, base.median, point.travel_date, tpl
+            spec.origin, spec.destination, fare.price, local_median, point.travel_date, tpl
         )
         repo.ensure_content_draft(session, cand.id, tpl.id, draft)
 

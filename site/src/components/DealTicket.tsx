@@ -49,7 +49,9 @@ export function DealTicket({ t, featured = false }: { t: TicketView; featured?: 
         <div className="ticket-foot">
           <div className="price">
             €{t.price}
-            {t.baseline ? <s>€{t.baseline}</s> : null}
+            {/* was-price only on deep deals — a strikethrough on a shallow
+                discount spends trust for nothing (reference-price research) */}
+            {t.baseline && t.drop >= 30 ? <s>€{t.baseline}</s> : null}
             <span className="ret">return · {t.airline}</span>
           </div>
           <span className="btn-see">See deal &#x2192;</span>
