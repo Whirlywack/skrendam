@@ -7,5 +7,7 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Only the NextAuth routes are exempt from the auth wall; any future /api/*
+  // route handler is protected by default instead of silently public.
+  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
 };

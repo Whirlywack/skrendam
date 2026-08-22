@@ -13,6 +13,10 @@ from dataclasses import dataclass, field
 
 EMPTY_RATIO_BAR = 0.5  # degraded when >= this fraction of calendar calls are empty...
 MIN_CALENDAR_SAMPLE = 5  # ...given at least this many calendar calls
+FLIGHTS_EMPTY_RATIO_BAR = 0.5  # degraded when >= this fraction of flights calls are empty...
+MIN_FLIGHTS_SAMPLE = 5  # ...given at least this many flights calls
+ERROR_RATIO_BAR = 0.3  # degraded when >= this fraction of ALL calls errored...
+MIN_TOTAL_SAMPLE = 5  # ...given at least this many calls total
 NO_DATA_MIN_CALLS = 10  # degraded when >= this many api calls produced exactly 0 price rows
 CLIFF_PRIOR_MIN_ROWS = 100  # cliff fires only when the prior run logged at least this many rows
 CLIFF_FRACTION = 0.10  # ...and this run logged under this fraction of it
@@ -150,10 +154,21 @@ def assess(log: CallLog, price_rows: int, prior_price_rows: int | None = None) -
     cal = log.count("calendar")
     cal_empty = log.count("calendar", "empty")
 
-    # error-outcome calls stay in the denominator on purpose: heavy-error runs are
-    # the circuit breaker's job ("failed"), not this ratio's.
+    # error-outcome calls stay in this denominator on purpose; the error-ratio
+    # signal below owns them (the consecutive-only circuit breaker misses
+    # interleaved failures, so a half-dead API must degrade here instead).
     if cal >= MIN_CALENDAR_SAMPLE and cal_empty / cal >= EMPTY_RATIO_BAR:
         reasons.append(f"{cal_empty}/{cal} calendar searches returned no data")
+
+    fl = log.count("flights")
+    fl_empty = log.count("flights", "empty")
+    if fl >= MIN_FLIGHTS_SAMPLE and fl_empty / fl >= FLIGHTS_EMPTY_RATIO_BAR:
+        reasons.append(f"{fl_empty}/{fl} flight searches returned no data")
+
+    total = len(log.records)
+    err = len(log.errors)
+    if total >= MIN_TOTAL_SAMPLE and err / total >= ERROR_RATIO_BAR:
+        reasons.append(f"{err}/{total} api calls errored")
 
     if len(log.records) >= NO_DATA_MIN_CALLS and price_rows == 0:
         reasons.append(f"{len(log.records)} api calls produced 0 price rows")

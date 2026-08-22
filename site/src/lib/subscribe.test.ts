@@ -54,6 +54,19 @@ describe('isValidEmail — reject', () => {
   ])('%s is invalid', (email) => {
     expect(isValidEmail(email)).toBe(false);
   });
+
+  test('over-length email is rejected (254-char RFC ceiling)', () => {
+    const oversized = `${'a'.repeat(250)}@example.com`;
+    expect(oversized.length).toBeGreaterThan(254);
+    expect(isValidEmail(oversized)).toBe(false);
+  });
+
+  test('a 254-char email still passes', () => {
+    const local = 'a'.repeat(254 - '@example.com'.length);
+    const email = `${local}@example.com`;
+    expect(email.length).toBe(254);
+    expect(isValidEmail(email)).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

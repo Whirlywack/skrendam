@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { auth } from '@/auth';
 import { db } from '@/db';
 import {
@@ -105,7 +105,6 @@ export async function publishDeal(input: {
   headline: string;
   body?: string;
   tiktokHook?: string;
-  channel?: 'public' | 'newsletter';
   validUntil?: string | null;
 }): Promise<void> {
   await requireAdmin();
@@ -175,6 +174,37 @@ export async function republishDeal(id: number): Promise<void> {
     .update(publishedDeals)
     .set({ status: 'live', unverifiedSince: null })
     .where(eq(publishedDeals.id, id));
+  revalidatePath('/published');
+}
+
+// ---------------------------------------------------------------------------
+// Redesign Phase 2 — bulk dismiss + manual social-post tracking
+// ---------------------------------------------------------------------------
+
+export async function rejectCandidates(candidateIds: number[]): Promise<void> {
+  await requireAdmin();
+  if (candidateIds.length === 0) return;
+  await db
+    .update(candidates)
+    .set({ status: 'rejected' })
+    .where(inArray(candidates.id, candidateIds));
+  revalidatePath('/queue');
+  revalidatePath('/');
+}
+
+// Toggles the manual "I posted this" marker. Timestamps, not booleans, so
+// hook-performance analysis can use posting dates later.
+export async function markPosted(
+  dealId: number,
+  platform: 'tiktok' | 'instagram',
+  posted: boolean,
+): Promise<void> {
+  await requireAdmin();
+  const value = posted ? new Date().toISOString() : null;
+  await db
+    .update(publishedDeals)
+    .set(platform === 'tiktok' ? { postedTiktokAt: value } : { postedInstagramAt: value })
+    .where(eq(publishedDeals.id, dealId));
   revalidatePath('/published');
 }
 

@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SKRENDAM_", extra="ignore")
 
     database_url: str = "sqlite+pysqlite:///:memory:"
-    fli_timeout: float = 25.0
     # Pacing: our own ceiling, far below fli's 10/sec built-in limit.
     min_call_interval_seconds: float = 1.5
     pacing_jitter_seconds: float = 0.5

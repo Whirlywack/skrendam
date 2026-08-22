@@ -57,7 +57,9 @@ def test_cliff_needs_meaningful_prior():
 
 
 def test_health_json_caps_error_detail():
-    log = _log(calendar_data=40, errors=ERROR_DETAIL_CAP + 10)
+    # 30 errors / 110 calls == 27% — under ERROR_RATIO_BAR, so this test stays
+    # about the detail cap rather than doubling as a degraded-status test.
+    log = _log(calendar_data=80, errors=ERROR_DETAIL_CAP + 10)
     v = assess(log, price_rows=500)
     j = health_json(v, log)
     assert len(j["errors"]) == ERROR_DETAIL_CAP

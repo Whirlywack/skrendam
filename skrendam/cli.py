@@ -1,7 +1,7 @@
 """Entrypoints: run-scan, calibrate, seed. Backend/session injectable for tests."""
 
 import argparse
-from datetime import date
+from datetime import datetime, timezone
 
 from skrendam.config import Settings
 from skrendam.db.session import make_sessionmaker
@@ -37,6 +37,7 @@ def worker_command() -> None:
         make_adapter,
         scanner_version=settings.scanner_version,
         tail_rotation_days=settings.tail_rotation_days,
+        circuit_breaker_threshold=settings.circuit_breaker_threshold,
     )
 
 
@@ -46,7 +47,13 @@ def run_scan_command(
     settings = Settings()
     session = (session_factory or make_sessionmaker(settings))()
     backend = backend or _real_backend()
-    today = today or date.today()
+    if today is None:
+        # Naive UTC, matching the schema's timestamps everywhere else.
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        today = now.date()
+    else:
+        # Injected `today` (tests): keep the deterministic midnight stamp.
+        now = datetime(today.year, today.month, today.day)
     bucket = TokenBucket(settings.min_call_interval_seconds, settings.pacing_jitter_seconds)
     adapter = FliAdapter(backend, pace=bucket.acquire)
     if seed:
@@ -58,6 +65,8 @@ def run_scan_command(
         scanner_version=settings.scanner_version,
         tail_rotation_days=settings.tail_rotation_days,
         all_routes=all_routes,
+        circuit_breaker_threshold=settings.circuit_breaker_threshold,
+        now=now,
     )
 
 

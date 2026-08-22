@@ -1,0 +1,378 @@
+# Handoff — repo move, scan revival, and the BotGuard finding
+
+_Date: 2026-08-21. Written from `/Users/superoptimised/Skrendam` (note the new path).
+Branch: `fix/audit-findings`. Read this before touching the engine._
+
+---
+
+## 0. The one-paragraph version
+
+The daily scan had **never once run** — 72 consecutive launchd failures since 2026-06-12,
+caused by macOS TCC blocking `~/Documents`. Fixed by moving the repo to `~/Skrendam`;
+verified firing. But reviving the scan surfaced a much bigger problem: around **2026-08-07
+Google added a BotGuard signature requirement** to the Flights RPCs, and `fli` cannot
+produce it. We now get roughly **15% of the data we used to**. The engine, the site, the
+admin and the health detection all work correctly — the *data supply* is what broke.
+
+---
+
+## 0.5 START HERE — state at session close (2026-08-21 evening)
+
+**Everything is merged and green.** Open Claude Code from `~/Skrendam` (memory lives at
+that path key). The working checkout is `main`, in sync with origin.
+
+| | |
+|---|---|
+| `main` | PR #9 (audit fixes + repo move + monitoring, 21 commits) and PR #10 (CI green fix) merged; **CI fully green** on the merge commit — full Python matrix 3.10–3.13, web, site |
+| Open PRs | only **#8** (route expansion 14→146) — **deliberately held**, see below |
+| launchd | `com.skrendam.daily-scan` 06:00 + `com.skrendam.watchdog` 09:00, both armed, pointing at `~/Skrendam` |
+| DB | dev Neon; 9 fresh candidates in the queue; 1 live deal; **0 subscribers** (test rows deleted, sequence reset) |
+
+### The first thing that happens next: the 06:00 scan
+
+It is the **first clean, uncontaminated reading** since the BotGuard gate was discovered
+(all of 2026-08-21's numbers were polluted by our own probing). The founder gets a
+notification; `scripts/status.sh` has the detail. Interpretation:
+
+- **exit 0 / healthy** → the gating was partly self-inflicted heat; supply may be workable
+  at gentle pace. Re-evaluate: unfreeze PR #8 (founder reviews route list + 11 core picks
+  + post-merge runbook in the PR body), then Workstream B (digest).
+- **exit 2 / degraded with "N/40 calendar searches returned no data"** → BotGuard is the
+  steady state (~15% throughput). The supply decision can no longer wait:
+  **(a) headful-browser path** (Playwright + real Chromium — the only approach with
+  evidence of working, 6/6 in upstream's A/B; headless scores WORSE than nothing) or
+  **(b) paid API** (SerpApi etc.) for the core routes — this is the long-flagged R1
+  migration arriving early. Cheap experiments first: force-IPv4 (`CurlOpt.IPRESOLVE`,
+  upstream #200) and the curl_cffi string-proxy patch (#50) — an hour each.
+
+### Standing queue after the supply decision
+
+1. PR #8 — held until the steady-state gating rate is known.
+2. Workstream B (digest email) — the pilot's centerpiece; sender-home decision still open
+   (Python job vs Next cron vs `scan_requests` kind).
+3. R0: the funnel has **zero real humans** ever through it — TikTok + signup is untested.
+4. Deferred review findings with triggers: §6 below.
+
+---
+
+## 1. What this product is (for whoever reads this cold)
+
+Skrendam/Yip is a **curated flight-deal newsletter** for the Baltics — a robot proposes,
+the founder disposes. Not a search engine.
+
+```
+SCAN (robot, daily 06:00) → SCORE (robot) → CURATE (founder) → PUBLISH → site + email
+```
+
+Three surfaces, **one shared Neon Postgres, no API between them** — the database *is* the
+interface:
+
+| Component | What it is | Port |
+|---|---|---|
+| `skrendam/` | Python engine. Scans via the vendored `fli` fork, scores, writes candidates | — |
+| `web/` | "Deal Desk" — private admin. Review queue → Publish | 3000 |
+| `site/` | "Yip" — public site. Reads `published_deals` only | 3001 |
+
+Publishing **is** the insert: clicking Publish writes one `published_deals` row and the
+site renders it within 5 minutes (ISR 300s). No deploy step.
+
+**The scan is two-tier**, and this distinction matters for everything below:
+
+- **Tier 1 — `GetCalendarGraph`.** "What does every day cost on this route?" One call per
+  route×template window. All points → `price_log`. Cheap, broad.
+- **Tier 2 — `GetShoppingResults`.** Only for dates in the **cheapest 10%**, fetches the real
+  bookable itinerary. This is what becomes a candidate.
+
+Four scorers run per fare — `weighted` (works from day one), plus `drop`, `error_fare`,
+`rarity` which need **8–10 days of per-route history** before they fire.
+
+---
+
+## 2. What we did today
+
+### 2.1 Diagnosed and fixed the TCC block (the 70-day outage)
+
+A launchd probe settled it definitively:
+
+```
+A: read a file OUTSIDE ~/Documents  → OK
+B: read a file INSIDE  ~/Documents  → DENIED
+C: list ~/Documents/Skrendam        → DENIED
+```
+
+macOS TCC protects exactly `~/Documents`, `~/Desktop`, `~/Downloads`. A launchd-spawned
+`/bin/bash` has no access and **no way to prompt for it** — so it failed silently, forever.
+
+**Fix: moved the repo to `/Users/superoptimised/Skrendam`.** Chosen over granting Full Disk
+Access to `/bin/bash` because it needs no security grant, is narrower, and survives macOS
+updates.
+
+Post-move steps that were required and are easy to miss:
+
+1. `git worktree repair <path>` **per worktree** — the bare no-arg form does not fix them.
+2. **`rm -rf .venv && uv sync --all-extras`** — every console script in `.venv/bin` hardcodes
+   the old interpreter in its shebang. Symptom: `pytest` silently falls back to a Homebrew
+   binary and everything fails with `ModuleNotFoundError: sqlalchemy`.
+3. `scripts/install-daily-scan.sh` from the primary checkout (the plist hardcodes the path).
+4. Copy `~/.claude/projects/<old-key>/` → `<new-key>` or the next agent session starts blind.
+
+### 2.2 Verified the whole pipeline end to end
+
+Kickstarted the job. It ran, and the DB confirms every stage worked:
+
+| Stage | Evidence |
+|---|---|
+| launchd fires | 0 new errors in `launchd.err.log` (still 72, all historical) |
+| Scan runs | `scan_runs` id 9 written |
+| Tier-1 works | 154 `price_log` rows across 6 routes |
+| Tier-2 works | 9 candidates with real itineraries (Ryanair FR1787 VNO→BCN €144, nonstop) |
+| TTL sweep works | **377** stale candidates correctly expired |
+| Curator safety works | the 1 `approved` candidate was **not** trampled |
+| Health detection works | correctly flagged `degraded`, exit 2, reasons persisted |
+
+**The resilience work (PR #7) proved itself.** It reported "this data is untrustworthy"
+instead of silently claiming "no deals today."
+
+### 2.3 Fixed four stale tests + pinned Python
+
+The offline suite had been red. None were product bugs:
+
+- `test_config.py` asserted `Settings.fli_timeout`, which the July audit deliberately deleted
+  — the repo held **two contradictory tests** about it.
+- `test_health.py::test_health_json_caps_error_detail` broke on the audit's new 30%
+  error-ratio signal via an incidental `reasons == []` assertion.
+- `test_live_backend.py` × 2 hardcoded `date(2026, 7, 1)`, now in the past, which fli's
+  validator rejects. Made relative.
+- **`.python-version` = 3.13** — Homebrew's `python3` is now 3.14, where `pydantic-core`
+  fails to build, so a venv rebuild picks an unusable interpreter. Same content as the pin on
+  `feat/route-expansion`, so no merge conflict.
+
+Now: **518 passed, 2 skipped, 1 deselected.**
+
+### 2.4 Tracked five documents that existed only in the working tree
+
+The pilot research, deal-profiles discovery, the rework handoff, the pilot runbook and
+codebase-research were **never committed**. One `git clean` would have destroyed the entire
+pilot strategy. Now tracked, along with `site/e2e/journey-capture.spec.ts`;
+`site/e2e/journey-shots/` is now gitignored.
+
+### 2.5 Built the monitoring stack (so silence can never hide again)
+
+- **Desktop notification** when each scan finishes ("Skrendam scan OK / DEGRADED / FAILED"),
+  scoped to *this* run's log slice so a crash can't display yesterday's numbers.
+- **`scripts/status.sh`** — one-command dashboard (last scan + age + health reasons, job
+  armed?, worker up?, queue depth, live deals, subscribers). `--alert` mode is silent when
+  healthy.
+- **`com.skrendam.watchdog` (09:00, RunAtLoad)** — the dead-man's switch. Alerts when no
+  scan *finished* in 26h, when either launchd job is unloaded, or on a degraded/failed run.
+  It fails loud (never silent) on its own errors: missing psql, missing DB URL, unreachable
+  DB. Writes a daily heartbeat line so a dead watchdog is distinguishable from a healthy one.
+- **`install-daily-scan.sh`** installs/uninstalls both jobs and **refuses** to install from a
+  TCC-protected folder (physical path, so symlinks can't sneak past).
+
+### 2.6 Deleted the 16 fake subscribers
+
+All 16 `subscribers` rows were `qa+...@example.com` Playwright e2e residue — **zero real
+people ever signed up**. (Earlier docs called them "16 real subscribers"; corrected in place.)
+Rows deleted, ID sequence reset — the first real signup will be id 1. Sharper truth left
+behind: R0 (acquisition) is entirely unproven; the funnel has never been touched by a human.
+
+---
+
+## 3. The BotGuard finding — the thing that actually matters
+
+### What we observed
+
+The revived scan came back **degraded: 34/40 calendar searches returned no data**, price
+rows 154 vs 1923 last run. A raw wire probe showed:
+
+```
+HTTP 200, 96 bytes
+[["wrb.fr",null,null,null,null,[13]],["di",31],["af.httprm",30,...]]
+              ↑ payload slot null      ↑ error 13
+```
+
+Six different TLS fingerprints (`chrome`, `chrome116`, `chrome131`, `chrome136`,
+`firefox135`, `safari180`) all returned zero — **so this is not a TLS-fingerprint problem.**
+
+### What upstream says (verified in raw issue comments, not summaries)
+
+Two independent reporters on [fli#223](https://github.com/punitarani/fli/issues/223),
+2026-08-08 and 2026-08-10, traced it: `GetShoppingResults` now requires an
+**`X-Goog-BatchExecute-Bgr`** header generated by Google's own page JavaScript. Their
+controlled tests found the header is *necessary and sufficient*, cookies irrelevant.
+
+Critically, **a harvested token cannot be reused**: it is bound to the exact request bytes.
+Same token + browser's own body → 81KB of data; same token + one date digit changed →
+error 13. Their conclusion: *"fli's query builder can never produce a body Google accepts."*
+
+**Upstream `fli` is abandoned** — last commit **2026-05-29**, ~3 months ago. Fix PRs (#224
+et al) sit unmerged. Nobody is going to fix this for us.
+
+### Where our data disagrees with upstream — read this carefully
+
+Upstream calls the search path *"not recoverable in a plain HTTP client."* **Our evidence
+says that is too absolute.** Today's scan produced 9 candidates carrying genuine tier-2
+itineraries (real airlines, flight numbers, durations). Both endpoints still work — just
+rarely.
+
+The honest reading: **the gate is not absolute — but it is also not worth retrying.** Two
+measurements that look contradictory and are not:
+
+- Across 40 **different** specs in one scan: **6 succeeded (15%)**.
+- Retrying **one identical** request 12 times, 3s apart: **0/12**.
+
+So a given request either passes or it doesn't, and that verdict is stable — but which
+requests pass varies. Retrying the same call is wasted effort; this is why upstream's retry
+PRs would not help us.
+
+> **The product is degraded, not dead.** But at ~15% throughput, per-route history accrues
+> ~6× slower, and three of four scorers need 8–10 points per route before they fire.
+
+⚠️ **Caveat on the 15% figure:** it was measured at 17:41. Later probing the same afternoon
+returned **0%** across every attempt. Today's numbers are contaminated by our own testing —
+tomorrow's cold 06:00 run is the first trustworthy reading.
+
+### What this does NOT mean
+
+- ✗ Not a decoder break — a stale decoder would show a large body fli can't parse. We got 96 bytes.
+- ✗ Not TLS fingerprinting — six profiles, identical failure.
+- ✗ Not IP reputation *primarily* — our residential IP was clean in June and is ~85% gated now.
+  The timeline tracks Google's change, not any IP change.
+- ✗ **Not a stale vendored fork.** Our `fli/` sits at upstream `daf9e9a7`; the only later commit
+  on upstream `main` is `121d34fe`, a TypeScript-only change to `fli-js` (which we deleted).
+  There is nothing Python-side to pull.
+- ✗ **Not the wrong fli surface.** CLI, MCP and library all funnel through the same
+  `fli/search/client.py` and the same three RPCs. No surface can be less blocked than another.
+  (There is no REPL; the CLI has exactly four commands: `airports`, `dates`, `flights`, `multi`.)
+
+### Things investigated and ruled out (so nobody re-runs them)
+
+| Hypothesis | Verdict | Evidence |
+|---|---|---|
+| Retrying the blocked call helps | **No** | 12 identical requests, 3s apart → **0/12**. The block is deterministic per request, not probabilistic per attempt. Upstream PRs #201/#205/#208 all retry; none would help. |
+| Byte-vs-char chunk framing is eating our data | **No — refuted** | Upstream PR #224 claims Google's length header counts *characters* while `_wire.py:86` slices *bytes*, which would destroy any non-ASCII response (a real risk for Málaga/Köln/Zürich). Reproduced the failure synthetically — then tested the **7 real captured Google bodies** in `tests/search/fixtures/`: 6 contain multi-byte UTF-8 and **all decode correctly**. Google counts bytes. Our decoder is right. |
+| `GetExploreDestinations` (PR #226) dodges the gate | **No** | Same `FlightsFrontendService` family, same `f.req` POST shape. PR #226's own author captured a live Explore rejection with the identical error-13 envelope. It would be a *volume* win (one call replaces N×M route calls), not a gate win. |
+| An HTML-scrape fallback already exists | **No** | `Client.get` (`client.py:133`) is **dead code** — zero callers across `fli/`, `skrendam/`, `tests/`. |
+
+### Untested leads worth ~an hour each
+
+- **Force IPv4.** Upstream issue #200 (`MalcolmWardlaw`, 2026-07-13, reconfirmed 07-15) reports
+  empty results "entirely fixed by forcing IPv4" via `CurlOpt.IPRESOLVE = 1` on the session.
+  Single reporter, mechanism unexplained, ~5 lines, opt-in behind an env var like the existing
+  `FLI_IMPERSONATE` hook. Cheap to A/B.
+- **Proxy support.** fli has none (the word appears once, in a comment). Issue #50 carries a
+  working `curl_cffi` monkey-patch; note `proxy=` takes a **string**, not `requests`' dict.
+
+### Independent corroboration of the ~15% figure
+
+Issue #200, `silvalucas9031` (2026-06-16) ran a controlled A/B through one proxy IP, same
+minute, same `f.req`: raw fetch ≈1/6 data; curl_cffi Chrome TLS ≈1/6 (**TLS is not the gate**);
+headless Chromium 0/3 (*worse* — BotGuard encodes the automation signal); **headful Chromium
+6/6**; headful with the bgr header stripped → 1/4. Their no-bgr baseline of **1/6 = 16.7%**
+matches our 6/40 = 15% almost exactly.
+
+---
+
+## 4. Current state (verified against the live DB, 2026-08-21)
+
+| | |
+|---|---|
+| Migration head | `0008_route_expansion` applied to Neon **dev** — but 0008 lives only on unmerged PR #8, so dev is **ahead of `main`** |
+| Routes | **14** (PR #8's 146-route seed has not been run) |
+| `price_log` | 6,144 rows; history is June 3–13 plus today |
+| Candidates | 9 new, 377 expired, 1 approved |
+| Published deals | **1** live (VNO→LCA €140, travel 2026-09-30) — price unverified for 70 days |
+| Subscribers | **0** — table emptied 2026-08-21 (all 16 rows were Playwright e2e residue; sequence reset so the first real signup is id 1) |
+| Email | **OFF** — no `RESEND_API_KEY`; site runs single opt-in |
+| Digest sender | **does not exist** — nothing reads `subscribers.prefs` |
+
+### Open branches
+
+- **PR #8 `feat/route-expansion`** — open since 2026-06-12, awaiting founder review of the
+  route list + 11 core picks. ⚠️ **Reconsider before merging**: at 15% throughput, scanning
+  146 routes yields ~15% of expected data while multiplying request volume.
+  Also note PR #8 re-adds `fli_timeout` (unused), which the audit deleted — it will
+  re-break `test_fli_timeout_setting_removed` on merge.
+- **`fix/audit-findings`** — **merged to `main` 2026-08-21** (PR #9): the July 20-agent audit fix pass + everything in this handoff (repo move fallout, test repairs, monitoring stack, four-reviewer code-review fixes). The primary checkout is back on `main`; day-to-day work continues from `main` at `~/Skrendam`. Merging #9 triggered the rewritten CI's first real run and exposed two never-executed jobs (missing `--extra skrendam` in the test install; site build prerendering DB-backed pages against CI's dummy URL) — fixed and merged as **PR #10**; `main` CI is green.
+
+---
+
+## 5. Decisions and open questions
+
+### Railway — recommend removing
+
+`railway.toml` starts `fli-mcp-http`, which is an **AI-assistant tool** (Claude Desktop et
+al). It has no end-user surface and nothing in Skrendam consumes it. Users get deals via the
+site and email; they will never touch MCP.
+
+Two further reasons to remove it: `run_http` defaults to **`host="0.0.0.0"`** (the README
+claims `127.0.0.1` — the code disagrees), and there is **no authentication of any kind**;
+the only PR proposing auth was closed unmerged.
+
+**Hosting the scanner is a separate question** — and the BotGuard finding makes it much less
+urgent, because the constraint is a signature we can't generate, not our IP.
+
+### The real fork in the road
+
+At ~15% supply, the pilot's deal-supply assumption no longer holds. Options, cheapest first:
+
+1. **Monitor.** Let tomorrow's cold 06:00 scan run untouched and read `scan_runs.health`.
+   Today's numbers are polluted — we hammered the endpoint with probes. **Do this first;
+   it costs nothing and every other option depends on the answer.**
+2. **Pace much slower.** Burstiness appears more punishing than daily volume.
+3. **Headful browser path** (Playwright + real Chromium). The only approach with evidence of
+   working *now*, because the page's own JS mints the `bgr` token. Big build. Notably it
+   would also make cloud hosting viable again.
+4. **Paid API** (SerpApi Google Flights or similar) for the core routes, keeping fli for
+   breadth. Costs money; removes the BotGuard question entirely. This is also the long-flagged
+   **R1** migration (an EU-legal, affiliate-enabled source) arriving earlier than planned.
+
+### Unchanged blockers from previous handoffs
+
+- **There is no audience yet.** The "16 subscribers" cited in the June handoff and the pilot
+  runbook are **test data**, not people — every address is `qa+...@example.com` from the e2e
+  specs. Nothing to send, nobody waiting, no GDPR exposure. The real point stands and is
+  sharper: the signup funnel has never been touched by a real human, so **R0 (acquisition)
+  is entirely unproven**. Consider deleting the 16 rows so they stop inflating the scorecard.
+- **Pro tier would leak**: `publishDeal` hardcodes `tier:'free'` *and* `site/src/lib/queries.ts`
+  has no tier filter. Both must change together, before any paid list exists.
+- **Digest sender home** still undecided (Python job / Next cron / `scan_requests` kind).
+
+---
+
+## 6. Code review (2026-08-21, four parallel reviewers) — outcome
+
+Four independent reviewers (correctness / ops / security / scalability+leanness) went over
+the full `main...HEAD` diff. **No critical defects.** Security: "net improvement, no
+committed secrets." Correctness: every audit engine fix verified clean. The real findings
+clustered in the day-one ops scripts and were **fixed the same day** (loud missing-DB-URL
+path, in-flight-scan suppression, wake-retry, `RunAtLoad` watchdog, slice-scoped
+notification summary, `STALE_HOURS` validation, heartbeat line, `pwd -P` TCC guard,
+label-based bootout, stale ci.yml header, pr-gate `data/` lane hole, eslint zero).
+
+### Deferred follow-ups (recorded so they're not lost — none block current work)
+
+| # | Finding | When it matters |
+|---|---|---|
+| 1 | `history.py:99` caches per `(route, trip_type, duration)` but the SQL ignores duration → same 180-day window fetched up to 3× per route per scan (~4-line fix: cache raw rows per `(route, trip_type)`) | at PR #8 scale (146 routes); harmless at 14 |
+| 2 | `live_backend.py:180` — a `price=None` fare (documented for premium-cabin multi-pax) raises through `_to_itinerary` and kills the whole flights call | only if a BUSINESS/FIRST template ships; all templates ECONOMY today |
+| 3 | `season_end_mmdd="02-29"` crashes the whole scan in non-leap years — no mmdd validation anywhere | if a curator ever saves a leap-day season boundary |
+| 4 | Rate limiters key on the client-spoofable leftmost `x-forwarded-for`; the 10k-key `gc()` full-clear compounds it | **at deploy time** — derive IP from the platform's trusted header (Vercel `x-real-ip`) |
+| 5 | Booking-URL allowlist is prefix-only — `https://www.google.com/url?q=…` (open redirector) passes | before deals with third-party URLs ship |
+| 6 | `price_log` composite index never serves the history query (gap column); plain route-id index + heap filter today | when price_log reaches millions of rows: add `(route_id, trip_type, scanned_at)` |
+| 7 | Worker batch shares one `now` — two full-scans in one poll batch can't see each other's rows | rare double-queue; cosmetic |
+| 8 | Neon DSN appears in `psql` argv in status.sh (visible in `ps`) | accepted on a single-user Mac |
+
+## 7. Gotchas for the next session
+
+- **The repo is at `/Users/superoptimised/Skrendam`.** Start Claude Code from there.
+- **Never run tests while a scan is in flight** — concurrent `uv run` invocations mutate the
+  shared `.venv` and can uninstall a package out from under the running scan.
+- Test command that is actually green:
+  `uv run pytest -q --ignore=tests/search -k "not test_search_dates_round_trip"`
+  (both exclusions hit the live API and fail while gated — documented in `docs/PR-GATE.md`).
+- **Never run `skrendam-scheduler`** — it would double-scan alongside launchd.
+- `scan_runs` commits **once at the very end** of a run; an in-progress scan shows zero rows.
+  That is not a failure.
+- The `Unknown airport IATA code 'ZWS'/'AGY'` log spam is a known, harmless fli gap.

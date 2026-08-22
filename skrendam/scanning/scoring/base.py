@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import TYPE_CHECKING, Protocol
 
 from skrendam.scanning.scoring import tiering
@@ -42,6 +43,9 @@ class ScoringContext:
     # (now - scanned_at).days with now always midnight (orchestrator) — age 0/1 reads
     # "since the last scan" in drop.py; >1 states the age.
     previous_price_age_days: int | None = None
+    # Travel date of the fare being scored — lets scorers use month-local
+    # baseline stats (compare January with January). None = window stats.
+    travel_date: "date | None" = None
 
 
 class Scorer(Protocol):

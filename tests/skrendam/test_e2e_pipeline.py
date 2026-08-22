@@ -20,24 +20,25 @@ from skrendam.verification import recheck_candidate
 TODAY = date(2026, 6, 15)
 
 # ─── Expected exact pipeline counts for TODAY=2026-06-15 with NewFakeBackend ─────────
-# due_routes(rotation_days=10) returns 24 routes (11 core + 13 tail in slot 2).
-# Templates x due routes resolve to 64 specs total (see below per-template breakdown):
-#   family-school-holiday-sun: 8, september-sun: 8, last-warm-days: 8,
-#   christmas-markets: 12, last-minute-weekends: 12, plan-ahead-summer: 8,
-#   vfr-watch: 7, long-haul-opportunist: 1  →  64 total
+# Re-derived 2026-08-22 for the Phase A seed (159 routes, 29 core) + the two
+# templates merged from main (winter-sun-escape, ski-alps): 10 templates over
+# due_routes(rotation_days=10) resolve to 129 specs; the fake is single-month so
+# Wave-1 month-local scoring is neutral here (month stats == window stats).
 #
-# 7 calendar points per spec → 64 * 7 = 448 price_log rows.
-# Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only 30.0 is flagged.
+# 7 calendar points per spec → 129 * 7 = 903 price_log rows.
+# Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only 30.0 is flagged
+# (single-month fake: month decile == window decile).
 # near_dates = prices ≤ 30.0*1.10=33.0 → 5 points → satisfies min_departure_dates=5.
-# Weighted scorer fires for last-minute-weekends (12 specs) and vfr-watch (7 specs)
-# only; all other templates fail their price-anomaly or score threshold gates.
-# All 64 specs trigger one search_flights call (one flagged point each), but only
-# 19 produce a candidate (12 last-minute + 7 vfr-watch).  Each candidate gets
-# exactly one template match → 19 matches and 19 content drafts.
-E2E_PRICE_LOG_ROWS = 448
-E2E_CANDIDATES = 19
-E2E_MATCHES = 19
-E2E_DRAFTS = 19
+# Weighted fires wherever the EUR30 fare passes a price gate: family-school-holiday-sun
+# (under max_price 400) 30 specs, last-warm-days (under max_price 150) 30,
+# last-minute-weekends (psych 40) 20, vfr-watch (psych 80) 10 → 90 candidates.
+# winter-sun-escape and ski-alps stay quiet: discount-only gates (25%) vs the fake's
+# 6% below-median fare. Outlier scorer quiet too (z=-1.35 at month MAD 1.0).
+# Each candidate gets exactly one template match → 90 matches and 90 drafts.
+E2E_PRICE_LOG_ROWS = 903
+E2E_CANDIDATES = 90
+E2E_MATCHES = 90
+E2E_DRAFTS = 90
 
 
 # ─── FakeBackend ─────────────────────────────────────────────────────────────────────
@@ -102,8 +103,8 @@ def test_full_pipeline_offline(session):
 
     summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
-    # ── 1. summary: all 8 templates scanned ──────────────────────────────────────────
-    assert summary.templates_scanned == 8
+    # ── 1. summary: all 10 templates scanned ─────────────────────────────────────────
+    assert summary.templates_scanned == 10
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()

@@ -2,8 +2,47 @@
 
 import { useState, useTransition } from 'react';
 import type { publishedDeals } from '@/db/generated/schema';
-import { expireDeal, republishDeal } from '@/app/actions';
+import { expireDeal, republishDeal, markPosted } from '@/app/actions';
+import { timeAgo } from '@/lib/format';
 import { Icon } from '@/components/Icon';
+
+// Manual "I posted this" toggle — one tap after posting the deal by hand.
+// Automatic detection would need TikTok/IG API integrations for zero benefit
+// at one post per deal (founder decision 2026-08-22).
+function PostedChip({
+  dealId,
+  platform,
+  postedAt,
+}: {
+  dealId: number;
+  platform: 'tiktok' | 'instagram';
+  postedAt: string | null;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const label = platform === 'tiktok' ? 'TikTok' : 'IG';
+  const posted = postedAt != null;
+  return (
+    <button
+      disabled={isPending}
+      onClick={() => startTransition(() => markPosted(dealId, platform, !posted))}
+      title={posted ? `Posted ${timeAgo(postedAt)} — tap to unmark` : `Mark as posted to ${label}`}
+      style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 10,
+        letterSpacing: '0.05em',
+        padding: '3px 9px',
+        borderRadius: 99,
+        cursor: 'pointer',
+        border: posted ? '1px solid var(--sea-200)' : '1px dashed var(--sand-300)',
+        background: posted ? 'var(--sea-50)' : 'transparent',
+        color: posted ? 'var(--sea-700)' : 'var(--fg-3)',
+        opacity: isPending ? 0.6 : 1,
+      }}
+    >
+      {label} {posted ? '✓' : '+'}
+    </button>
+  );
+}
 
 type Deal = typeof publishedDeals.$inferSelect;
 
@@ -85,6 +124,9 @@ function DealRow({ deal }: { deal: Deal }) {
               valid until {deal.validUntil}
             </span>
           )}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' }}>
+            published {timeAgo(deal.publishedAt)}
+          </span>
           {deal.unverifiedSince && (
             <span className="stat unverified">
               unverified since {String(deal.unverifiedSince).slice(0, 10)}
@@ -94,6 +136,12 @@ function DealRow({ deal }: { deal: Deal }) {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' }}>
               {deal.publicLabel}
             </span>
+          )}
+          {deal.status === 'live' && (
+            <>
+              <PostedChip dealId={deal.id} platform="tiktok" postedAt={deal.postedTiktokAt} />
+              <PostedChip dealId={deal.id} platform="instagram" postedAt={deal.postedInstagramAt} />
+            </>
           )}
         </div>
       </div>
@@ -155,7 +203,7 @@ export function PublishedBoard({ deals }: Props) {
           color: 'var(--fg-1)',
         }}
       >
-        Published deals
+        Live
       </h1>
 
       {/* Tabs */}

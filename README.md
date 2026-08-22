@@ -453,7 +453,9 @@ const filters = new FlightSearchFilters({
 const results = await new SearchFlights().search(filters, { currency: "USD" });
 ```
 
-The TypeScript source lives in [`fli-js/`](fli-js); see the
+The TypeScript source lives in
+[upstream's `fli-js/`](https://github.com/punitarani/fli/tree/main/fli-js)
+(removed from this fork — nothing here consumes it); see the
 [TypeScript Quick Start](https://punitarani.github.io/fli/typescript/quickstart/)
 for the full guide.
 

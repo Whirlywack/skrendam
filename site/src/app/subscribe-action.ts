@@ -2,11 +2,12 @@
 import { randomBytes } from 'crypto';
 import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
 import { emailEnabled, sendConfirmEmail } from '@/lib/email';
+import { subscribeEmailLimiter, subscribeIpLimiter } from '@/lib/rate-limit';
 import {
   normalizeEmail,
   isValidEmail,
@@ -64,6 +65,19 @@ export async function subscribeAction(
 
   const token = randomBytes(24).toString('hex');
   const enabled = emailEnabled();
+
+  // Abuse guard: this is an unauthenticated public endpoint whose success path
+  // sends an email. Over-limit requests are answered exactly like successes
+  // (no oracle for bots) but do nothing — no row write, no Resend send.
+  const h = await headers();
+  const ip = (h.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+  if (!subscribeIpLimiter.allow(`ip:${ip}`) || !subscribeEmailLimiter.allow(`em:${email}`)) {
+    console.warn(`subscribe rate-limited (ip=${ip})`);
+    if (mode === 'page') {
+      redirect(enabled ? '/subscribe?state=check-email' : '/subscribe?state=confirmed');
+    }
+    return { ok: true, state: enabled ? 'check-email' : 'subscribed' };
+  }
   const nowIso = new Date().toISOString();
 
   let touched = false;
@@ -190,7 +204,7 @@ export async function savePreferencesAction(formData: FormData): Promise<void> {
 // joinEarlyAlertsAction — opt subscriber into early alerts by token
 // ---------------------------------------------------------------------------
 
-export async function joinEarlyAlertsAction(formData: FormData): Promise<void> {
+export async function joinEarlyAlertsAction(): Promise<void> {
   // Read token from httpOnly cookie, NOT formData (token must not appear in URL/form).
   const c = await cookies();
   const token = c.get(COOKIE_NAME)?.value ?? '';

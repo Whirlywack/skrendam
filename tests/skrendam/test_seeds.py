@@ -10,8 +10,8 @@ def test_seed_is_idempotent(session):
     assert session.query(models.Zone).count() >= 4
     assert session.query(models.Route).count() >= 10
     assert session.query(models.AudienceSegment).count() == 6
-    assert session.query(models.TravelMoment).count() == 8
-    assert session.query(models.DealTemplate).count() == 8
+    assert session.query(models.TravelMoment).count() == 10
+    assert session.query(models.DealTemplate).count() == 10
     # every template references a real audience + moment
     for t in session.query(models.DealTemplate):
         assert t.audience_segment_id and t.travel_moment_id
@@ -57,7 +57,7 @@ def test_route_list_size_and_validity():
     from fli.models import Airport
     from skrendam.seeds import ROUTES, ZONES
 
-    assert 120 <= len(ROUTES) <= 150
+    assert 150 <= len(ROUTES) <= 175
     zone_names = {z[0] for z in ZONES}
     assert len(ROUTES) == len({(o, d) for o, d, *_ in ROUTES})  # no dupes
     for o, d, z, *_rest in ROUTES:
@@ -73,7 +73,7 @@ def test_core_composition_feeds_every_enabled_template(session):
     seed_all(session)
     routes = session.query(models.Route).filter_by(enabled=True).all()
     core = [r for r in routes if r.core]
-    assert 8 <= len(core) <= 12
+    assert 26 <= len(core) <= 34
     today = date(2026, 6, 15)
     for tpl in session.query(models.DealTemplate).filter_by(enabled=True).all():
         specs = resolve(tpl, core, today)

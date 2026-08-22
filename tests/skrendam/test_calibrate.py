@@ -7,6 +7,7 @@ from skrendam.db import models
 class FakeBackend:
     def search_calendar(self, spec):
         return [(date(2026, 7, 1 + i), None, 40 + i * 5) for i in range(10)]
+
     def search_flights(self, *a, **k):
         return []
 

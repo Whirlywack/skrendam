@@ -1,14 +1,12 @@
 version: 2
 updates:
-  # Enable version updates for Python dependencies
+  # Python dependencies (engine + vendored fli)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    reviewers:
-      - "punitarani"
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -23,43 +21,40 @@ updates:
         patterns:
           - "fastapi*"
           - "pydantic*"
-          - "httpx*"
-          - "pandas*"
           - "typer*"
           - "uvicorn*"
+          - "sqlalchemy*"
+          - "alembic*"
 
-  # Enable version updates for GitHub Actions
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    reviewers:
-      - "punitarani"
     commit-message:
       prefix: "ci"
       include: "scope"
 
-  # Enable version updates for the fli-js (npm) package
+  # Deal Desk (internal curator app)
   - package-ecosystem: "npm"
-    directory: "/fli-js"
+    directory: "/web"
     schedule:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    reviewers:
-      - "punitarani"
     commit-message:
-      prefix: "deps"
+      prefix: "deps(web)"
       include: "scope"
-    groups:
-      js-dev-dependencies:
-        patterns:
-          - "@biomejs/*"
-          - "@types/*"
-          - "oxlint"
-          - "typescript"
-      js-production-dependencies:
-        patterns:
-          - "zod"
+
+  # Public site
+  - package-ecosystem: "npm"
+    directory: "/site"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(site)"
+      include: "scope"

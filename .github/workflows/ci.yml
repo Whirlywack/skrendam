@@ -15,15 +15,15 @@ on:
 
 permissions:
   contents: read
-  checks: write
-  pull-requests: write
 
 jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
     outputs:
-      fli-js: ${{ steps.filter.outputs.fli-js || 'true' }}
+      python: ${{ steps.filter.outputs.python || 'true' }}
+      web: ${{ steps.filter.outputs.web || 'true' }}
+      site: ${{ steps.filter.outputs.site || 'true' }}
       workflows: ${{ steps.filter.outputs.workflows || 'true' }}
     steps:
       - uses: actions/checkout@v6
@@ -33,9 +33,24 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           filters: |
-            fli-js:
-              - 'fli-js/**'
+            python:
+              - 'fli/**'
+              - 'skrendam/**'
+              - 'tests/**'
+              - 'alembic/**'
+              - 'scripts/**'
               - 'data/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'pytest.ini'
+              - 'railway.toml'
+              - 'nixpacks.toml'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            site:
+              - 'site/**'
               - '.github/workflows/ci.yml'
             workflows:
               - '.github/workflows/**'
@@ -57,6 +72,8 @@ jobs:
 
   lint:
     name: Lint Python
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -78,81 +95,10 @@ jobs:
       - name: Check style
         run: uv run ruff check .
 
-  fli-js-lint:
-    name: fli-js / Format & lint
-    needs: changes
-    if: needs.changes.outputs.fli-js == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: fli-js
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Biome format check
-        run: bun run format:check
-
-      - name: Biome + oxlint check
-        run: bun run lint
-
-      - name: TypeScript typecheck
-        run: bun run typecheck
-
-  fli-js-test:
-    name: fli-js / Bun tests
-    needs: [ changes, fli-js-lint ]
-    if: needs.changes.outputs.fli-js == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: fli-js
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Verify generated enums are in sync with data/
-        run: |
-          bun run generate:enums
-          if ! git diff --quiet src/models/airport.ts src/models/airline.ts; then
-            echo "Generated enums are out of date — run 'bun run generate:enums' and commit." >&2
-            git diff --stat src/models/airport.ts src/models/airline.ts
-            exit 1
-          fi
-
-      - name: Run tests with coverage
-        run: bun run test:ci
-
-      - name: Upload fli-js test results
-        if: always() && !env.ACT
-        uses: actions/upload-artifact@v7
-        with:
-          name: Test Results (fli-js)
-          path: fli-js/junit.xml
-
-      - name: Upload fli-js coverage
-        if: always() && !env.ACT
-        uses: actions/upload-artifact@v7
-        with:
-          name: Coverage (fli-js)
-          path: fli-js/coverage/
-
   railway-build:
     name: Railway build validation
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -222,7 +168,8 @@ jobs:
 
   test:
     name: test
-    needs: [ lint, railway-build ]
+    needs: [ changes, lint, railway-build ]
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -243,7 +190,9 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --extra dev --extra mcp
+        # skrendam extra: tests/skrendam imports sqlalchemy/alembic — without it
+        # collection fails with ModuleNotFoundError (first red main run, 2026-08-21)
+        run: uv sync --extra dev --extra mcp --extra skrendam
 
       - name: Run tests
         run: |
@@ -261,11 +210,78 @@ jobs:
           name: Test Results (Python ${{ matrix.python-version }})
           path: junit.xml
 
+  web:
+    name: web / Deal Desk
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npx next build
+        env:
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+          AUTH_SECRET: "ci-only-secret-not-used-in-prod"
+
+  site:
+    name: site / Public site
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        # compile-only: the collection pages prerender at build time and query the
+        # DB; CI has no database, so a full build always fails with NeonDbError.
+        # Compile mode validates bundling/routes without static generation —
+        # production builds (which have a real DATABASE_URL) are unaffected.
+        run: npx next build --experimental-build-mode compile
+        env:
+          DATABASE_URL: "postgres://ci:ci@localhost:5432/ci"
+
   publish-test-results:
     name: Publish Test Results
-    needs: [ test, fli-js-test ]
+    needs: [ test ]
     runs-on: ubuntu-latest
-    if: always() && (needs.test.result != 'skipped' || needs.fli-js-test.result != 'skipped')
+    if: always() && needs.test.result != 'skipped'
     permissions:
       checks: write
       pull-requests: write

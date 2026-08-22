@@ -4,6 +4,7 @@ deterministic order; the orchestrator runs every one per in-scope template."""
 from skrendam.scanning.scoring.base import Score, Scorer
 from skrendam.scanning.scoring.drop import PriceDropScorer
 from skrendam.scanning.scoring.error_fare import ErrorFareScorer
+from skrendam.scanning.scoring.outlier import OutlierScorer
 from skrendam.scanning.scoring.rarity import RarityScorer
 from skrendam.scanning.scoring.weighted import WeightedScorer
 
@@ -43,3 +44,4 @@ register(WeightedScorer())
 register(PriceDropScorer())
 register(ErrorFareScorer())
 register(RarityScorer())
+register(OutlierScorer())

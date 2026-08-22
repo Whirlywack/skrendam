@@ -14,7 +14,8 @@ export default async function CandidatePage({
   const row = await getCandidateRow(Number(id.replace(/^m/, '')));
   if (!row) notFound();
 
-  // Inline mode: no scrim, no close button, renders in-flow as the full review room.
-  // onClose is a no-op — the detail page has no drawer to dismiss.
-  return <Composer c={toCandidateView(row)} onClose={() => {}} inline />;
+  // Inline mode: no scrim, no close button, renders in-flow as the full review
+  // room. onClose is intentionally omitted — a function prop from a Server
+  // Component cannot cross the RSC boundary (it crashed this page before).
+  return <Composer c={toCandidateView(row)} inline />;
 }

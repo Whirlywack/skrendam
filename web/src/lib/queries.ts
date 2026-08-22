@@ -1,8 +1,8 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   candidates, candidateTemplateMatches, dealTemplates, contentDrafts,
-  publishedDeals, scanRuns, scanRequests,
+  publishedDeals, routes, scanRuns, scanRequests,
 } from '@/db/generated/schema';
 
 // ---------------------------------------------------------------------------
@@ -36,8 +36,13 @@ function queueBase() {
     .leftJoin(publishedDeals, eq(publishedDeals.candidateId, candidates.id));
 }
 
-export async function getQueueRows() {
-  const rows = await queueBase().orderBy(desc(candidateTemplateMatches.matchScore));
+export async function getQueueRows(includeExpired = false) {
+  // Expired candidates are engine history, not review work — they polluted every
+  // count and queue group (B3). The Review page's "History" scope opts back in.
+  const base = includeExpired
+    ? queueBase()
+    : queueBase().where(ne(candidates.status, 'expired'));
+  const rows = await base.orderBy(desc(candidateTemplateMatches.matchScore));
   // A candidate with multiple published_deals rows fans out the same matchId.
   // Keep only the first occurrence per matchId.
   const seen = new Set<number>();
@@ -53,6 +58,18 @@ export async function getCandidateRow(matchId: number) {
     .where(eq(candidateTemplateMatches.id, matchId))
     .limit(1);
   return rows[0] ?? null;
+}
+
+export async function getRouteOrigins(): Promise<string[]> {
+  // Origin tabs come from the routes table, not from today's candidates, so a
+  // city with zero finds still shows (with a 0) and TLL appears the day its
+  // routes are seeded.
+  const rows = await db
+    .selectDistinct({ origin: routes.origin })
+    .from(routes)
+    .where(eq(routes.enabled, true))
+    .orderBy(routes.origin);
+  return rows.map((r) => r.origin);
 }
 
 export async function getLatestScanRun() {
