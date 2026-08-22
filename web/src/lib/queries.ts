@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import {
@@ -36,7 +37,10 @@ function queueBase() {
     .leftJoin(publishedDeals, eq(publishedDeals.candidateId, candidates.id));
 }
 
-export async function getQueueRows(includeExpired = false) {
+// cache(): the app layout and the page it wraps both need these on every
+// navigation — per-request memoization halves the DB round-trips
+// (review 2026-08-22).
+export const getQueueRows = cache(async (includeExpired = false) => {
   // Expired candidates are engine history, not review work — they polluted every
   // count and queue group (B3). The Review page's "History" scope opts back in.
   const base = includeExpired
@@ -51,7 +55,7 @@ export async function getQueueRows(includeExpired = false) {
     seen.add(r.matchId);
     return true;
   });
-}
+});
 
 export async function getCandidateRow(matchId: number) {
   const rows = await queueBase()
@@ -72,23 +76,23 @@ export async function getRouteOrigins(): Promise<string[]> {
   return rows.map((r) => r.origin);
 }
 
-export async function getLatestScanRun() {
+export const getLatestScanRun = cache(async () => {
   const [run] = await db.select().from(scanRuns).orderBy(desc(scanRuns.startedAt)).limit(1);
   return run ?? null;
-}
+})
 
-export async function getPublishedDeals() {
+export const getPublishedDeals = cache(async () => {
   return db.select().from(publishedDeals).orderBy(desc(publishedDeals.publishedAt));
-}
+})
 
 export async function getRecentScanRuns(limit = 20) {
   return db.select().from(scanRuns).orderBy(desc(scanRuns.startedAt)).limit(limit);
 }
 
-export async function getPendingScanRequests() {
+export const getPendingScanRequests = cache(async () => {
   return db
     .select()
     .from(scanRequests)
     .where(inArray(scanRequests.status, ['queued', 'running']))
     .orderBy(desc(scanRequests.createdAt));
-}
+})

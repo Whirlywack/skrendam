@@ -351,7 +351,7 @@ export function QueueBoard({
         if (!items.length) return null;
         return (
           <TemplateSection
-            key={`${g.templateId}-${sortKey}`}
+            key={g.templateId}
             g={g}
             items={items}
             alsoMatches={templatesByCandidate}

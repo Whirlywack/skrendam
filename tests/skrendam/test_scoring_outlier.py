@@ -81,3 +81,51 @@ def test_flat_month_mad_zero_is_silent():
         travel_date=date(2027, 3, 5),
     )
     assert OutlierScorer().score(ctx) is None  # degenerate scale — no z
+
+
+def test_template_price_ceiling_is_respected():
+    # Review 2026-08-22: a z-outlier above the template's absolute cap must not
+    # attach to that template.
+    pts = [CalendarPoint(date(2027, 1, 1 + i), None, 400.0 + i) for i in range(20)]
+    b = compute_baseline(pts)
+    ctx = ScoringContext(
+        fare=_fare(340.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(max_price_eur=150),
+        travel_date=date(2027, 1, 10),
+    )
+    assert OutlierScorer().score(ctx) is None
+
+
+def test_calm_route_deep_z_without_discount_is_not_error_fare():
+    # Ultra-calm series: median 100, MAD ~1. An 88 fare is z<-5 but only 12%
+    # below median — a fine outlier, NOT an error fare (review 2026-08-22).
+    pts = [CalendarPoint(date(2027, 2, 1 + i), None, 98.0 + (i % 5)) for i in range(20)]
+    b = compute_baseline(pts)
+    ctx = ScoringContext(
+        fare=_fare(88.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(),
+        travel_date=date(2027, 2, 10),
+    )
+    s = OutlierScorer().score(ctx)
+    assert s is not None
+    assert s.signals["possible_error_fare"] is False
+
+
+def test_thin_month_reason_names_the_window_not_the_month():
+    pts = [CalendarPoint(date(2027, 1, 1 + i), None, 145.0 + i) for i in range(20)]
+    pts.append(CalendarPoint(date(2027, 4, 1), None, 150.0))  # 1-pt month
+    b = compute_baseline(pts)
+    ctx = ScoringContext(
+        fare=_fare(120.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(),
+        travel_date=date(2027, 4, 1),
+    )
+    s = OutlierScorer().score(ctx)
+    assert s is not None
+    assert "April" not in s.reason_text and "window" in s.reason_text

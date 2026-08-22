@@ -14,6 +14,7 @@
  */
 import Link from 'next/link';
 import type { TicketView } from '@/lib/types';
+import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
 import { Photo } from './Photo';
 
 export function DealTicket({ t, featured = false }: { t: TicketView; featured?: boolean }) {
@@ -51,7 +52,7 @@ export function DealTicket({ t, featured = false }: { t: TicketView; featured?: 
             €{t.price}
             {/* was-price only on deep deals — a strikethrough on a shallow
                 discount spends trust for nothing (reference-price research) */}
-            {t.baseline && t.drop >= 30 ? <s>€{t.baseline}</s> : null}
+            {t.baseline && t.drop >= WAS_PRICE_MIN_DROP_PCT ? <s>€{t.baseline}</s> : null}
             <span className="ret">return · {t.airline}</span>
           </div>
           <span className="btn-see">See deal &#x2192;</span>
