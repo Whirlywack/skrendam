@@ -2,8 +2,9 @@ import type { ScanView } from '@/lib/types';
 import { GREAT_THRESHOLD } from '@/lib/tiers';
 
 interface DashboardCardsProps {
+  toReview: number;
   highScore: number;
-  needsRecheck: number;
+  stalePrice: number;
   liveCount: number;
   expiringSoon: number;
   scan: ScanView;
@@ -44,8 +45,9 @@ const CARD: React.CSSProperties = {
 };
 
 export function DashboardCards({
+  toReview,
   highScore,
-  needsRecheck,
+  stalePrice,
   liveCount,
   expiringSoon,
   scan,
@@ -58,39 +60,41 @@ export function DashboardCards({
         gap: 14,
       }}
     >
-      {/* Card 1 — New high-score candidates */}
+      {/* Card 1 — deals waiting for review (distinct candidates, current scan data) */}
       <div style={CARD}>
-        <p style={EYEBROW}>High-score deals</p>
+        <p style={EYEBROW}>To review</p>
         <p
           style={{
             ...NUM,
-            color: highScore > 0 ? 'var(--sea-600)' : 'var(--fg-2)',
+            color: toReview > 0 ? 'var(--sea-600)' : 'var(--fg-2)',
           }}
         >
-          {highScore}
+          {toReview}
         </p>
         <p style={CAPTION}>
-          {highScore === 1
-            ? `candidate · score ≥ ${GREAT_THRESHOLD}, not yet reviewed`
-            : `candidates · score ≥ ${GREAT_THRESHOLD}, not yet reviewed`}
+          {toReview === 0
+            ? 'queue is clear'
+            : `fresh deals · ${highScore} high-score (≥ ${GREAT_THRESHOLD})`}
         </p>
       </div>
 
-      {/* Card 2 — Needs recheck */}
+      {/* Card 2 — live deals whose price nobody has re-checked lately */}
       <div style={CARD}>
-        <p style={EYEBROW}>Needs recheck</p>
+        <p style={EYEBROW}>Needs a price check</p>
         <p
           style={{
             ...NUM,
-            color: needsRecheck > 0 ? 'var(--amber-600)' : 'var(--fg-2)',
+            color: stalePrice > 0 ? 'var(--coral-600)' : 'var(--fg-2)',
           }}
         >
-          {needsRecheck}
+          {stalePrice}
         </p>
         <p style={CAPTION}>
-          {needsRecheck === 1
-            ? 'candidate not yet verified'
-            : 'candidates not yet verified'}
+          {stalePrice === 0
+            ? 'all live prices fresh'
+            : stalePrice === 1
+              ? 'live deal not verified in over a week'
+              : 'live deals not verified in over a week'}
         </p>
       </div>
 

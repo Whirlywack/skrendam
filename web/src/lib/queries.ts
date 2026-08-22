@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   candidates, candidateTemplateMatches, dealTemplates, contentDrafts,
@@ -37,7 +37,11 @@ function queueBase() {
 }
 
 export async function getQueueRows() {
-  const rows = await queueBase().orderBy(desc(candidateTemplateMatches.matchScore));
+  // Expired candidates are engine history, not review work — they polluted every
+  // count and queue group (B3). Phase 2 re-exposes them behind an "Everything" scope.
+  const rows = await queueBase()
+    .where(ne(candidates.status, 'expired'))
+    .orderBy(desc(candidateTemplateMatches.matchScore));
   // A candidate with multiple published_deals rows fans out the same matchId.
   // Keep only the first occurrence per matchId.
   const seen = new Set<number>();

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { publishedDeals } from '@/db/generated/schema';
 import { expireDeal, republishDeal } from '@/app/actions';
+import { timeAgo } from '@/lib/format';
 import { Icon } from '@/components/Icon';
 
 type Deal = typeof publishedDeals.$inferSelect;
@@ -85,6 +86,9 @@ function DealRow({ deal }: { deal: Deal }) {
               valid until {deal.validUntil}
             </span>
           )}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' }}>
+            published {timeAgo(deal.publishedAt)}
+          </span>
           {deal.unverifiedSince && (
             <span className="stat unverified">
               unverified since {String(deal.unverifiedSince).slice(0, 10)}
