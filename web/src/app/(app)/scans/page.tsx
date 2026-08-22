@@ -1,13 +1,16 @@
 import { getRecentScanRuns, getPendingScanRequests } from '@/lib/queries';
-import { timeAgo } from '@/lib/format';
+import { parseEngineTs, timeAgo } from '@/lib/format';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDuration(startedAt: string, finishedAt: string | null): string {
   if (!finishedAt) return '—';
   const secs = Math.round(
-    (new Date(finishedAt).getTime() - new Date(startedAt).getTime()) / 1000,
+    (parseEngineTs(finishedAt).getTime() - parseEngineTs(startedAt).getTime()) / 1000,
   );
+  // The engine writes started_at and finished_at together at commit time, so old
+  // runs show a degenerate ~0s duration; hide it rather than display a lie.
+  if (secs < 1) return '—';
   if (secs < 60) return `${secs}s`;
   const m = Math.floor(secs / 60);
   const s = secs % 60;
@@ -16,7 +19,7 @@ function fmtDuration(startedAt: string, finishedAt: string | null): string {
 
 function fmtTs(iso: string | null): string {
   if (!iso) return '—';
-  const d = new Date(iso);
+  const d = parseEngineTs(iso);
   return d.toLocaleString('en-GB', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
   });
@@ -104,20 +107,17 @@ function reqPill(status: string): React.CSSProperties {
 type ScanRunRow = Awaited<ReturnType<typeof getRecentScanRuns>>[number];
 
 function ScanRunCard({ run }: { run: ScanRunRow }) {
-  const hasErrors = (run.errors ?? 0) > 0;
+  // Status is carried by the pill; unhealthy runs get a soft tint (like the
+  // dashboard's attention block) instead of a side stripe.
+  const unhealthy =
+    run.status === 'failed' || run.status === 'error' || run.status === 'degraded';
   return (
     <div
       style={{
         ...CARD,
-        borderLeft: `3px solid ${
-          run.status === 'completed' && !hasErrors
-            ? 'var(--sea-300)'
-            : run.status === 'failed' || run.status === 'error' || run.status === 'degraded'
-              ? 'var(--coral-400)'
-              : run.status === 'running'
-                ? 'var(--amber-400)'
-                : 'var(--sand-300)'
-        }`,
+        ...(unhealthy
+          ? { background: 'var(--coral-50)', border: '1px solid var(--coral-100)' }
+          : {}),
       }}
     >
       {/* top row: status pill + duration + version */}

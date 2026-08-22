@@ -46,6 +46,7 @@ export function toCandidateView(r: QueueRow): CandidateView {
     from: c.origin, to: c.destination,
     price: Number(c.price), usual: c.baselinePrice == null ? null : Number(c.baselinePrice), drop,
     dates: formatDates(String(c.travelDate), c.returnDate ? String(c.returnDate) : null),
+    travelDate: String(c.travelDate),
     legs, airline,
     template: r.templateLabel ?? r.templateName,
     signals, flags,
