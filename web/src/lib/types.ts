@@ -14,7 +14,7 @@ export interface CandidateView {
   place: string; country: string; origin: string;
   from: string; to: string;
   price: number; usual: number | null; drop: number;
-  dates: string; legs: string; airline: string;
+  dates: string; travelDate: string; legs: string; airline: string;
   template: string;
   signals: string[]; flags: string[];
   grad: string;

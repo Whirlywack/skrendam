@@ -5,6 +5,7 @@ const A: Record<string, { city: string; country: string }> = {
   VNO: { city: 'Vilnius', country: 'Lithuania' },
   KUN: { city: 'Kaunas', country: 'Lithuania' },
   RIX: { city: 'Riga', country: 'Latvia' },
+  TLL: { city: 'Tallinn', country: 'Estonia' },
   AGP: { city: 'Málaga', country: 'Spain' },
   AYT: { city: 'Antalya', country: 'Türkiye' },
   BCN: { city: 'Barcelona', country: 'Spain' },
