@@ -38,8 +38,11 @@ def _baseline():
 
 def _ctx(price, tpl=None, travel_date=date(2027, 1, 10), stops=0):
     return ScoringContext(
-        fare=_fare(price, stops), baseline=_baseline(), zone=SimpleNamespace(),
-        template=tpl or _tpl(), travel_date=travel_date,
+        fare=_fare(price, stops),
+        baseline=_baseline(),
+        zone=SimpleNamespace(),
+        template=tpl or _tpl(),
+        travel_date=travel_date,
     )
 
 
@@ -71,7 +74,10 @@ def test_flat_month_mad_zero_is_silent():
     pts = [CalendarPoint(date(2027, 3, 1 + i), None, 200.0) for i in range(10)]
     b = compute_baseline(pts)
     ctx = ScoringContext(
-        fare=_fare(50.0), baseline=b, zone=SimpleNamespace(),
-        template=_tpl(), travel_date=date(2027, 3, 5),
+        fare=_fare(50.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(),
+        travel_date=date(2027, 3, 5),
     )
     assert OutlierScorer().score(ctx) is None  # degenerate scale — no z

@@ -42,8 +42,8 @@ def test_local_discount_compares_january_with_january():
     b = compute_baseline(_seasonal_pts())
     window_disc = (b.median - 120.0) / b.median
     local_disc = b.local_discount(120.0, date(2027, 1, 15))
-    assert window_disc > 0.4          # the old, flattering number
-    assert local_disc < 0.25          # the honest, month-local number
+    assert window_disc > 0.4  # the old, flattering number
+    assert local_disc < 0.25  # the honest, month-local number
 
 
 def test_thin_month_falls_back_to_window():
