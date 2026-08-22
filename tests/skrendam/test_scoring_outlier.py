@@ -89,8 +89,11 @@ def test_template_price_ceiling_is_respected():
     pts = [CalendarPoint(date(2027, 1, 1 + i), None, 400.0 + i) for i in range(20)]
     b = compute_baseline(pts)
     ctx = ScoringContext(
-        fare=_fare(340.0), baseline=b, zone=SimpleNamespace(),
-        template=_tpl(max_price_eur=150), travel_date=date(2027, 1, 10),
+        fare=_fare(340.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(max_price_eur=150),
+        travel_date=date(2027, 1, 10),
     )
     assert OutlierScorer().score(ctx) is None
 
@@ -101,8 +104,11 @@ def test_calm_route_deep_z_without_discount_is_not_error_fare():
     pts = [CalendarPoint(date(2027, 2, 1 + i), None, 98.0 + (i % 5)) for i in range(20)]
     b = compute_baseline(pts)
     ctx = ScoringContext(
-        fare=_fare(88.0), baseline=b, zone=SimpleNamespace(),
-        template=_tpl(), travel_date=date(2027, 2, 10),
+        fare=_fare(88.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(),
+        travel_date=date(2027, 2, 10),
     )
     s = OutlierScorer().score(ctx)
     assert s is not None
@@ -114,8 +120,11 @@ def test_thin_month_reason_names_the_window_not_the_month():
     pts.append(CalendarPoint(date(2027, 4, 1), None, 150.0))  # 1-pt month
     b = compute_baseline(pts)
     ctx = ScoringContext(
-        fare=_fare(120.0), baseline=b, zone=SimpleNamespace(),
-        template=_tpl(), travel_date=date(2027, 4, 1),
+        fare=_fare(120.0),
+        baseline=b,
+        zone=SimpleNamespace(),
+        template=_tpl(),
+        travel_date=date(2027, 4, 1),
     )
     s = OutlierScorer().score(ctx)
     assert s is not None
