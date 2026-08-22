@@ -16,8 +16,11 @@ class WeightedScorer:
     def score(self, ctx: ScoringContext) -> Score | None:
         fare, tpl, baseline, zone = ctx.fare, ctx.template, ctx.baseline, ctx.zone
         gates: dict = {}
-        discount = 0.0 if baseline.median <= 0 else (baseline.median - fare.price) / baseline.median
-        abs_savings = max(0.0, baseline.median - fare.price)
+        # Month-local discount: compare January with January. The window median
+        # inflated seasonal-trough fares by up to 2x (Wave-0 T3: 24% of a batch).
+        local_median = baseline.local_median(ctx.travel_date)
+        discount = baseline.local_discount(fare.price, ctx.travel_date)
+        abs_savings = max(0.0, local_median - fare.price)
 
         # Gate 1: price anomaly (hard). One-way templates may fall back to the
         # zone ceiling; round-trips must set their own max_price_eur.
@@ -74,9 +77,14 @@ class WeightedScorer:
             return None
 
         pct = round(discount * 100)
+        month_local = ctx.travel_date is not None and baseline.month_stats(ctx.travel_date)
+        basis = (
+            f"its {ctx.travel_date:%B} median" if month_local
+            else f"the {baseline.sample_size}-day median"
+        )
         reason = (
-            f"EUR{fare.price:.0f} - {pct}% below the {baseline.sample_size}-day median "
-            f"(EUR{baseline.median:.0f}); {'nonstop' if fare.stops == 0 else f'{fare.stops} stop(s)'}."
+            f"EUR{fare.price:.0f} - {pct}% below {basis} "
+            f"(EUR{local_median:.0f}); {'nonstop' if fare.stops == 0 else f'{fare.stops} stop(s)'}."
         )
         value = round(score, 3)
         return Score.from_value("weighted", value, reason, gates)

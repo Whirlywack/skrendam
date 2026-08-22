@@ -31,9 +31,14 @@ def build_content_draft(
             # fall back to the raw pattern, never abort the scan run.
             return pattern
 
+    # Reference-price rule (deal-detection synthesis 2026-08-22): a was-price
+    # only helps on deep deals; on shallow ones it spends credibility. Suppress
+    # the "usually" clause below 30% discount in the generic fallback headline.
+    # (Template-authored headlines are the curator's own copy and are not touched.)
+    deep_enough = bool(baseline) and (baseline - price) / baseline >= 0.30
     headline = fill(template.suggested_headline_template) or (
         f"{origin}->{destination} just EUR{price:.0f}"
-        + (f" (usually EUR{baseline:.0f})" if baseline else "")
+        + (f" (usually EUR{baseline:.0f})" if deep_enough else "")
     )
     return {
         "headline": headline,

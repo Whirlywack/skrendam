@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { CandidateView, ScanView, TemplateGroup } from '@/lib/types';
 import { rejectCandidates } from '@/app/actions';
+import { clusterByRoute } from '@/lib/cluster';
 import { Queue } from './Queue';
 import { Composer } from './Composer';
 
@@ -61,8 +62,11 @@ function TemplateSection({
   const great = items.filter((c) => c.tier === 'great');
   const maybe = items.filter((c) => c.tier === 'maybe');
   const dismissable = items.filter((c) => c.status === 'suggested' || c.status === 'review');
-  const shown = showAll || !preview ? great : great.slice(0, GROUP_PREVIEW);
-  const hidden = great.length - shown.length;
+  // Cluster BEFORE the preview cap: the top-3 slots must be three different
+  // routes, not three dates of the same route (they sort adjacent by score).
+  const greatClusters = clusterByRoute(great);
+  const shown = showAll || !preview ? greatClusters : greatClusters.slice(0, GROUP_PREVIEW);
+  const hidden = greatClusters.length - shown.length;
 
   function bulkDismiss() {
     const ids = [...new Set(dismissable.map((c) => c.candidateId))];
@@ -120,7 +124,7 @@ function TemplateSection({
         )}
       </h3>
 
-      {shown.length > 0 && <Queue candidates={shown} alsoMatches={alsoMatches} onOpen={onOpen} />}
+      {shown.length > 0 && <Queue clusters={shown} alsoMatches={alsoMatches} onOpen={onOpen} />}
 
       {hidden > 0 && (
         <button
@@ -128,10 +132,10 @@ function TemplateSection({
           onClick={() => setShowAll(true)}
           style={{ fontWeight: 600 }}
         >
-          Show all {great.length} ↓
+          Show {hidden} more {hidden === 1 ? 'route' : 'routes'} ({great.length} dates total) ↓
         </button>
       )}
-      {preview && showAll && great.length > GROUP_PREVIEW && (
+      {preview && showAll && greatClusters.length > GROUP_PREVIEW && (
         <button className="maybe-toggle" onClick={() => setShowAll(false)}>
           Show fewer ↑
         </button>
@@ -149,7 +153,9 @@ function TemplateSection({
             </span>
             Maybe ({maybe.length})
           </button>
-          {maybeOpen && <Queue candidates={maybe} alsoMatches={alsoMatches} onOpen={onOpen} />}
+          {maybeOpen && (
+            <Queue clusters={clusterByRoute(maybe)} alsoMatches={alsoMatches} onOpen={onOpen} />
+          )}
         </>
       )}
     </section>
