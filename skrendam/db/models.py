@@ -280,6 +280,9 @@ class PublishedDeal(Base):
     valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     unverified_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Manual "posted to socials" markers set from the Deal Desk Live board.
+    posted_tiktok_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    posted_instagram_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     tier: Mapped[str] = mapped_column(String, default="free")
     status: Mapped[str] = mapped_column(String, default="live")
     going_fast: Mapped[bool] = mapped_column(
