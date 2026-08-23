@@ -52,7 +52,7 @@ export function dealWhyAndCatch(inputs: DealDetailInputs): WhyAndCatch {
 
   // Why: airline (only if non-empty and not a placeholder)
   if (inputs.airline && inputs.airline !== '—') {
-    why.push(inputs.airline);
+    why.push(`Flies with ${inputs.airline}`);
   }
 
   // Why: quality phrase (words only — score stays internal)

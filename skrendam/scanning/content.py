@@ -1,12 +1,41 @@
 """Seed editorial drafts from a template's copy patterns. Curator edits before publishing."""
 
+import json
 from datetime import date
+from importlib import resources
 
 from skrendam.db import models
+
+# IATA -> {city, country}; shared with site/ and web/ (they import the same JSON).
+_AIRPORTS: dict[str, dict[str, str]] = json.loads(
+    resources.files("skrendam").joinpath("airports.json").read_text(encoding="utf-8")
+)
+
+
+def city(iata: str) -> str:
+    return _AIRPORTS.get(iata, {}).get("city", iata)
 
 # Keep in sync with web/src/lib/format.ts and site/src/lib/format-rules.ts
 # (WAS_PRICE_MIN_DROP_PCT = 30).
 WAS_PRICE_MIN_DISCOUNT = 0.30
+
+
+def fallback_headline(
+    destination: str, price: float, baseline: float | None, angle: str | None
+) -> str:
+    """Brand-voice headline when a template has no pattern of its own.
+
+    yip-design-system: numbers are the hero, sentence case, the "why" after a dash —
+    "€140 return to Larnaca — one last sun trip before winter." The template's
+    content_angle supplies the why. Reference-price rule (deal-detection synthesis
+    2026-08-22): a was-price only helps on deep deals, so the "usually" clause only
+    appears above WAS_PRICE_MIN_DISCOUNT.
+    """
+    deep_enough = bool(baseline) and (baseline - price) / baseline >= WAS_PRICE_MIN_DISCOUNT
+    angle = (angle or "").strip().rstrip(".")
+    why = f" — {angle[0].lower() + angle[1:]}" if angle else ""
+    usually = f" (usually €{baseline:.0f})" if deep_enough else ""
+    return f"€{price:.0f} return to {city(destination)}{usually}{why}."
 
 
 def build_content_draft(
@@ -20,6 +49,8 @@ def build_content_draft(
     fields = {
         "origin": origin,
         "destination": destination,
+        "city": city(destination),
+        "from_city": city(origin),
         "price": f"{price:.0f}",
         "baseline": f"{baseline:.0f}" if baseline else "",
         "date": travel_date.isoformat(),
@@ -35,14 +66,9 @@ def build_content_draft(
             # fall back to the raw pattern, never abort the scan run.
             return pattern
 
-    # Reference-price rule (deal-detection synthesis 2026-08-22): a was-price
-    # only helps on deep deals; on shallow ones it spends credibility. Suppress
-    # the "usually" clause below the threshold in the generic fallback headline.
-    # (Template-authored headlines are the curator's own copy and are not touched.)
-    deep_enough = bool(baseline) and (baseline - price) / baseline >= WAS_PRICE_MIN_DISCOUNT
-    headline = fill(template.suggested_headline_template) or (
-        f"{origin}->{destination} just EUR{price:.0f}"
-        + (f" (usually EUR{baseline:.0f})" if deep_enough else "")
+    # Template-authored headlines are the curator's own copy and are not touched.
+    headline = fill(template.suggested_headline_template) or fallback_headline(
+        destination, price, baseline, template.content_angle
     )
     return {
         "headline": headline,
