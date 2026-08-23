@@ -55,3 +55,18 @@ The connection string is read from `SKRENDAM_DATABASE_URL`, falling back to `DAT
 - **Password with `$` in it:** the `.env` parser here does not unescape `\$` (the dotenv
   `$`-escape gotcha). If the Neon password ever rotates to one containing `$`, set
   `SKRENDAM_DATABASE_URL` directly in the plist environment instead of relying on the fallback.
+
+## macOS privacy (TCC): "Operation not permitted"
+
+If `launchd.err.log` shows `/bin/bash: …/scripts/daily-scan.sh: Operation not permitted`,
+macOS is blocking launchd from reading the repo (anything under `~/Documents` is
+TCC-protected; your terminal has access, launchd's bash does not). The schedule IS
+firing — only the file read is denied. One-time fix, in order of preference:
+
+1. System Settings → Privacy & Security → **Files and Folders** → `bash` →
+   enable **Documents Folder** (bash appears in the list after the first denial).
+2. If bash isn't listed: Privacy & Security → **Full Disk Access** → `+` → ⌘⇧G →
+   `/bin/bash` → add and enable (broader grant).
+
+Then `launchctl kickstart gui/$(id -u)/com.skrendam.daily-scan` and check the log
+ends `finished with exit 0` (or `2` = degraded — plumbing still fine).

@@ -45,6 +45,9 @@ def upsert_candidate(
         existing.discount_pct = fields.get("discount_pct", existing.discount_pct)
         existing.itinerary_snapshot = fields.get("itinerary_snapshot", existing.itinerary_snapshot)
         existing.expires_at = fields.get("expires_at", existing.expires_at)
+        existing.departure_date_count = fields.get(
+            "departure_date_count", existing.departure_date_count
+        )
     session.flush()
     return existing, False
 

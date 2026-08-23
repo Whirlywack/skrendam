@@ -430,7 +430,9 @@ def test_breaker_threshold_is_honored(session, threshold):
     session.add(models.AudienceSegment(id=1, slug="a", name="a"))
     session.add(models.TravelMoment(id=1, slug="m", name="m", moment_type="t"))
     for i in range(5):
-        session.add(models.Route(id=i + 1, origin="VNO", destination=f"X{i}", zone="MED"))
+        session.add(
+            models.Route(id=i + 1, origin="VNO", destination=f"X{i}", zone="MED", core=True)
+        )
     session.add(
         models.DealTemplate(
             id=1,

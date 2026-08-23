@@ -19,6 +19,27 @@ from skrendam.verification import recheck_candidate
 #      and plan-ahead-summer both resolve); relative templates always resolve. ────────
 TODAY = date(2026, 6, 15)
 
+# ─── Expected exact pipeline counts for TODAY=2026-06-15 with NewFakeBackend ─────────
+# Re-derived 2026-08-22 for the Phase A seed (159 routes, 29 core) + the two
+# templates merged from main (winter-sun-escape, ski-alps): 10 templates over
+# due_routes(rotation_days=10) resolve to 129 specs; the fake is single-month so
+# Wave-1 month-local scoring is neutral here (month stats == window stats).
+#
+# 7 calendar points per spec → 129 * 7 = 903 price_log rows.
+# Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only 30.0 is flagged
+# (single-month fake: month decile == window decile).
+# near_dates = prices ≤ 30.0*1.10=33.0 → 5 points → satisfies min_departure_dates=5.
+# Weighted fires wherever the EUR30 fare passes a price gate: family-school-holiday-sun
+# (under max_price 400) 30 specs, last-warm-days (under max_price 150) 30,
+# last-minute-weekends (psych 40) 20, vfr-watch (psych 80) 10 → 90 candidates.
+# winter-sun-escape and ski-alps stay quiet: discount-only gates (25%) vs the fake's
+# 6% below-median fare. Outlier scorer quiet too (z=-1.35 at month MAD 1.0).
+# Each candidate gets exactly one template match → 90 matches and 90 drafts.
+E2E_PRICE_LOG_ROWS = 903
+E2E_CANDIDATES = 90
+E2E_MATCHES = 90
+E2E_DRAFTS = 90
+
 
 # ─── FakeBackend ─────────────────────────────────────────────────────────────────────
 
@@ -31,26 +52,29 @@ def _rd(spec):
 
 
 class FakeBackend:
-    """Return 3 calendar points rooted at spec.window_start, plus one cheap detail fare.
+    """Window-aware calendar fake: 7 points rooted at spec.window_start.
 
-    The points sit inside the resolving template's window.
+    Prices: 30.0, 31.0, 31.5, 32.0, 33.0 (all ≤ 30.0*1.10=33.0, cheap cluster)
+    and 210.0, 215.0 (expensive).  Travel dates are window_start + 0..6 days.
 
-    The three points vary travel_date by +0/+1/+2 days so they are distinct rows
-    in price_log; having three prices means baseline.decile == the minimum, which
-    flags only the EUR 30.0 point, triggering exactly one search_flights call per
-    spec (bounded, deterministic).
+    Baseline decile on 7 prices = 30.6, flagging only the 30.0 point.
+    near_dates = 5 (prices ≤ 33.0), satisfying min_departure_dates=5 gates
+    so templates gated on that field now match — the key coverage improvement.
+
+    Exactly one search_flights call per spec (one flagged point), keeping the
+    test deterministic and bounded.
     """
 
     def search_calendar(self, spec):
         ws = spec.window_start
         rd0 = _rd(spec)
-        rd1 = None if rd0 is None else rd0 + timedelta(days=1)
-        rd2 = None if rd0 is None else rd0 + timedelta(days=2)
-        return [
-            (ws, rd0, 30.0),
-            (ws + timedelta(days=1), rd1, 210.0),
-            (ws + timedelta(days=2), rd2, 215.0),
-        ]
+        cheap_prices = [30.0, 31.0, 31.5, 32.0, 33.0]
+        expensive_prices = [210.0, 215.0]
+        points = []
+        for i, price in enumerate(cheap_prices + expensive_prices):
+            rd = None if rd0 is None else rd0 + timedelta(days=i)
+            points.append((ws + timedelta(days=i), rd, price))
+        return points
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
         return [
@@ -79,8 +103,8 @@ def test_full_pipeline_offline(session):
 
     summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
-    # ── 1. summary: all 6 templates scanned ──────────────────────────────────────────
-    assert summary.templates_scanned == 8
+    # ── 1. summary: all 10 templates scanned ─────────────────────────────────────────
+    assert summary.templates_scanned == 10
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()
@@ -88,12 +112,12 @@ def test_full_pipeline_offline(session):
     assert run.started_at <= run.finished_at
     assert run.api_calls > 0
 
-    # ── 3. price_log rows logged (3 per resolved spec) ───────────────────────────────
-    assert session.query(models.PriceLog).count() > 0
+    # ── 3. price_log rows logged (7 per resolved spec × 64 specs) ───────────────────
+    assert session.query(models.PriceLog).count() == E2E_PRICE_LOG_ROWS
 
-    # ── 4. at least one candidate ────────────────────────────────────────────────────
+    # ── 4. exact candidate count ──────────────────────────────────────────────────────
     candidates = session.query(models.Candidate).all()
-    assert len(candidates) >= 1
+    assert len(candidates) == E2E_CANDIDATES
 
     # ── 5. no orphan candidates (every candidate has ≥1 match) ───────────────────────
     #    Subquery counts matches per candidate; outer filters for zero-match cands.
@@ -112,9 +136,28 @@ def test_full_pipeline_offline(session):
     ).all()
     assert orphans == [], f"orphan candidates (no match row): {[c.id for c in orphans]}"
 
-    # ── 6. content_drafts ≥ candidates (one draft per (candidate, template) match) ───
+    # ── 6. content_drafts: exactly one per (candidate, template) match ───────────────
     draft_count = session.query(models.ContentDraft).count()
-    assert draft_count >= len(candidates)
+    assert draft_count == E2E_DRAFTS
+
+    # ── 6b. a gated template (min_departure_dates=5) now produces matches ─────────────
+    #    vfr-watch carries min_departure_dates=5; with near_dates=5 it passes the gate.
+    gated_template_slugs = {
+        row[0]
+        for row in session.execute(
+            select(models.DealTemplate.slug)
+            .join(
+                models.CandidateTemplateMatch,
+                models.CandidateTemplateMatch.deal_template_id == models.DealTemplate.id,
+            )
+            .where(models.DealTemplate.min_departure_dates == 5)
+            .distinct()
+        ).all()
+    }
+    assert "vfr-watch" in gated_template_slugs, (
+        f"vfr-watch (min_departure_dates=5) should match but did not; "
+        f"gated templates with matches: {gated_template_slugs}"
+    )
 
     # ── 7. curator grouping query: templates with ≥1 'new' candidate ─────────────────
     stmt = (

@@ -22,6 +22,31 @@ from skrendam.scanning.scoring.eligibility import in_template_scope
 from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
+NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
+
+
+def due_routes(routes, today: date, rotation_days: int, all_routes: bool = False) -> list:
+    """Routes to scan today: enabled AND (core OR today's rotation slot).
+
+    The tail slice is computed, not stored - retuning rotation_days never
+    rewrites route rows. A width retune can leave a route unscanned for up to
+    old-N days before its new slot comes up: harmless, self-healing, by design.
+
+    Args:
+        routes: All Route rows loaded from the database.
+        today: The date being scanned.
+        rotation_days: Cohort window width N; tail routes scan when id % N == ordinal % N.
+        all_routes: When True, return all enabled routes, bypassing cohort logic.
+
+    Returns:
+        List of Route objects due for scanning today.
+
+    """
+    enabled = [r for r in routes if r.enabled]
+    if all_routes:
+        return enabled
+    slot = today.toordinal() % rotation_days
+    return [r for r in enabled if r.core or r.id % rotation_days == slot]
 
 
 @dataclass
@@ -56,6 +81,8 @@ def run_scan(
     adapter: FliAdapter,
     scanner_version: str = "0.1.0",
     circuit_breaker_threshold: int = 5,
+    tail_rotation_days: int = 10,
+    all_routes: bool = False,
     now: datetime | None = None,
 ) -> ScanSummary:
     # Production callers (cli, worker) pass the real wall clock so same-day runs
@@ -73,16 +100,26 @@ def run_scan(
     templates = list(
         session.scalars(select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True)))
     )
-    routes = list(session.scalars(select(models.Route)))
+    routes = due_routes(
+        list(session.scalars(select(models.Route))), today, tail_rotation_days, all_routes
+    )
     zones = {z.zone: z for z in session.scalars(select(models.Zone))}
     route_by_pair = {(r.origin, r.destination): r for r in routes if r.enabled}
 
+    core_n = sum(1 for r in routes if r.core)
+    spec_lists = [(tpl, resolve(tpl, routes, today)) for tpl in templates]
+    plan = {
+        "core": core_n,
+        "tail": len(routes) - core_n,
+        "specs_planned": sum(len(s) for _, s in spec_lists),
+    }
+
     aborted = False
-    for tpl in templates:
+    for _tpl, specs in spec_lists:  # _tpl reserved for future per-template plan metadata
         if aborted:
             break
         summary.templates_scanned += 1
-        for spec in resolve(tpl, routes, today):
+        for spec in specs:
             summary.routes_scanned += 1
             try:
                 points = adapter.search_calendar(spec)
@@ -116,6 +153,10 @@ def run_scan(
             if base is None:
                 continue
             for p in _flagged(points, base, zone):
+                # Window-relative: counted against THIS spec's calendar points; a second
+                # template with a different window stores whichever spec found the candidate
+                # first (see Candidate.departure_date_count).
+                near_dates = sum(1 for q in points if q.price <= p.price * NEAR_PRICE_FRAC)
                 try:
                     fares = adapter.search_flights(
                         spec.origin, spec.destination, p.travel_date, p.return_date, spec.cabin
@@ -147,6 +188,7 @@ def run_scan(
                     scanner_version,
                     summary,
                     history,
+                    near_dates,
                 )
             if aborted:
                 break
@@ -191,7 +233,7 @@ def run_scan(
         run.status = "degraded"
     else:
         run.status = "completed"
-    run.health = health_json(verdict, adapter.call_log)
+    run.health = health_json(verdict, adapter.call_log, plan=plan)
     run.templates_scanned = summary.templates_scanned
     run.routes_scanned = summary.routes_scanned
     run.candidates_found = summary.candidates_found
@@ -217,16 +259,21 @@ def _persist_fare(
     scanner_version,
     summary,
     history,
+    departure_date_count,
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
-    hist_series = history.for_route(route.id, spec.trip_type, spec.duration_days)
-    prev = hist_series.previous_price(point.travel_date, now)
+    hist_series = history.for_route(route.id, spec.trip_type)
+    prev_pt = hist_series.previous_point(point.travel_date, now)
+    prev = prev_pt.price if prev_pt else None
+    prev_age = (now - prev_pt.scanned_at).days if prev_pt else None
     matched = []  # (tpl, headline_score, all_scores)
     for tpl in templates:
         if tpl.trip_type != spec.trip_type:
             continue
         if not in_template_scope(tpl, route, point, today=now.date()):
             continue
+        if tpl.min_departure_dates is not None and departure_date_count < tpl.min_departure_dates:
+            continue  # marketability gate: not enough near-price dates to plan around
         ctx = ScoringContext(
             fare=fare,
             baseline=base,
@@ -234,6 +281,7 @@ def _persist_fare(
             template=tpl,
             history=hist_series,
             previous_price=prev,
+            previous_price_age_days=prev_age,
             travel_date=point.travel_date,
         )
         scores = [s for sc in enabled_scorers() if (s := sc.score(ctx)) is not None]
@@ -277,6 +325,7 @@ def _persist_fare(
         search_params={"cabin": spec.cabin},
         scanner_version=scanner_version,
         expires_at=now + timedelta(days=CANDIDATE_TTL_DAYS),
+        departure_date_count=departure_date_count,
     )
     cand, created = repo.upsert_candidate(session, key, fields, now)
     if created:

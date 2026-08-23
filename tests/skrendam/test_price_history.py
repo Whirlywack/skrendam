@@ -88,3 +88,16 @@ def test_db_price_history_excludes_current_scan():
     series = hist.for_route(1, "oneway")
     assert [p.scanned_at for p in series.points] == [datetime(2026, 1, 1)]
     assert series.min_seen() == 300.0
+
+
+def test_previous_point_returns_most_recent_with_age_material():
+    pts = (
+        HistoryPoint(scanned_at=datetime(2026, 6, 1), travel_date=date(2026, 9, 1), price=200.0),
+        HistoryPoint(scanned_at=datetime(2026, 6, 3), travel_date=date(2026, 9, 1), price=180.0),
+    )
+    s = PriceHistorySeries(route_id=1, trip_type="oneway", points=pts)
+    pt = s.previous_point(date(2026, 9, 1), datetime(2026, 6, 15))
+    assert pt is not None and pt.price == 180.0 and pt.scanned_at == datetime(2026, 6, 3)
+    assert s.previous_point(date(2026, 9, 2), datetime(2026, 6, 15)) is None
+    # previous_price stays consistent with previous_point
+    assert s.previous_price(date(2026, 9, 1), datetime(2026, 6, 15)) == 180.0

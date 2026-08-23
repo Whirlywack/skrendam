@@ -15,7 +15,9 @@ def _seed(session):
             min_discount_pct=20,
         )
     )
-    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True))
+    session.add(
+        models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True, core=True)
+    )
     aud = models.AudienceSegment(id=1, slug="budget", name="Budget")
     mom = models.TravelMoment(id=1, slug="lm", name="Last minute", moment_type="relative")
     session.add_all([aud, mom])
@@ -91,7 +93,9 @@ def test_match_less_fare_creates_no_candidate(session):
             min_discount_pct=20,
         )
     )
-    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True))
+    session.add(
+        models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True, core=True)
+    )
     aud = models.AudienceSegment(id=1, slug="budget", name="Budget")
     mom = models.TravelMoment(id=1, slug="lm", name="LM", moment_type="relative")
     session.add_all([aud, mom])
@@ -152,7 +156,9 @@ def _seed_many_routes(session, n=6):
     )
     dests = ["BCN", "AGP", "PMI", "LIS", "FAO", "ATH"][:n]
     for i, d in enumerate(dests, start=1):
-        session.add(models.Route(id=i, origin="VNO", destination=d, zone="MED", enabled=True))
+        session.add(
+            models.Route(id=i, origin="VNO", destination=d, zone="MED", enabled=True, core=True)
+        )
     session.add_all(
         [
             models.AudienceSegment(id=1, slug="budget", name="Budget"),
@@ -309,3 +315,173 @@ def test_cliff_reason_uses_last_trustworthy_run(session):
     assert run.status == "degraded"
     assert run.health["metrics"]["prior_price_rows"] == 100  # the failed run was skipped
     assert any("cliff" in r for r in run.health["reasons"])
+
+
+def _seed_two_routes(session):
+    """Zone + template scoped to MED, route 1 core, route 2 tail."""
+    session.add(
+        models.Zone(
+            zone="MED",
+            haul_type="short",
+            threshold_price_eur=60,
+            min_abs_savings_eur=20,
+            min_discount_pct=20,
+        )
+    )
+    session.add(
+        models.Route(id=1, origin="VNO", destination="BCN", zone="MED", enabled=True, core=True)
+    )
+    session.add(
+        models.Route(id=2, origin="VNO", destination="AGP", zone="MED", enabled=True, core=False)
+    )
+    session.add_all(
+        [
+            models.AudienceSegment(id=1, slug="budget", name="B"),
+            models.TravelMoment(id=1, slug="lm", name="LM", moment_type="relative"),
+        ]
+    )
+    session.add(
+        models.DealTemplate(
+            id=1,
+            slug="lastminute",
+            name="LM",
+            enabled=True,
+            audience_segment_id=1,
+            travel_moment_id=1,
+            trip_type="oneway",
+            date_window_type="relative",
+            rel_offset_start_days=1,
+            rel_offset_end_days=60,
+            included_zones=["MED"],
+            max_stops=1,
+        )
+    )
+    session.commit()
+
+
+def test_core_route_scans_every_day_tail_rotates(session):
+    _seed_two_routes(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    # Walk to a day whose slot is NOT route 2's (id % 10 == 2) -> tail not due.
+    today = date(2026, 6, 2)
+    while today.toordinal() % 10 == 2:
+        today = today.fromordinal(today.toordinal() + 1)
+    run_scan(session, today=today, adapter=adapter, tail_rotation_days=10)
+    scanned = {r[0] for r in session.query(models.PriceLog.route_id).distinct()}
+    assert scanned == {1}  # core only
+
+
+def test_tail_route_scans_on_its_slot_day(session):
+    _seed_two_routes(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    # Pick a day whose ordinal % 10 == 2 (route 2's slot): walk forward from 2026-06-02.
+    today = date(2026, 6, 2)
+    while today.toordinal() % 10 != 2:
+        today = today.fromordinal(today.toordinal() + 1)
+    run_scan(session, today=today, adapter=adapter, tail_rotation_days=10)
+    scanned = {r[0] for r in session.query(models.PriceLog.route_id).distinct()}
+    assert scanned == {1, 2}  # core + due tail
+
+
+def test_all_routes_overrides_rotation(session):
+    _seed_two_routes(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(
+        session, today=date(2026, 6, 2), adapter=adapter, tail_rotation_days=10, all_routes=True
+    )
+    scanned = {r[0] for r in session.query(models.PriceLog.route_id).distinct()}
+    assert scanned == {1, 2}
+
+
+def test_disabled_core_route_never_scans(session):
+    _seed_two_routes(session)
+    session.query(models.Route).filter_by(id=1).update({"enabled": False})
+    session.commit()
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, tail_rotation_days=10)
+    scanned = {r[0] for r in session.query(models.PriceLog.route_id).distinct()}
+    assert 1 not in scanned
+
+
+def test_plan_block_in_health_json(session):
+    _seed_two_routes(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    # Use a day where the tail route is NOT due, so plan counts are deterministic.
+    today = date(2026, 6, 2)
+    while today.toordinal() % 10 == 2:
+        today = today.fromordinal(today.toordinal() + 1)
+    run_scan(session, today=today, adapter=adapter, tail_rotation_days=10)
+    run = session.query(models.ScanRun).one()
+    assert run.health["plan"] == {"core": 1, "tail": 0, "specs_planned": 1}
+
+
+class SpreadBackend:
+    """5 near-priced cheap dates (<=110% of the 30.0 fare) + 6 expensive ones.
+
+    The 6 expensive dates keep the window median in the expensive cluster (~90 EUR)
+    so the 30 EUR flagged fare carries enough discount to pass scoring gates.
+    """
+
+    def search_calendar(self, spec):
+        d = date(2026, 7, 20)
+        cheap = [(d.fromordinal(d.toordinal() + i), None, 30.0 + i * 0.5) for i in range(5)]
+        dear = [
+            (date(2026, 7, 28), None, 90.0),
+            (date(2026, 7, 29), None, 95.0),
+            (date(2026, 7, 30), None, 100.0),
+            (date(2026, 7, 31), None, 105.0),
+            (date(2026, 8, 1), None, 110.0),
+            (date(2026, 8, 2), None, 115.0),
+        ]
+        return cheap + dear
+
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        # Fare deliberately diverges from calendar price (28.0 vs 30.0) to lock the
+        # design: departure_date_count anchors on the CALENDAR point price, not the fare.
+        return [
+            {
+                "price": 28.0,
+                "currency": "EUR",
+                "stops": 0,
+                "duration": 215,
+                "legs": [{"airline": {"code": "W6"}}],
+                "self_transfer": False,
+                "mixed_cabin": False,
+                "booking_url": "https://x",
+            }
+        ]
+
+
+def test_gate_passes_when_enough_near_price_dates(session):
+    _seed(session)
+    session.query(models.DealTemplate).update({"min_departure_dates": 5})
+    session.commit()
+    adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
+    # Month-local decile (Wave 1): July's 9 points give decile 30.4 -> only the
+    # 30.0 point is flagged; August's 2-point month falls back to the window
+    # decile (30.5) and its 110/115 fares stay unflagged.
+    assert summary.candidates_found == 1
+    assert summary.matches_created == 1
+    # Calendar-anchor proof: fare is 28.0 but near_dates counts from calendar price 30.0
+    # (ceiling 33.0 → 5 qualifying dates), not from fare 28.0 (ceiling 30.8 → 2 dates).
+    cand = session.query(models.Candidate).filter_by(price=28.0).first()
+    assert cand.departure_date_count == 5
+
+
+def test_gate_blocks_template_below_minimum(session):
+    _seed(session)
+    session.query(models.DealTemplate).update({"min_departure_dates": 6})
+    session.commit()
+    adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
+    assert summary.matches_created == 0
+    assert summary.candidates_found == 0  # no match -> no orphan candidate
+
+
+def test_null_gate_template_unaffected(session):
+    _seed(session)  # min_departure_dates stays NULL
+    adapter = FliAdapter(SpreadBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
+    # Month-local decile flags one point (July decile 30.4); NULL gate never blocks.
+    assert summary.matches_created == 1

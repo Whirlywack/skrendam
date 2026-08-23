@@ -1,6 +1,7 @@
 import { listRoutes, listZones } from '@/lib/config-queries';
 import { ConfigShell } from '@/components/ConfigShell';
 import { RouteForm } from './RouteForm';
+import { BulkRouteAdd } from './BulkRouteAdd';
 
 export default async function RoutesPage() {
   const [rows, zoneRows] = await Promise.all([listRoutes(), listZones()]);
@@ -42,6 +43,29 @@ export default async function RoutesPage() {
             New route
           </div>
           <RouteForm route={null} zones={zoneRows} />
+        </div>
+
+        {/* Bulk add */}
+        <div
+          style={{
+            borderTop: '1px solid var(--line)',
+            paddingTop: 18,
+            marginTop: 6,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              color: 'var(--fg-3)',
+              marginBottom: 12,
+            }}
+          >
+            Bulk add
+          </div>
+          <BulkRouteAdd zones={zoneRows} />
         </div>
       </div>
     </ConfigShell>

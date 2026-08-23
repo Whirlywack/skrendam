@@ -62,6 +62,7 @@ export const dealTemplates = pgTable("deal_templates", {
 	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
 	primaryScorer: varchar("primary_scorer").default('weighted').notNull(),
+	minDepartureDates: integer("min_departure_dates"),
 }, (table) => [
 	foreignKey({
 			columns: [table.audienceSegmentId],
@@ -110,25 +111,6 @@ export const zones = pgTable("zones", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
 });
 
-export const routes = pgTable("routes", {
-	id: serial().primaryKey().notNull(),
-	origin: varchar().notNull(),
-	destination: varchar().notNull(),
-	zone: varchar().notNull(),
-	enabled: boolean().notNull(),
-	cabin: varchar().notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
-}, (table) => [
-	index("ix_routes_destination").using("btree", table.destination.asc().nullsLast().op("text_ops")),
-	index("ix_routes_origin").using("btree", table.origin.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.zone],
-			foreignColumns: [zones.zone],
-			name: "routes_zone_fkey"
-		}),
-]);
-
 export const scanRuns = pgTable("scan_runs", {
 	id: serial().primaryKey().notNull(),
 	startedAt: timestamp("started_at", { mode: 'string' }).notNull(),
@@ -144,6 +126,26 @@ export const scanRuns = pgTable("scan_runs", {
 	status: varchar().notNull(),
 	health: json(),
 });
+
+export const routes = pgTable("routes", {
+	id: serial().primaryKey().notNull(),
+	origin: varchar().notNull(),
+	destination: varchar().notNull(),
+	zone: varchar().notNull(),
+	enabled: boolean().notNull(),
+	cabin: varchar().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
+	core: boolean().default(false).notNull(),
+}, (table) => [
+	index("ix_routes_destination").using("btree", table.destination.asc().nullsLast().op("text_ops")),
+	index("ix_routes_origin").using("btree", table.origin.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.zone],
+			foreignColumns: [zones.zone],
+			name: "routes_zone_fkey"
+		}),
+]);
 
 export const candidates = pgTable("candidates", {
 	id: serial().primaryKey().notNull(),
@@ -169,6 +171,7 @@ export const candidates = pgTable("candidates", {
 	expiresAt: timestamp("expires_at", { mode: 'string' }),
 	scannerVersion: varchar("scanner_version"),
 	dealGroupKey: varchar("deal_group_key").notNull(),
+	departureDateCount: integer("departure_date_count"),
 }, (table) => [
 	uniqueIndex("ix_candidates_deal_group_key").using("btree", table.dealGroupKey.asc().nullsLast().op("text_ops")),
 	foreignKey({

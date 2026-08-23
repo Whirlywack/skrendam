@@ -29,6 +29,7 @@ def process_pending_requests(
     today: date,
     now: datetime,
     scanner_version: str = "0.1.0",
+    tail_rotation_days: int = 10,
     limit: int = 5,
     circuit_breaker_threshold: int = 5,
 ) -> int:
@@ -45,6 +46,7 @@ def process_pending_requests(
         today: The current date (injected for testability).
         now: The current datetime (injected for testability).
         scanner_version: Version string stamped onto scan_runs rows.
+        tail_rotation_days: Cohort rotation window width passed through to run_scan.
         limit: Maximum number of queued requests to claim in one batch.
         circuit_breaker_threshold: Consecutive-failure count that aborts a full scan.
 
@@ -81,6 +83,7 @@ def process_pending_requests(
                     today=today,
                     adapter=adapter,
                     scanner_version=scanner_version,
+                    tail_rotation_days=tail_rotation_days,
                     circuit_breaker_threshold=circuit_breaker_threshold,
                     now=now,
                 )
@@ -118,6 +121,7 @@ def poll_loop(
     *,
     interval_seconds: float = 15.0,
     scanner_version: str = "0.1.0",
+    tail_rotation_days: int = 10,
     circuit_breaker_threshold: int = 5,
     now_fn=_utcnow,
     today_fn=date.today,
@@ -134,6 +138,7 @@ def poll_loop(
                     today=today_fn(),
                     now=now_fn(),
                     scanner_version=scanner_version,
+                    tail_rotation_days=tail_rotation_days,
                     circuit_breaker_threshold=circuit_breaker_threshold,
                 )
             finally:

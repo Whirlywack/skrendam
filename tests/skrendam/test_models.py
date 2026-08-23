@@ -68,3 +68,16 @@ def test_can_persist_core_rows(session):
     assert cand.id is not None
     assert m.candidate_id == cand.id
     assert session.query(models.Candidate).count() == 1
+
+
+def test_0008_columns_exist(session):
+    session.add(models.Zone(zone="MED", haul_type="short"))
+    r = models.Route(origin="VNO", destination="BCN", zone="MED")
+    session.add(r)
+    session.flush()
+    assert r.core is False  # default
+
+    t_cols = models.DealTemplate.__table__.columns
+    assert "min_departure_dates" in t_cols
+    c_cols = models.Candidate.__table__.columns
+    assert "departure_date_count" in c_cols

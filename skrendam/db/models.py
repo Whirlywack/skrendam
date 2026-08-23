@@ -41,6 +41,8 @@ class Route(Base):
     destination: Mapped[str] = mapped_column(String, index=True)
     zone: Mapped[str] = mapped_column(ForeignKey("zones.zone"))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Core routes scan every day; non-core rotate (orchestrator due_routes()).
+    core: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     cabin: Mapped[str] = mapped_column(String, default="ECONOMY")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
@@ -101,6 +103,8 @@ class DealTemplate(Base):
     max_price_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
     min_discount_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     min_abs_savings_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Marketability gate: minimum near-price departure dates for a match (NULL = exempt).
+    min_departure_dates: Mapped[int | None] = mapped_column(Integer, nullable=True)
     psychological_price_threshold_eur: Mapped[float | None] = mapped_column(Float, nullable=True)
     allow_smaller_discount_if_under_price: Mapped[bool] = mapped_column(Boolean, default=False)
     cabin: Mapped[str] = mapped_column(String, default="ECONOMY")
@@ -184,6 +188,10 @@ class Candidate(Base):
     currency: Mapped[str] = mapped_column(String, default="EUR")
     baseline_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     discount_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Calendar dates priced <=110% of this fare, counted in the DISCOVERING spec's
+    # window. Two templates with different windows can match one candidate; the
+    # stored count came from whichever spec found it first. Accepted v1 imprecision.
+    departure_date_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     itinerary_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     search_params: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String, default="new")
