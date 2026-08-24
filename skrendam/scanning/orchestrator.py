@@ -193,6 +193,15 @@ def run_scan(
             if aborted:
                 break
 
+    # Persist the scan's findings before the sweep/finalize touch the DB again.
+    # The search loop can leave the connection idle long enough for Neon to kill
+    # it; before this commit, that rolled back the ENTIRE run (2026-08-24: the
+    # retry scanned for 15 minutes, died at the sweep below, and left no trace).
+    # pool_pre_ping then hands the next block a validated connection. A crash
+    # after this point leaves the run in status "running" with finished_at NULL,
+    # which the watchdog's staleness check reports.
+    session.commit()
+
     _expire_stale(session, now)
     _expire_published_past_date(session, today)
 
@@ -296,9 +305,7 @@ def _persist_fare(
     # borrows a Christmas peak to flatter a January fare.
     local_median = base.local_median(point.travel_date)
     discount = (
-        None
-        if local_median <= 0
-        else round((local_median - fare.price) / local_median * 100, 1)
+        None if local_median <= 0 else round((local_median - fare.price) / local_median * 100, 1)
     )
     key = deal_group_key(
         spec.origin,

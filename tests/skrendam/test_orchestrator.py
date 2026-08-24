@@ -485,3 +485,33 @@ def test_null_gate_template_unaffected(session):
     summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter)
     # Month-local decile flags one point (July decile 30.4); NULL gate never blocks.
     assert summary.matches_created == 1
+
+
+def test_scan_findings_survive_a_sweep_crash(session, monkeypatch):
+    """The commit before the expiry sweep bounds a late DB failure to the sweep.
+
+    2026-08-24 regression: Neon killed the idle connection during the search
+    phase; the first statement of the sweep then raised OperationalError and the
+    WHOLE 15-minute run rolled back. Findings must already be committed by then.
+    """
+    import pytest
+    from sqlalchemy.exc import OperationalError
+
+    from skrendam.scanning import orchestrator
+
+    _seed(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+
+    def dead_connection(*a, **k):
+        raise OperationalError("SELECT 1", {}, Exception("SSL connection has been closed"))
+
+    monkeypatch.setattr(orchestrator, "_expire_stale", dead_connection)
+    with pytest.raises(OperationalError):
+        run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="test")
+    session.rollback()
+
+    # The scan's findings persisted; only the never-finalized run row marks the crash.
+    assert session.query(models.Candidate).count() == 1
+    assert session.query(models.PriceLog).count() == 3
+    run = session.query(models.ScanRun).one()
+    assert run.status == "running" and run.finished_at is None  # watchdog's staleness signal
