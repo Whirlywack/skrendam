@@ -7,6 +7,7 @@ import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format';
 import { StatusPill } from './StatusPill';
 
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' };
+const DASH = '—';
 
 /**
  * Boarding-pass row: route always readable (mono, never truncated), price as
@@ -25,12 +26,19 @@ export function QueueRow({
   const [isPending, startTransition] = useTransition();
   const [gone, setGone] = useState<null | 'held' | 'dismissed'>(null);
   const [updated, setUpdated] = useState(false);
+  const [updateErr, setUpdateErr] = useState<string | null>(null);
 
   function updateLive(e: React.MouseEvent, liveId: number) {
     e.stopPropagation();
     startTransition(async () => {
-      await updateLiveDealFromCandidate({ publishedId: liveId, candidateId: c.candidateId });
-      setUpdated(true);
+      try {
+        await updateLiveDealFromCandidate({ publishedId: liveId, candidateId: c.candidateId });
+        setUpdated(true);
+        setUpdateErr(null);
+      } catch (err) {
+        // A rejected server action must not look identical to success (review 08-25).
+        setUpdateErr(err instanceof Error ? err.message : 'update failed');
+      }
     });
   }
 
@@ -40,6 +48,16 @@ export function QueueRow({
       await setCandidateStatus(c.candidateId, status);
       setGone(status === 'seen' ? 'held' : 'dismissed');
     });
+  }
+
+  if (updated) {
+    return (
+      <div className="qrow" style={{ gridTemplateColumns: '1fr' }}>
+        <span style={{ ...MONO, fontSize: 12, color: 'var(--sea-600)', fontWeight: 700 }}>
+          {c.from} {'→'} {c.to} {DASH} live deal updated to {'€'}{c.price} {'✓'}
+        </span>
+      </div>
+    );
   }
 
   if (gone) {
@@ -100,9 +118,9 @@ export function QueueRow({
             <span style={{ ...MONO, fontSize: 11, color: 'var(--amber-700)', fontWeight: 700 }}>
               ↓ live deal is €{c.context.livePrice} — this fare is €{c.context.saving} cheaper
             </span>
-            {updated ? (
-              <span style={{ ...MONO, fontSize: 11, color: 'var(--sea-600)', fontWeight: 700 }}>
-                live deal updated ✓
+            {updateErr ? (
+              <span style={{ ...MONO, fontSize: 11, color: 'var(--coral-600, #D63E22)', fontWeight: 700 }}>
+                {updateErr} {DASH} refresh the page
               </span>
             ) : (
               <button

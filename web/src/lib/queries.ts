@@ -110,6 +110,7 @@ export const getRouteSignals = cache(async () => {
         id: publishedDeals.id,
         origin: publishedDeals.origin,
         destination: publishedDeals.destination,
+        tripType: publishedDeals.tripType,
         price: publishedDeals.price,
         headline: publishedDeals.headline,
       })

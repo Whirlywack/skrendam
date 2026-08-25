@@ -36,6 +36,8 @@ def test_0011_rewrites_machine_headlines(tmp_path, monkeypatch):
         tpl.suggested_headline_template = "{origin}->{destination} EUR{price} return"
         other = s.scalar(select(models.DealTemplate).filter_by(slug="ski-alps"))
         other.suggested_headline_template = "Curator wrote this {price}"
+        oneway = s.scalar(select(models.DealTemplate).filter_by(slug="last-minute-weekends"))
+        oneway.suggested_headline_template = "{origin}->{destination} EUR{price}"
         route = s.scalar(select(models.Route).filter_by(origin="VNO", destination="LCA"))
         cand = models.Candidate(
             route_id=route.id,
@@ -66,6 +68,13 @@ def test_0011_rewrites_machine_headlines(tmp_path, monkeypatch):
                     headline="VNO->LCA just EUR140",
                     created_by="curator",
                 ),
+                models.ContentDraft(
+                    id=3,
+                    candidate_id=cand.id,
+                    deal_template_id=oneway.id,
+                    headline="VNO->LCA EUR140",
+                    created_by="system",
+                ),
             ]
         )
         s.commit()
@@ -88,4 +97,6 @@ def test_0011_rewrites_machine_headlines(tmp_path, monkeypatch):
         assert drafts == {
             1: "€140 return to Larnaca (usually €285) — one last sun trip before winter.",
             2: "VNO->LCA just EUR140",  # curator-written: untouched
+            # oneway template: never "return" (frozen _headline is trip-type aware)
+            3: "€140 one-way to Larnaca (usually €285) — leave this weekend.",
         }

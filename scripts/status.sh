@@ -98,7 +98,7 @@ fi
 # scan sat frozen). After 08:30 local, nothing finished since 06:00 today is wrong
 # even if a scan process exists — a run frozen by a battery dark-wake IS the
 # failure mode, not a grace case. (date -v is macOS-specific, like this whole box.)
-if [ "$(date +%H%M | sed 's/^0*//')" -ge 830 ] \
+if [ "$((10#$(date +%H%M)))" -ge 830 ] \
     && [ "$last_fin_epoch" -lt "$(date -v6H -v0M -v0S +%s)" ]; then
   if [ "$scan_inflight" = yes ]; then
     problems+=("today's 06:00 scan has not finished — a scan process is running/frozen")

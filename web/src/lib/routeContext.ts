@@ -18,6 +18,7 @@ export interface LiveDealLite {
   id: number;
   origin: string;
   destination: string;
+  tripType: string;
   price: number;
   headline: string;
 }
@@ -39,18 +40,22 @@ export type RouteContext =
   | { kind: 'live_on_route'; liveId: number; livePrice: number }
   | { kind: 'rejected_similar'; rejectedPrice: number; when: string | null };
 
-const MIN_SAVING_EUR = 5; // deal_group_key price band — smaller moves are the same fare
+export const MIN_SAVING_EUR = 5; // deal_group_key price band — smaller moves are the same fare
 const REJECTED_SIMILAR_PCT = 0.15; // matches cluster.ts's date-clone price band
 
 export function routeContextFor(
-  c: Pick<CandidateView, 'from' | 'to' | 'price' | 'status'>,
+  c: Pick<CandidateView, 'from' | 'to' | 'tripType' | 'price' | 'status'>,
   signals: RouteSignals,
 ): RouteContext | undefined {
   // Only fares still being decided need context; published/rejected/expired
   // cards already carry their own state.
   if (c.status !== 'suggested' && c.status !== 'review') return undefined;
 
-  const liveHere = signals.live.filter((d) => d.origin === c.from && d.destination === c.to);
+  // tripType must match too: a one-way fare superseding a roundtrip deal
+  // would render “€89 return” on a one-way link (review 08-25).
+  const liveHere = signals.live.filter(
+    (d) => d.origin === c.from && d.destination === c.to && d.tripType === c.tripType,
+  );
   if (liveHere.length > 0) {
     const cheapest = liveHere.reduce((a, b) => (b.price < a.price ? b : a));
     const saving = Math.round(cheapest.price - c.price);

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { routeContextFor, type RouteSignals } from './routeContext';
 
-const base = { from: 'VNO', to: 'LCA', price: 118, status: 'suggested' } as const;
+const base = { from: 'VNO', to: 'LCA', tripType: 'roundtrip', price: 118, status: 'suggested' } as const;
 const none: RouteSignals = { live: [], rejected: [] };
 const live140: RouteSignals = {
-  live: [{ id: 7, origin: 'VNO', destination: 'LCA', price: 140, headline: 'x' }],
+  live: [{ id: 7, origin: 'VNO', destination: 'LCA', tripType: 'roundtrip', price: 140, headline: 'x' }],
   rejected: [],
 };
 
@@ -33,8 +33,8 @@ describe('routeContextFor', () => {
   it('picks the cheapest live deal when several exist on the route', () => {
     const two: RouteSignals = {
       live: [
-        { id: 7, origin: 'VNO', destination: 'LCA', price: 140, headline: 'x' },
-        { id: 9, origin: 'VNO', destination: 'LCA', price: 120, headline: 'y' },
+        { id: 7, origin: 'VNO', destination: 'LCA', tripType: 'roundtrip', price: 140, headline: 'x' },
+        { id: 9, origin: 'VNO', destination: 'LCA', tripType: 'roundtrip', price: 120, headline: 'y' },
       ],
       rejected: [],
     };
@@ -67,6 +67,8 @@ describe('routeContextFor', () => {
     };
     expect(routeContextFor(base, sig)?.kind).toBe('cheaper_than_live');
     expect(routeContextFor({ ...base, from: 'RIX' }, sig)).toBeUndefined();
+    // review 08-25: one-way candidate must NOT supersede a roundtrip live deal
+    expect(routeContextFor({ ...base, tripType: 'oneway' }, live140)).toBeUndefined();
     expect(routeContextFor({ ...base, status: 'published' }, none)).toBeUndefined();
   });
 });

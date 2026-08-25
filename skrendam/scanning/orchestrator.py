@@ -234,7 +234,10 @@ def run_scan(
     verdict = assess(adapter.call_log, price_rows, prior_rows)
     summary.health = verdict
 
-    run.finished_at = now
+    # Fresh wall clock, NOT the run-start `now`: the watchdog's "did today's
+    # 06:00 scan finish" gate and its age math read finished_at, and a
+    # multi-hour full-network run start-stamps would skew both (review 08-25).
+    run.finished_at = datetime.utcnow()
     if aborted:
         run.status = "failed"
         summary.aborted = True

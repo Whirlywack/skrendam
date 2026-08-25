@@ -36,6 +36,12 @@ jobs:
             python:
               - 'fli/**'
               - 'skrendam/**'
+              # the pytest drift guard (test_shared_data) must run when the app
+              # copies of the shared IATA maps change in a site/web-only PR
+              - 'site/src/lib/airports.json'
+              - 'site/src/lib/airlines.json'
+              - 'web/src/lib/airports.json'
+              - 'web/src/lib/airlines.json'
               - 'tests/**'
               - 'alembic/**'
               - 'scripts/**'

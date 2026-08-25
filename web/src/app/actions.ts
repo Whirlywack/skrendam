@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { MIN_SAVING_EUR } from '@/lib/routeContext';
 import { redirect } from 'next/navigation';
 import { and, eq, inArray } from 'drizzle-orm';
 import { auth } from '@/auth';
@@ -178,17 +179,34 @@ export async function updateLiveDealFromCandidate(input: {
     .from(publishedDeals)
     .where(eq(publishedDeals.id, input.publishedId));
   if (!deal) throw new Error(`published deal ${input.publishedId} not found`);
+  // Server-side re-validation: the chip's invariants were computed at page
+  // render; a stale tab must not write a higher price, revive an expired deal,
+  // or cross trip types (review 08-25). MIN_SAVING_EUR mirrors routeContext.
+  if (deal.status !== 'live') throw new Error('deal is no longer live');
   if (deal.origin !== cand.origin || deal.destination !== cand.destination) {
     throw new Error('candidate and live deal are on different routes');
+  }
+  if (deal.tripType !== cand.tripType) {
+    throw new Error('candidate and live deal have different trip types');
+  }
+  if (deal.price - cand.price < MIN_SAVING_EUR) {
+    throw new Error('candidate is no longer meaningfully cheaper than the live deal');
   }
 
   // The curator's headline usually contains the price - keep their copy, swap
   // the number (both the €118 and EUR118 forms; anything fancier is a manual edit).
+  // Digit-bounded so €14 → €11 can't corrupt “(usually €140)”, and the
+  // usually-clause follows the baseline when it changes (review 08-25).
+  const bounded = (n: string) => new RegExp(`(€|EUR)${n}(?!\\d)`, 'g');
   const oldP = String(Math.round(deal.price));
   const newP = String(Math.round(cand.price));
-  const headline = deal.headline
-    .replaceAll(`€${oldP}`, `€${newP}`)
-    .replaceAll(`EUR${oldP}`, `EUR${newP}`);
+  let headline = deal.headline.replace(bounded(oldP), `$1${newP}`);
+  const oldB = deal.baselinePrice == null ? null : String(Math.round(deal.baselinePrice));
+  const newB =
+    cand.baselinePrice == null ? oldB : String(Math.round(cand.baselinePrice));
+  if (oldB && newB && oldB !== newB) {
+    headline = headline.replace(bounded(oldB), `$1${newB}`);
+  }
 
   await db
     .update(publishedDeals)
