@@ -981,6 +981,20 @@
    scoped to .deal .ticket-foot .price.
    ========================================================================= */
 
+/* Design-system anchor reset (colors_and_type.css has it on .yip, but the site
+   root is .yip-site, so it never applied — every <a> fell back to browser-default
+   blue/purple + underline). Ticket cards are whole-card <a>s: they inherit text
+   colour and never underline, even on hover. */
+.yip-site a { color: var(--accent-press); text-decoration: none; }
+.yip-site a:hover { text-decoration: underline; }
+.yip-site a.deal,
+.yip-site a.feat,
+.yip-site a.deal:hover,
+.yip-site a.feat:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
 .yip-site .deal {
   background: var(--paper);
   border-radius: 20px;
@@ -2103,6 +2117,8 @@
   font-family: 'Hanken Grotesk', sans-serif;
 }
 
+.yip-site .dbook-cta { text-align: right; }
+
 .yip-site .booksub {
   font-size: 11px;
   color: var(--fg3);
@@ -2685,4 +2701,65 @@
   .yip-site .cmpcard--early .btn {
     width: 100%;
   }
+}
+
+/* =========================================================================
+   MOBILE (≤ 720px) — the mockups were desktop-only; this is the one place
+   narrow-screen layout lives. Everything stacks, nothing overflows.
+   ========================================================================= */
+@media (max-width: 720px) {
+  .yip-site { overflow-x: hidden; }
+
+  /* header: wordmark + wrapping nav; the origin pill is redundant with the hero */
+  .yip-site .hdr { height: auto; padding: 10px 16px; gap: 12px; flex-wrap: wrap; }
+  .yip-site .hdr nav { flex-wrap: wrap; gap: 6px 14px; margin-left: 0; }
+  .yip-site .frompill { display: none; }
+
+  /* page paddings */
+  .yip-site .hero,
+  .yip-site .pad { padding-left: 16px; padding-right: 16px; }
+  .yip-site .hero h1 { font-size: 30px; }
+  .yip-site .lead { max-width: 100%; }
+
+  /* hero: photo under the copy. min-width:0 stops the grid item growing to the
+     signup form's min-content width (input + button side by side). */
+  .yip-site .hero-grid { grid-template-columns: 1fr; gap: 16px; }
+  .yip-site .hero-grid > * { min-width: 0; }
+  .yip-site .hero-photo { min-height: 180px; height: 180px; }
+  .yip-site .cap-row { flex-direction: column; }
+  .yip-site .cap-row input { min-width: 0; }
+  .yip-site .cap-row .btn-primary { width: 100%; justify-content: center; }
+  .yip-site .cap-early { flex-direction: column; align-items: flex-start; }
+
+  /* featured ticket becomes a vertical ticket like the rest */
+  .yip-site .feat { grid-template-columns: 1fr; }
+  .yip-site .feat .ph { min-height: 160px; }
+  .yip-site .feat .body { padding: 16px; }
+
+  /* grids */
+  .yip-site .grid,
+  .yip-site .grid3,
+  .yip-site .grid2,
+  .yip-site .dcols { grid-template-columns: 1fr; }
+  .yip-site .coll { grid-template-columns: 1fr 1fr; }
+  .yip-site .proc { grid-template-columns: 1fr 1fr; gap: 18px; }
+
+  /* dark capture band: stack copy over a full-width form */
+  .yip-site .band { margin: 16px; padding: 24px 20px; flex-direction: column; align-items: stretch; gap: 16px; }
+  .yip-site .band .f { flex-direction: column; }
+  .yip-site .band input { width: 100%; box-sizing: border-box; }
+  .yip-site .band .btn-primary { width: 100%; justify-content: center; }
+
+  /* deal page */
+  .yip-site .dbook { flex-direction: column; align-items: stretch; }
+  .yip-site .dbook-cta { text-align: center; }
+  .yip-site .dbook .bookbtn { display: block; }
+  .yip-site .booksub { text-align: center; }
+
+  /* sticky CTA: button on its own line, copy can wrap */
+  .yip-site .sticky-cta { padding: 10px 16px; }
+  .yip-site .sticky-cta .btn-primary { width: 100%; justify-content: center; }
+
+  .yip-site .ftr { padding: 28px 16px 22px; }
+  .yip-site .ftr-in { gap: 24px; }
 }

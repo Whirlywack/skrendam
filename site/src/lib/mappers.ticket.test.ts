@@ -14,7 +14,7 @@ describe('toTicket', () => {
     const t = toTicket(row(), new Date('2026-06-04T12:00:00Z'));
     expect(t.id).toBe(1);
     expect(t.destination).toBe('Larnaca'); expect(t.country).toBe('Cyprus'); expect(t.origin).toBe('VNO');
-    expect(t.route).toBe('VNO → LCA'); expect(t.drop).toBe(53); expect(t.airline).toBe('BT');
+    expect(t.route).toBe('VNO → LCA'); expect(t.drop).toBe(53); expect(t.airline).toBe('airBaltic');
     expect(t.headline).toContain('€140'); expect(t.scene).toBe('ph-coast'); expect(t.quality).toBe('rare');
     expect(t.baseline).toBe(301); expect(t.catchChip).toBe('1 stop');
   });

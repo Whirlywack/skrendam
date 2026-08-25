@@ -295,8 +295,6 @@ def seed_all(session: Session) -> None:
             min_departure_dates=5,
             public_label="Family sun",
             newsletter_tag="family_sun",
-            suggested_headline_template="{origin}->{destination} EUR{price} return"
-            " - school-holiday sun",
             content_angle="School-holiday sun without package prices",
         ),
         dict(
@@ -373,8 +371,6 @@ def seed_all(session: Session) -> None:
             max_stops=1,
             public_label="Leave this weekend",
             newsletter_tag="last_minute",
-            suggested_headline_template="{origin}->{destination} just EUR{price}"
-            " - leave this weekend",
             content_angle="Leave this weekend",
         ),
         dict(
@@ -416,7 +412,6 @@ def seed_all(session: Session) -> None:
             min_departure_dates=5,
             public_label="Visit-home fares",
             newsletter_tag="vfr",
-            suggested_headline_template="{origin}->{destination} EUR{price} return",
             content_angle="Cheap weekend to visit family abroad",
         ),
         dict(
@@ -457,7 +452,6 @@ def seed_all(session: Session) -> None:
             min_discount_pct=25,
             public_label="Winter sun",
             newsletter_tag="winter_sun",
-            suggested_headline_template="{origin}->{destination} EUR{price} return - winter sun",
             content_angle="Escape the dark months for real warmth",
         ),
         # Inert until Alps routes are seeded (route refresh rides with PR #8).
@@ -480,7 +474,6 @@ def seed_all(session: Session) -> None:
             min_discount_pct=25,
             public_label="Ski season",
             newsletter_tag="ski",
-            suggested_headline_template="{origin}->{destination} EUR{price} return - ski the Alps",
             content_angle="The Alps at a Baltic-friendly price",
         ),
     ]
