@@ -20,6 +20,7 @@ export interface CandidateView {
   grad: string;
   verifiedAt: string | null;
   copy: { headline: string; hook: string; news: string };
+  context?: import('./routeContext').RouteContext;
 }
 
 export interface ScanView { fares: string; airports: number; ago: string; newToday: number; status: string; healthReasons: string[]; }

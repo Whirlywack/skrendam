@@ -156,6 +156,70 @@ export async function publishDeal(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Supersede: a cheaper fare on a route with a LIVE deal updates that deal in
+// place (same page, same URL) instead of spawning a duplicate. Reference-price
+// research (2026-08-25): "was €140 → now €118" against a known price is the
+// strongest message we can send; two live deals for one trip is the worst bug.
+// ---------------------------------------------------------------------------
+
+export async function updateLiveDealFromCandidate(input: {
+  publishedId: number;
+  candidateId: number;
+}): Promise<void> {
+  await requireAdmin();
+
+  const [cand] = await db
+    .select()
+    .from(candidates)
+    .where(eq(candidates.id, input.candidateId));
+  if (!cand) throw new Error(`candidate ${input.candidateId} not found`);
+  const [deal] = await db
+    .select()
+    .from(publishedDeals)
+    .where(eq(publishedDeals.id, input.publishedId));
+  if (!deal) throw new Error(`published deal ${input.publishedId} not found`);
+  if (deal.origin !== cand.origin || deal.destination !== cand.destination) {
+    throw new Error('candidate and live deal are on different routes');
+  }
+
+  // The curator's headline usually contains the price - keep their copy, swap
+  // the number (both the €118 and EUR118 forms; anything fancier is a manual edit).
+  const oldP = String(Math.round(deal.price));
+  const newP = String(Math.round(cand.price));
+  const headline = deal.headline
+    .replaceAll(`€${oldP}`, `€${newP}`)
+    .replaceAll(`EUR${oldP}`, `EUR${newP}`);
+
+  await db
+    .update(publishedDeals)
+    .set({
+      headline,
+      price: cand.price,
+      baselinePrice: cand.baselinePrice ?? deal.baselinePrice,
+      discountPct: cand.discountPct ?? deal.discountPct,
+      travelDate: cand.travelDate,
+      returnDate: cand.returnDate ?? null,
+      bookingUrl:
+        ((cand.itinerarySnapshot as Record<string, unknown> | null)?.booking_url as
+          | string
+          | null) ?? deal.bookingUrl,
+      candidateId: cand.id,
+      goingFast: false,
+      unverifiedSince: null,
+      lastSeenAt: new Date().toISOString(),
+    })
+    .where(eq(publishedDeals.id, input.publishedId));
+
+  await db
+    .update(candidates)
+    .set({ status: 'approved' })
+    .where(eq(candidates.id, cand.id));
+
+  revalidatePath('/queue');
+  revalidatePath('/published');
+}
+
+// ---------------------------------------------------------------------------
 // Task 16 — Expire / republish a published deal
 // ---------------------------------------------------------------------------
 
