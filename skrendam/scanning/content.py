@@ -21,7 +21,11 @@ WAS_PRICE_MIN_DISCOUNT = 0.30
 
 
 def fallback_headline(
-    destination: str, price: float, baseline: float | None, angle: str | None
+    destination: str,
+    price: float,
+    baseline: float | None,
+    angle: str | None,
+    trip_type: str = "roundtrip",
 ) -> str:
     """Brand-voice headline when a template has no pattern of its own.
 
@@ -35,7 +39,8 @@ def fallback_headline(
     angle = (angle or "").strip().rstrip(".")
     why = f" — {angle[0].lower() + angle[1:]}" if angle else ""
     usually = f" (usually €{baseline:.0f})" if deep_enough else ""
-    return f"€{price:.0f} return to {city(destination)}{usually}{why}."
+    fare_word = "one-way to" if trip_type == "oneway" else "return to"
+    return f"€{price:.0f} {fare_word} {city(destination)}{usually}{why}."
 
 
 def build_content_draft(
@@ -68,7 +73,7 @@ def build_content_draft(
 
     # Template-authored headlines are the curator's own copy and are not touched.
     headline = fill(template.suggested_headline_template) or fallback_headline(
-        destination, price, baseline, template.content_angle
+        destination, price, baseline, template.content_angle, template.trip_type
     )
     return {
         "headline": headline,

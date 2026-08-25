@@ -12,7 +12,7 @@ export interface CandidateView {
   tier: Tier;
   status: DisplayStatus;
   place: string; country: string; origin: string;
-  from: string; to: string;
+  from: string; to: string; tripType: string;
   price: number; usual: number | null; drop: number;
   dates: string; travelDate: string; legs: string; airline: string;
   template: string;

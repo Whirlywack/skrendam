@@ -411,7 +411,9 @@ def test_run_scan_accepts_real_wall_clock(session):
     run_scan(session, today=date(2026, 7, 1), adapter=adapter, now=afternoon)
     run = session.query(models.ScanRun).one()
     assert run.started_at == afternoon
-    assert run.finished_at == afternoon
+    # finished_at is a FRESH wall-clock read at finalize (review 08-25) — the
+    # watchdog's 06:00 gate reads it, so it must not inherit the start stamp.
+    assert run.finished_at >= run.started_at
 
 
 @pytest.mark.parametrize("threshold", [1, 3])

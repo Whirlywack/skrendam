@@ -40,8 +40,9 @@ def test_missing_templates_fall_back_to_brand_voice_headline():
         travel_date=date(2026, 7, 12),
         template=tpl,
     )
+    # trip_type="oneway" fixture → "one-way to", never "return to" (review 08-25)
     assert draft["headline"] == (
-        "€25 return to Málaga (usually €60) — one last sun trip before winter."
+        "€25 one-way to Málaga (usually €60) — one last sun trip before winter."
     )
 
 
@@ -55,7 +56,7 @@ def test_fallback_without_angle_or_unknown_airport():
         travel_date=date(2026, 7, 12),
         template=tpl,
     )
-    assert draft["headline"] == "€25 return to ZZZ."
+    assert draft["headline"] == "€25 one-way to ZZZ."
 
 
 def test_shallow_discount_suppresses_was_price_in_fallback():
@@ -71,4 +72,21 @@ def test_shallow_discount_suppresses_was_price_in_fallback():
         template=tpl,
     )
     assert "usually" not in draft["headline"]
-    assert draft["headline"] == "€80 return to Copenhagen."
+    assert draft["headline"] == "€80 one-way to Copenhagen."
+
+
+def test_oneway_template_fallback_says_oneway_not_return():
+    # Review 08-25: 'last-minute-weekends' is trip_type='oneway'; its drafts must
+    # never claim "return".
+    tpl = models.DealTemplate(
+        slug="z", name="z", trip_type="oneway", content_angle="Leave this weekend"
+    )
+    draft = build_content_draft(
+        origin="KUN",
+        destination="BER",
+        price=40,
+        baseline=None,
+        travel_date=date(2026, 9, 5),
+        template=tpl,
+    )
+    assert draft["headline"] == "€40 one-way to Berlin — leave this weekend."

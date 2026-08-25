@@ -44,7 +44,7 @@ export function toCandidateView(r: QueueRow): CandidateView {
     tier,
     status: toDisplayStatus(c.status, r.publishedId != null),
     place: city(c.destination), country: country(c.destination), origin: city(c.origin),
-    from: c.origin, to: c.destination,
+    from: c.origin, to: c.destination, tripType: c.tripType,
     price: Number(c.price), usual: c.baselinePrice == null ? null : Number(c.baselinePrice), drop,
     dates: formatDates(String(c.travelDate), c.returnDate ? String(c.returnDate) : null),
     travelDate: String(c.travelDate),
