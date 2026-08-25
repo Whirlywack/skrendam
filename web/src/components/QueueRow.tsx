@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { CandidateView } from '@/lib/types';
-import { setCandidateStatus } from '@/app/actions';
+import { setCandidateStatus, updateLiveDealFromCandidate } from '@/app/actions';
 import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format';
 import { StatusPill } from './StatusPill';
 
@@ -24,6 +24,15 @@ export function QueueRow({
 }) {
   const [isPending, startTransition] = useTransition();
   const [gone, setGone] = useState<null | 'held' | 'dismissed'>(null);
+  const [updated, setUpdated] = useState(false);
+
+  function updateLive(e: React.MouseEvent, liveId: number) {
+    e.stopPropagation();
+    startTransition(async () => {
+      await updateLiveDealFromCandidate({ publishedId: liveId, candidateId: c.candidateId });
+      setUpdated(true);
+    });
+  }
 
   function act(e: React.MouseEvent, status: 'seen' | 'rejected') {
     e.stopPropagation();
@@ -80,6 +89,42 @@ export function QueueRow({
         {also.length > 0 && (
           <div style={{ ...MONO, fontSize: 10, color: 'var(--fg-3)', marginTop: 3 }}>
             also matches: {also.join(', ')}
+          </div>
+        )}
+        {/* Route context: what the desk already knows about this route (routeContext.ts) */}
+        {c.context?.kind === 'cheaper_than_live' && (
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span style={{ ...MONO, fontSize: 11, color: 'var(--amber-700)', fontWeight: 700 }}>
+              ↓ live deal is €{c.context.livePrice} — this fare is €{c.context.saving} cheaper
+            </span>
+            {updated ? (
+              <span style={{ ...MONO, fontSize: 11, color: 'var(--sea-600)', fontWeight: 700 }}>
+                live deal updated ✓
+              </span>
+            ) : (
+              <button
+                className="btn btn-outline"
+                style={{ padding: '2px 8px', fontSize: 11 }}
+                disabled={isPending}
+                onClick={(e) => updateLive(e, (c.context as { liveId: number }).liveId)}
+              >
+                Update live deal →
+              </button>
+            )}
+          </div>
+        )}
+        {c.context?.kind === 'live_on_route' && (
+          <div style={{ ...MONO, fontSize: 10, color: 'var(--fg-3)', marginTop: 4 }}>
+            live on this route at €{c.context.livePrice}
+          </div>
+        )}
+        {c.context?.kind === 'rejected_similar' && (
+          <div style={{ ...MONO, fontSize: 10, color: 'var(--fg-3)', marginTop: 4 }}>
+            you dismissed a similar fare at €{c.context.rejectedPrice}
+            {c.context.when ? ` · ${new Date(c.context.when).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}
           </div>
         )}
       </div>

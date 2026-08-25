@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { and, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   candidates, candidateTemplateMatches, dealTemplates, contentDrafts,
@@ -96,3 +96,34 @@ export const getPendingScanRequests = cache(async () => {
     .where(inArray(scanRequests.status, ['queued', 'running']))
     .orderBy(desc(scanRequests.createdAt));
 })
+
+// ---------------------------------------------------------------------------
+// Route signals for the queue's context chips (routeContext.ts): what is LIVE
+// per route, and what the curator recently dismissed. One cached pair of
+// queries per request, matched in memory.
+// ---------------------------------------------------------------------------
+export const getRouteSignals = cache(async () => {
+  const cutoff = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const [live, rejected] = await Promise.all([
+    db
+      .select({
+        id: publishedDeals.id,
+        origin: publishedDeals.origin,
+        destination: publishedDeals.destination,
+        price: publishedDeals.price,
+        headline: publishedDeals.headline,
+      })
+      .from(publishedDeals)
+      .where(eq(publishedDeals.status, 'live')),
+    db
+      .select({
+        origin: candidates.origin,
+        destination: candidates.destination,
+        price: candidates.price,
+        lastSeenAt: candidates.lastSeenAt,
+      })
+      .from(candidates)
+      .where(and(eq(candidates.status, 'rejected'), gte(candidates.lastSeenAt, cutoff))),
+  ]);
+  return { live, rejected };
+});

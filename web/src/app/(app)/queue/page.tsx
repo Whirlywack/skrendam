@@ -1,5 +1,6 @@
-import { getQueueRows, getLatestScanRun, getRouteOrigins } from '@/lib/queries';
+import { getQueueRows, getLatestScanRun, getRouteOrigins, getRouteSignals } from '@/lib/queries';
 import { groupByTemplate, toScanView } from '@/lib/mappers';
+import { attachRouteContext } from '@/lib/routeContext';
 import { QueueBoard } from '@/components/QueueBoard';
 import { city } from '@/lib/airports';
 
@@ -10,10 +11,11 @@ export default async function QueuePage({
 }) {
   const { origin } = await searchParams;
   // includeExpired: the "History" scope shows engine history; default scopes hide it.
-  const [rows, run, originCodes] = await Promise.all([
+  const [rows, run, originCodes, signals] = await Promise.all([
     getQueueRows(true),
     getLatestScanRun(),
     getRouteOrigins(),
+    getRouteSignals(),
   ]);
 
   // Each departure city is its own server-rendered sub-page (?origin=VNO) so
@@ -36,7 +38,7 @@ export default async function QueuePage({
 
   return (
     <QueueBoard
-      groups={groupByTemplate(visible)}
+      groups={attachRouteContext(groupByTemplate(visible), signals)}
       scan={toScanView(run)}
       origins={originCodes.map((code) => ({
         code,
