@@ -1,22 +1,7 @@
-// IATA → {city, country} map for the origins/destinations the engine scans.
-// Extends beyond placeholder with all seeded origins + scanned destinations.
-// Falls back to the IATA code when not found.
-const A: Record<string, { city: string; country: string }> = {
-  VNO: { city: 'Vilnius', country: 'Lithuania' },
-  KUN: { city: 'Kaunas', country: 'Lithuania' },
-  RIX: { city: 'Riga', country: 'Latvia' },
-  TLL: { city: 'Tallinn', country: 'Estonia' },
-  AGP: { city: 'Málaga', country: 'Spain' },
-  AYT: { city: 'Antalya', country: 'Türkiye' },
-  BCN: { city: 'Barcelona', country: 'Spain' },
-  BGY: { city: 'Bergamo', country: 'Italy' },
-  CIA: { city: 'Rome', country: 'Italy' },
-  CPH: { city: 'Copenhagen', country: 'Denmark' },
-  LCA: { city: 'Larnaca', country: 'Cyprus' },
-  PRG: { city: 'Prague', country: 'Czechia' },
-  STN: { city: 'London', country: 'United Kingdom' },
-  TFS: { city: 'Tenerife', country: 'Spain' },
-  VIE: { city: 'Vienna', country: 'Austria' },
-};
-export function city(iata: string): string { return A[iata]?.city ?? iata; }
-export function country(iata: string): string { return A[iata]?.country ?? ''; }
+// IATA → {city, country}. Copy of skrendam/airports.json (canonical; tests/skrendam/test_shared_data.py
+// fails if this drifts). Falls back to the IATA code.
+import A from './airports.json';
+
+const MAP = A as Record<string, { city: string; country: string }>;
+export function city(iata: string): string { return MAP[iata]?.city ?? iata; }
+export function country(iata: string): string { return MAP[iata]?.country ?? ''; }

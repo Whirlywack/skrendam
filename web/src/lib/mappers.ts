@@ -1,5 +1,6 @@
 import type { CandidateView, ScanView, TemplateGroup } from './types';
 import { city, country } from './airports';
+import { airlineName } from './airlines';
 import { formatDates, timeAgo } from './format';
 import { gradientForZone } from './gradients';
 import { toDisplayStatus } from './status';
@@ -12,7 +13,7 @@ function legsFrom(snapshot: unknown): { legs: string; airline: string; stops: nu
   const stops = Number(s.stops ?? 0);
   const dur = s.duration_minutes ? `${Math.round(Number(s.duration_minutes) / 60)}h` : '';
   const legs = `${stops === 0 ? 'Direct' : `${stops} stop${stops > 1 ? 's' : ''}`}${dur ? ` · ${dur}` : ''}`;
-  return { legs, airline: String(s.airline ?? '—'), stops };
+  return { legs, airline: airlineName(String(s.airline ?? '—')), stops };
 }
 
 export function toCandidateView(r: QueueRow): CandidateView {

@@ -1,17 +1,18 @@
 import type { PublicDeal, TicketView } from './types';
 import { qualityTag } from './quality';
 import { bookingCta } from './booking';
-import { city, country } from './airports';
+import { city, country, dealHeadline } from './airports';
 import { formatDates, timeAgo } from './format';
 import { sceneClass } from './photos';
+import { airlineName } from './airlines';
 
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 
 function legs(snapshot: unknown): { stops: number; airline: string } {
   const s = (snapshot ?? {}) as Record<string, unknown>;
   const legsArr = s.legs as Array<{ airline?: { code?: string } }> | undefined;
-  const airline = legsArr?.[0]?.airline?.code ?? String(s.airline ?? '—');
-  return { stops: Number(s.stops ?? 0), airline };
+  const code = legsArr?.[0]?.airline?.code ?? String(s.airline ?? '—');
+  return { stops: Number(s.stops ?? 0), airline: airlineName(code) };
 }
 
 export function toTicket(r: Row, now: Date): TicketView {
@@ -38,7 +39,7 @@ export function toTicket(r: Row, now: Date): TicketView {
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
     quality,
-    headline: pd.headline ?? `€${Math.round(Number(pd.price))} return to ${city(pd.destination)}`,
+    headline: dealHeadline(pd.headline, Number(pd.price), pd.destination),
     eyebrow: pd.publicLabel ?? 'Found by hand',
     catchChip: stops === 0 ? 'Direct' : `${stops} stop${stops > 1 ? 's' : ''}`,
     scene: sceneClass(pd.destination),

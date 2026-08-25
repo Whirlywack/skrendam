@@ -24,7 +24,7 @@ describe('toPublicDeal', () => {
     expect(d.route).toBe('VNO → BCN');
     expect(d.booking.button).toBe('Open in Google Flights');
     expect(d.status.kind).toBe('fresh');
-    expect(d.airline).toBe('BT');             // airline read from legs[0].airline.code
+    expect(d.airline).toBe('airBaltic');      // legs[0].airline.code → display name
   });
   it('going_fast flag wins the status', () => {
     const d = toPublicDeal(row({ pd: { goingFast: true } }), new Date('2026-06-03T12:00:00Z'));

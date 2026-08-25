@@ -20,7 +20,7 @@ export function Hero({
       <div className="hero-grid">
         <div className="hero-left">
           <div className="eyebrow">
-            Found &amp; checked by hand · {newCount} new this week
+            Found &amp; checked by hand · {newCount} live right now
           </div>
           <h1>
             Hand-checked <span className="amber">cheap flights</span> from

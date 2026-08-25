@@ -7,7 +7,7 @@ import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
 import { dealWhyAndCatch } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
-import { city, country } from '@/lib/airports';
+import { city, country, dealHeadline } from '@/lib/airports';
 import { timeAgo } from '@/lib/format';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -54,6 +54,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const now = new Date();
   const pd = row.pd;
   const deal = toPublicDeal(row, now);
+  const headline = dealHeadline(pd.headline, Number(pd.price), pd.destination);
 
   // Price context (real data — no fake sparklines)
   const stats = await priceContext(pd.origin, pd.destination, pd.tripType, deal.price, now);
@@ -109,7 +110,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       ])} />
       <JsonLd data={dealArticleJsonLd({
         id: pd.id,
-        headline: pd.headline,
+        headline,
         description: articleDescription,
         datePublished: pd.publishedAt,
       })} />
@@ -149,7 +150,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Headline */}
-        <div className="dh">{pd.headline}</div>
+        <div className="dh">{headline}</div>
 
         {/* ── Book row ──────────────────────────────────────────────────── */}
         <div className="dbook">
@@ -158,7 +159,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             {deal.baseline ? <s>&euro;{Math.round(deal.baseline)}</s> : null}
             <span className="ret">{pd.tripType === 'roundtrip' ? 'return' : 'one-way'} &middot; per person</span>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="dbook-cta">
             <a className="bookbtn" href={booking.url} target="_blank" rel="noopener noreferrer">
               {booking.button} &rarr;
             </a>
@@ -249,7 +250,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             &euro;{Math.round(deal.price)}
             <span className="ret">{pd.tripType === 'roundtrip' ? 'return' : 'one-way'} &middot; per person</span>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="dbook-cta">
             <a className="bookbtn" href={booking.url} target="_blank" rel="noopener noreferrer">
               {booking.button} &rarr;
             </a>
