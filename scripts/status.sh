@@ -55,7 +55,8 @@ SELECT
   (SELECT count(*) FROM candidates WHERE status IN ('new','seen','maybe'))::text,
   (SELECT count(*) FROM published_deals WHERE status='live')::text,
   (SELECT count(*) FROM published_deals WHERE status='live' AND unverified_since IS NOT NULL)::text,
-  (SELECT count(*) FROM subscribers)::text
+  (SELECT count(*) FROM subscribers)::text,
+  COALESCE(round(EXTRACT(EPOCH FROM max(r.finished_at)))::text, '0')
 FROM scan_runs r;
 SQL
 }
@@ -75,7 +76,7 @@ if [ -z "$line" ]; then
   fail_loud "cannot reach the database: $err"
 fi
 rm -f "$db_err"
-read -r age_hours status candidates matches reasons queue live unverified subs <<<"$line"
+read -r age_hours status candidates matches reasons queue live unverified subs last_fin_epoch <<<"$line"
 
 scan_job=$(launchctl list 2>/dev/null | grep -c com.skrendam.daily-scan || true)
 wd_job=$(launchctl list 2>/dev/null | grep -c com.skrendam.watchdog || true)
@@ -90,6 +91,19 @@ if [ "$age_hours" -ge "$STALE_HOURS" ]; then
     : # late but running right now (e.g. Mac just woke) — not a problem yet
   else
     problems+=("no scan finished in ${age_hours}h")
+  fi
+fi
+# Did TODAY's 06:00 scan land? The age check above aliases when yesterday's scan
+# finished late (2026-08-24: age rounded to 25h < 26 at 09:00 → "OK" while today's
+# scan sat frozen). After 08:30 local, nothing finished since 06:00 today is wrong
+# even if a scan process exists — a run frozen by a battery dark-wake IS the
+# failure mode, not a grace case. (date -v is macOS-specific, like this whole box.)
+if [ "$(date +%H%M | sed 's/^0*//')" -ge 830 ] \
+    && [ "$last_fin_epoch" -lt "$(date -v6H -v0M -v0S +%s)" ]; then
+  if [ "$scan_inflight" = yes ]; then
+    problems+=("today's 06:00 scan has not finished — a scan process is running/frozen")
+  else
+    problems+=("today's 06:00 scan never finished")
   fi
 fi
 [ "$scan_job" -eq 0 ] && problems+=("daily-scan job is NOT loaded in launchd")
