@@ -31,8 +31,8 @@ fi
 
 # Power Nap dark wakes fire the missed 06:00 job with flaky networking; the DB
 # connection then dies mid-run (2 crashes in 2 days: 2026-08-22/23). Wait for the
-# network before scanning, and retry once on a connection-shaped failure — the
-# sleeps survive re-sleep, so the retry lands after the REAL wake. caffeinate
+# network before scanning, and retry on connection-shaped failures — the
+# sleeps survive re-sleep, so retries drift toward the REAL wake. caffeinate
 # holds the machine awake for the attempt itself (best effort; absent on old
 # macOS never blocks the scan).
 wait_for_network() { # up to ~2h of 30s probes; returns 0 as soon as we're online
@@ -62,11 +62,22 @@ run_attempt() {
   wait_for_network || echo "$(date -Iseconds) WARNING: network never came up; attempting anyway"
   attempt_offset=$(( $(wc -l < "$LOG_FILE" 2>/dev/null || echo 0) ))
   run_attempt
-  if [ "$code" -eq 1 ] && tail -n +$((attempt_offset + 1)) "$LOG_FILE" 2>/dev/null \
-      | grep -aq 'OperationalError\|server closed the connection'; then
-    echo "===== $(date -Iseconds) connection-shaped failure — waiting for network to retry once ====="
-    wait_for_network && run_attempt
-  fi
+  # Retry up to 4 times on connection-shaped failures. One retry proved too few
+  # (2026-08-26: attempt AND retry both landed inside clamshell-sleep windows,
+  # then nothing was left to fire at the real wake). The 5-minute settle only
+  # elapses while the machine is AWAKE — sleep pauses it — so successive
+  # retries naturally drift toward a genuine wake, and the last one typically
+  # runs after the lid opens.
+  for retry in 1 2 3 4; do
+    [ "$code" -eq 1 ] || break
+    tail -n +$((attempt_offset + 1)) "$LOG_FILE" 2>/dev/null \
+      | grep -aq 'OperationalError\|server closed the connection' || break
+    echo "===== $(date -Iseconds) connection-shaped failure — retry $retry/4 after network + 5 min settle ====="
+    wait_for_network
+    sleep 300
+    attempt_offset=$(( $(wc -l < "$LOG_FILE" 2>/dev/null || echo 0) ))
+    run_attempt
+  done
 } >> "$LOG_FILE" 2>&1
 
 summary="$(tail -n +$((run_offset + 1)) "$LOG_FILE" | grep -a '^scan complete:' | tail -1)"
