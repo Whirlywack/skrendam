@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { CandidateView, ScanView, TemplateGroup } from '@/lib/types';
 import { rejectCandidates } from '@/app/actions';
 import { clusterByRoute } from '@/lib/cluster';
+import { SHORTLIST, shortlistIds } from '@/lib/shortlist';
 import { Queue } from './Queue';
 import { Composer } from './Composer';
 
@@ -177,6 +178,7 @@ export function QueueBoard({
   const [sortKey, setSortKey] = useState<SortKey>('Best first');
   const [typeFilter, setTypeFilter] = useState<number | null>(null);
   const [selected, setSelected] = useState<CandidateView | null>(null);
+  const [showAllToday, setShowAllToday] = useState(false);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const byId = (id: number) => flat.find((c) => c.matchId === id) ?? null;
@@ -202,6 +204,15 @@ export function QueueBoard({
     }),
     [flat],
   );
+
+  // Membership is by best score per candidate; the sort dropdown only reorders
+  // the 20, it never changes who made the cut.
+  const shortlist = useMemo(() => shortlistIds(flat), [flat]);
+  // Only the default view is capped — focusing a type chip or another scope is
+  // already an explicit "show me everything of this" gesture.
+  const shortlisting =
+    scope === 'New today' && typeFilter === null && !showAllToday &&
+    counts['New today'] > SHORTLIST;
 
   // Groups with the most fresh high-score deals first — June ghosts can't lead.
   const orderedGroups = useMemo(() => {
@@ -347,7 +358,10 @@ export function QueueBoard({
 
       {orderedGroups.map((g) => {
         if (typeFilter !== null && g.templateId !== typeFilter) return null;
-        const items = g.items.filter(SCOPE_FILTER[scope]).sort(SORTS[sortKey]);
+        const items = g.items
+          .filter(SCOPE_FILTER[scope])
+          .filter((c) => !shortlisting || shortlist.has(c.candidateId))
+          .sort(SORTS[sortKey]);
         if (!items.length) return null;
         return (
           <TemplateSection
@@ -355,11 +369,29 @@ export function QueueBoard({
             g={g}
             items={items}
             alsoMatches={templatesByCandidate}
-            preview={typeFilter === null}
+            // The shortlist IS the cap — don't hide any of the 20 behind
+            // per-group previews on top of it.
+            preview={typeFilter === null && !shortlisting}
             onOpen={(id) => setSelected(byId(id))}
           />
         );
       })}
+
+      {shortlisting && (
+        <button
+          className="maybe-toggle"
+          onClick={() => setShowAllToday(true)}
+          style={{ fontWeight: 600 }}
+        >
+          Top {SHORTLIST} shown — show all {counts['New today']} deals ↓
+        </button>
+      )}
+      {scope === 'New today' && typeFilter === null && showAllToday &&
+        counts['New today'] > SHORTLIST && (
+          <button className="maybe-toggle" onClick={() => setShowAllToday(false)}>
+            Back to top {SHORTLIST} ↑
+          </button>
+        )}
 
       {flat.filter(SCOPE_FILTER[scope]).length === 0 && (
         <p style={{ padding: '32px 28px', color: 'var(--fg-2)', fontSize: 14 }}>
