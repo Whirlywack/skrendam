@@ -58,6 +58,14 @@ def run_scan_command(
     adapter = FliAdapter(backend, pace=bucket.acquire)
     if seed:
         seed_all(session)
+    import os as _os
+
+    from skrendam.scanning.checkpoint import ScanCheckpoint
+
+    ckpt_path = _os.environ.get(
+        "SKRENDAM_SCAN_CHECKPOINT",
+        _os.path.expanduser("~/Library/Logs/skrendam/scan-checkpoint.json"),
+    )
     return run_scan(
         session,
         today=today,
@@ -67,6 +75,7 @@ def run_scan_command(
         all_routes=all_routes,
         circuit_breaker_threshold=settings.circuit_breaker_threshold,
         now=now,
+        checkpoint=ScanCheckpoint(ckpt_path, today),
     )
 
 
