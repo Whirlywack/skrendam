@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { cookies, headers } from 'next/headers';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
 import { emailEnabled, sendConfirmEmail } from '@/lib/email';
@@ -132,6 +132,16 @@ export async function subscribeAction(
         })
         .returning({ id: subscribers.id });
       touched = inserted.length > 0;
+    }
+    // Confirmed rows are immutable to the upserts above, but the early-alerts
+    // flag alone is safe to OR on: no token change, no email, and the response
+    // stays uniform — so a confirmed subscriber re-entering their email on
+    // /early-alerts actually joins the waitlist instead of hitting a silent no-op.
+    if (earlyAlerts) {
+      await db
+        .update(subscribers)
+        .set({ earlyAlerts: true })
+        .where(and(eq(subscribers.email, email), eq(subscribers.confirmed, true)));
     }
   } catch (err) {
     if (isRedirectError(err)) throw err;

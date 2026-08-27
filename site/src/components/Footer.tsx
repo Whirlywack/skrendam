@@ -30,7 +30,7 @@ export function Footer() {
         {/* Yip column */}
         <div>
           <h4>Yip</h4>
-          <Link href="/past-deals">Past rare fares</Link>
+          {/* "Past rare fares" returns once real expired deals exist (audit 08-28) */}
           <Link href="/#how">How it works</Link>
           <Link href="/early-alerts">Get early alerts</Link>
           <a href="mailto:hello@yip.lt">Contact</a>

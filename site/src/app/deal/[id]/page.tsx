@@ -8,7 +8,7 @@ import { bookingCta } from '@/lib/booking';
 import { dealWhyAndCatch } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
 import { city, country, dealHeadline } from '@/lib/airports';
-import { timeAgo } from '@/lib/format';
+import { freshnessLabel } from '@/lib/format';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Photo } from '@/components/Photo';
@@ -86,7 +86,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const fresh = pd.lastSeenAt ?? row.candLastSeen ?? null;
   const freshLabel = pd.goingFast
     ? 'Going fast'
-    : fresh ? `Checked ${timeAgo(String(fresh))}` : 'Checked recently';
+    : freshnessLabel(fresh ? String(fresh) : null);
 
   // Quality chip (words only — score stays internal)
   const qualityLabel = deal.quality === 'rare' ? 'Rare deal' : 'Great deal';

@@ -13,3 +13,15 @@ export function timeAgo(iso: string | null): string {
   if (mins < 60) return `${mins} min ago`;
   const h = Math.round(mins / 60); return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
 }
+
+// A freshness claim older than this stops being a trust signal and becomes an
+// anti-ad ("Checked 86d ago") — past the cap we tell the truth differently.
+const FRESHNESS_CAP_DAYS = 3;
+
+export function freshnessLabel(iso: string | null): string {
+  if (!iso) return 'Checked recently';
+  const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
+  return days <= FRESHNESS_CAP_DAYS
+    ? `Checked ${timeAgo(iso)}`
+    : 'Price may have moved — check live';
+}

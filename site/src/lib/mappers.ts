@@ -2,7 +2,7 @@ import type { PublicDeal, TicketView } from './types';
 import { qualityTag } from './quality';
 import { bookingCta } from './booking';
 import { city, country, dealHeadline } from './airports';
-import { formatDates, timeAgo } from './format';
+import { formatDates, freshnessLabel } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
 
@@ -58,7 +58,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
   const fresh = pd.lastSeenAt ?? r.candLastSeen ?? null;
   const status = pd.goingFast
     ? { kind: 'going_fast' as const, label: 'Going fast' }
-    : { kind: 'fresh' as const, label: fresh ? `Checked ${timeAgo(String(fresh))}` : 'Checked recently' };
+    : { kind: 'fresh' as const, label: freshnessLabel(fresh ? String(fresh) : null) };
 
   // reserved for Task 8 — will be threaded into timeAgo() for the detail page's relative time
   void now;

@@ -52,29 +52,20 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </div>
-            <div className="cap-lbl">You&apos;re in.</div>
+            <div className="cap-lbl">
+              {result.state === 'check-email' ? 'Almost there — confirm your email.' : "You're in."}
+            </div>
           </div>
           <div className="cap-sub" style={{ marginTop: 6 }}>
             {result.state === 'check-email'
-              ? "You're in — check your email to confirm."
+              ? "We've emailed you a confirm link. Tap it and the next rare fare is yours."
               : 'First deals land in your inbox this week.'}
-          </div>
-
-          <div className="cap-div" />
-          <div className="cap-early">
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>Want them sooner?</div>
-              <div className="cap-sub" style={{ marginTop: 1 }}>
-                The rarest fares as soon as Yip finds them — before the weekly email.
-              </div>
-            </div>
-            <a href="/early-alerts" className="btn-sec">Get early alerts →</a>
           </div>
         </>
       ) : (
         <>
           <div className="cap-lbl">Get the next rare fare by email</div>
-          <form className="cap-row" onSubmit={onSubmit}>
+          <form id={`signup-card-${source}`} className="cap-row" onSubmit={onSubmit}>
             <input type="hidden" name="source" value={source} />
             <input type="hidden" name="mode" value="inline" />
             <input
@@ -101,15 +92,22 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
           </div>
 
           <div className="cap-div" />
-          <div className="cap-early">
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>Want them sooner?</div>
-              <div className="cap-sub" style={{ marginTop: 1 }}>
-                The best fares as soon as Yip finds them — before the weekly email.
-              </div>
-            </div>
-            <a href="/early-alerts" className="btn-sec">Get early alerts →</a>
-          </div>
+          <label className="cap-early" style={{ cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <input
+              type="checkbox"
+              name="early_alerts"
+              form={`signup-card-${source}`}
+              style={{ marginTop: 3, accentColor: 'var(--sea-ink)' }}
+            />
+            <span>
+              <span style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>
+                Also join early alerts — free
+              </span>
+              <span className="cap-sub" style={{ marginTop: 1, display: 'block' }}>
+                The rarest fares the moment Yip finds them — before the weekly email.
+              </span>
+            </span>
+          </label>
         </>
       )}
     </div>

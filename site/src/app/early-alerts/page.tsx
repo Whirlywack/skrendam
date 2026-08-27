@@ -88,7 +88,7 @@ export default function EarlyAlertsPage() {
 
           {/* Free weekly — left column */}
           <div className="cmpcard">
-            <span className="cmptag tag-now">You&rsquo;re on this</span>
+            <span className="cmptag tag-now">Included free</span>
             <h3>Free weekly email</h3>
             <div className="cmp-price">Always free</div>
             <ul className="cmplist">

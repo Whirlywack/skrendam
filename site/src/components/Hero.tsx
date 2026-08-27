@@ -20,7 +20,8 @@ export function Hero({
       <div className="hero-grid">
         <div className="hero-left">
           <div className="eyebrow">
-            Found &amp; checked by hand · {newCount} live right now
+            Found &amp; checked by hand ·{' '}
+            {newCount >= 3 ? `${newCount} live right now` : "this week's pick — only what survives the check"}
           </div>
           <h1>
             Hand-checked <span className="amber">cheap flights</span> from

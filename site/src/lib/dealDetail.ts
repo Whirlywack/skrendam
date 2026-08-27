@@ -50,11 +50,6 @@ export function dealWhyAndCatch(inputs: DealDetailInputs): WhyAndCatch {
     why.push('Direct — no layovers');
   }
 
-  // Why: airline (only if non-empty and not a placeholder)
-  if (inputs.airline && inputs.airline !== '—') {
-    why.push(`Flies with ${inputs.airline}`);
-  }
-
   // Why: quality phrase (words only — score stays internal)
   if (inputs.score !== null) {
     if (inputs.score >= RARE_THRESHOLD) {

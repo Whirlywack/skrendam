@@ -2278,9 +2278,11 @@
   margin: 0 0 16px;
 }
 
-/* Email + submit row on /subscribe page */
+/* Email + submit row on /subscribe page — wraps so the input never gets
+   crushed beside the wide button on narrow phones (audit 08-28) */
 .yip-site .sub-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
@@ -2292,7 +2294,7 @@
   padding: 10px 13px;
   font-size: 13px;
   font-family: 'Hanken Grotesk', sans-serif;
-  min-width: 0;
+  min-width: 180px;
 }
 
 /* Primary CTA — amber (shared with btn-primary but no margin-top here) */
