@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Sign in</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="login-wrap" data-screen-label="Admin · Login">
+  <span class="bead"></span>
+  <div class="login-card">
+    <div class="brand"><span class="yip-logo" style="font-size:26px">yıp</span><span class="tag">Deal Desk</span></div>
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to review and publish deals. Admin access only — there's no public sign-up.</p>
+    <form onsubmit="window.location='admin-today.html';return false">
+      <label>Email</label>
+      <input class="field" type="email" value="tomas@yip.lt">
+      <label>Password</label>
+      <input class="field" type="password" value="••••••••••">
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:20px" type="submit">Sign in <i data-lucide="arrow-right"></i></button>
+    </form>
+    <div class="foot">Trouble signing in? <a href="#" style="color:var(--sea-600);font-weight:600">Contact an admin</a></div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

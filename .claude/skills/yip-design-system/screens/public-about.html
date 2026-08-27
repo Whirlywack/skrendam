@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip — how it works</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  body { background: var(--sand-100); }
+  .promise { background: var(--bg-ink); color: var(--sand-50); padding: 30px 20px; }
+  .promise .eyebrow { color: var(--amber-400); }
+  .promise h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; line-height: 1.08; letter-spacing: -.02em; margin: 10px 0 0; }
+  .promise p { color: var(--sand-300); font-size: 15px; line-height: 1.55; margin: 12px 0 0; }
+  .fact { display: flex; gap: 12px; align-items: flex-start; padding: 15px 0; border-bottom: 1px solid var(--line-soft); }
+  .fact:last-child { border-bottom: none; }
+  .fact .ic { width: 38px; height: 38px; border-radius: 11px; background: var(--sea-50); color: var(--sea-600); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .fact .ic svg { width: 19px; height: 19px; }
+  .fact h4 { font-size: 16px; font-weight: 700; margin: 2px 0 3px; }
+  .fact p { font-size: 14px; color: var(--fg-2); line-height: 1.5; margin: 0; }
+</style>
+</head>
+<body>
+<div class="pub">
+<div class="phone" data-screen-label="Public · About">
+
+  <header class="pub-hdr">
+    <a href="public-home.html"><span class="yip-logo" style="font-size:26px">yıp</span></a>
+    <button class="menu" aria-label="Menu"><i data-lucide="menu"></i></button>
+  </header>
+
+  <div class="promise">
+    <span class="eyebrow">How Yip works</span>
+    <h1>We find the good flights, so you don't have to.</h1>
+    <p>Yip is a curated travel club for Lithuania and the Baltics — not a search engine. A real person finds, checks and publishes genuinely good deals. You just subscribe and book.</p>
+  </div>
+
+  <div class="pub-pad">
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div><h4>Our scanner watches fares</h4><p>Around the clock, across Vilnius, Kaunas, Riga and nearby airports — so you never have to search.</p></div></div>
+      <div class="step"><span class="n">2</span><div><h4>Yip flags the real gems</h4><p>It scores each fare against months of history and groups it into travel moments, like "September sun".</p></div></div>
+      <div class="step"><span class="n">3</span><div><h4>A human checks every deal</h4><p>We verify the price, dates and catches by hand. If it's not genuinely good, it doesn't go out.</p></div></div>
+      <div class="step"><span class="n">4</span><div><h4>You book directly</h4><p>Tap through and book with the airline or travel site. Yip just points you to the good ones, fast.</p></div></div>
+    </div>
+  </div>
+
+  <div class="pub-pad" style="padding-top:6px">
+    <div class="sec-head"><h2>Good to know</h2></div>
+    <div class="signup-block" style="padding:6px 18px">
+      <div class="fact"><span class="ic"><i data-lucide="search-x"></i></span><div><h4>You don't search — we do</h4><p>There's no route/date search box. We publish the deals worth your time.</p></div></div>
+      <div class="fact"><span class="ic"><i data-lucide="timer"></i></span><div><h4>Deals can expire fast</h4><p>Great fares sell out in hours. We mark the urgent ones and email subscribers first.</p></div></div>
+      <div class="fact"><span class="ic"><i data-lucide="external-link"></i></span><div><h4>Booking happens externally</h4><p>We link you out to the airline or travel site — Yip never takes your payment.</p></div></div>
+      <div class="fact"><span class="ic"><i data-lucide="map-pin"></i></span><div><h4>Made in Vilnius</h4><p>Built by Baltic travelers, for Baltic travelers. 🇱🇹</p></div></div>
+    </div>
+  </div>
+
+  <div class="pub-pad">
+    <div class="signup-block dark">
+      <h3>Ready for your next trip idea?</h3>
+      <p>Join 12,400+ travelers getting hand-checked deals by email.</p>
+      <div class="signup-row"><input class="field" type="email" placeholder="you@email.com"><button class="btn btn-primary">Get deals</button></div>
+    </div>
+  </div>
+
+  <footer class="pub-ftr">
+    <span class="yip-logo yip-logo--light" style="font-size:24px">yıp</span>
+    <div class="links"><a href="public-listing.html">All deals</a><a href="#">From Vilnius</a><a href="#">From Kaunas</a><a href="#">From Riga</a><a href="public-about.html">About</a><a href="#">TikTok</a></div>
+    <div class="legal">© 2026 Yip · Curated in Vilnius 🇱🇹 · We link out to airlines to book — prices change fast.</div>
+  </footer>
+
+</div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

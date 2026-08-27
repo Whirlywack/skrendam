@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Today</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="adm" data-screen-label="Admin · Today / Command Center">
+
+  <!-- Sidebar -->
+  <aside class="asb">
+    <div class="brand"><span class="yip-logo" style="font-size:24px">yıp</span><span class="tag">Deal Desk</span></div>
+    <div class="grp">Workspace</div>
+    <a class="navi on" href="admin-today.html"><i data-lucide="layout-dashboard"></i> Today</a>
+    <a class="navi" href="admin-queue.html"><i data-lucide="inbox"></i> Deal queue <span class="badge">7</span></a>
+    <a class="navi" href="#"><i data-lucide="send"></i> Published</a>
+    <div class="grp">Strategy</div>
+    <a class="navi" href="#"><i data-lucide="layout-template"></i> Templates</a>
+    <a class="navi" href="admin-template-builder.html"><i data-lucide="wand-2"></i> Template builder</a>
+    <a class="navi" href="#"><i data-lucide="users"></i> Audience</a>
+    <a class="navi" href="#"><i data-lucide="calendar-days"></i> Travel moments</a>
+    <a class="navi" href="#"><i data-lucide="map"></i> Routes &amp; zones</a>
+    <div class="grp">System</div>
+    <a class="navi" href="#"><i data-lucide="activity"></i> Scan health</a>
+    <div class="who"><span class="av">TK</span><div><div class="nm">Tomas K.</div><div class="ro">Founder · Vilnius</div></div></div>
+  </aside>
+
+  <!-- Main -->
+  <div class="amain">
+    <div class="atop">
+      <div><h1>Good afternoon, Tomas</h1><div class="sub">Tuesday, 2 June · Here's what needs you today.</div></div>
+      <span class="spacer"></span>
+      <button class="btn btn-outline btn-sm"><i data-lucide="refresh-cw"></i> Run scan</button>
+      <button class="btn btn-primary btn-sm"><i data-lucide="sparkles"></i> Review top deals</button>
+    </div>
+
+    <div class="abody">
+      <!-- scan banner -->
+      <div class="scan" style="margin-bottom:20px">
+        <span class="dot"></span>
+        <span>Last scan <b>4 min ago</b> · checked <b>2,143</b> fares across <b>4</b> airports · <b>3</b> new candidates</span>
+        <span class="spacer"></span>
+        <span class="mono" style="font-size:12px">VNO · KUN · RIX · PLQ</span>
+      </div>
+
+      <!-- stat cards -->
+      <div class="stat-grid" style="margin-bottom:24px">
+        <div class="stat-card amber">
+          <div class="lab"><i data-lucide="sparkles"></i> New top deals</div>
+          <div class="big">3</div>
+          <div class="sm">High-score candidates waiting for review</div>
+        </div>
+        <div class="stat-card">
+          <div class="lab"><i data-lucide="rotate-cw"></i> Needs recheck</div>
+          <div class="big">5</div>
+          <div class="sm">Live deals last verified 24h+ ago</div>
+        </div>
+        <div class="stat-card">
+          <div class="lab"><i data-lucide="timer"></i> Expiring soon</div>
+          <div class="big">2</div>
+          <div class="sm">Live deals ending in &lt; 48h</div>
+        </div>
+        <div class="stat-card">
+          <div class="lab"><i data-lucide="check-circle-2"></i> Live deals</div>
+          <div class="big">14</div>
+          <div class="sm">Published &amp; visible to subscribers</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px">
+
+        <!-- new top deals -->
+        <div class="panel">
+          <div class="panel-head"><i data-lucide="sparkles" style="width:17px;height:17px;color:var(--amber-600)"></i><h3>New top deals to review</h3><span class="spacer"></span><a class="btn btn-ghost btn-sm" href="admin-queue.html">Open queue →</a></div>
+          <a class="cand" href="admin-candidate.html">
+            <span class="photo thumb" style="background:linear-gradient(150deg,#EFA227,#D63E22 70%,#9C520A)"></span>
+            <div class="main">
+              <div class="nm">Larnaca, Cyprus</div>
+              <div class="mt">VNO → LCA · 14–21 Oct · Direct</div>
+              <div class="why">Matched <b>Last warm days</b> · 42% below median · direct</div>
+            </div>
+            <div class="right"><span class="score hi">92<small>SCORE</small></span><span class="price-badge" style="font-size:17px">€59</span></div>
+          </a>
+          <a class="cand" href="admin-candidate.html">
+            <span class="photo thumb" style="background:linear-gradient(150deg,#ED7660,#B53017 70%,#4A4034)"></span>
+            <div class="main">
+              <div class="nm">Vienna, Austria</div>
+              <div class="mt">VNO → VIE · 5–8 Dec · Direct</div>
+              <div class="why">Matched <b>Christmas markets</b> · 49% below median</div>
+            </div>
+            <div class="right"><span class="score hi">88<small>SCORE</small></span><span class="price-badge" style="font-size:17px">€45</span></div>
+          </a>
+          <a class="cand" href="admin-candidate.html">
+            <span class="photo thumb" style="background:linear-gradient(150deg,#EFA227,#E55438 70%,#7A410E)"></span>
+            <div class="main">
+              <div class="nm">Málaga, Spain</div>
+              <div class="mt">KUN → AGP · This Fri–Mon · Direct</div>
+              <div class="why">Matched <b>Last-minute weekends</b> · 53% below median</div>
+            </div>
+            <div class="right"><span class="score mid">76<small>SCORE</small></span><span class="price-badge" style="font-size:17px">€52</span></div>
+          </a>
+        </div>
+
+        <!-- expiring / recheck -->
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div class="panel">
+            <div class="panel-head"><i data-lucide="timer" style="width:17px;height:17px;color:var(--coral-500)"></i><h3>Expiring soon</h3></div>
+            <a class="cand" href="admin-candidate.html" style="padding:11px 16px">
+              <div class="main"><div class="nm" style="font-size:14px">Athens, Greece</div><div class="mt">RIX → ATH · ends in 31h</div></div>
+              <div class="right"><span class="status-pill st-live">Live</span></div>
+            </a>
+            <a class="cand" href="admin-candidate.html" style="padding:11px 16px">
+              <div class="main"><div class="nm" style="font-size:14px">Faro, Portugal</div><div class="mt">RIX → FAO · ends in 44h</div></div>
+              <div class="right"><span class="status-pill st-live">Live</span></div>
+            </a>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><i data-lucide="rotate-cw" style="width:17px;height:17px;color:var(--amber-600)"></i><h3>Needs recheck</h3><span class="spacer"></span><span class="cnt">5</span></div>
+            <a class="cand" href="admin-candidate.html" style="padding:11px 16px">
+              <div class="main"><div class="nm" style="font-size:14px">Tenerife, Spain</div><div class="mt">last checked 26h ago</div></div>
+              <div class="right"><button class="btn btn-outline btn-sm">Recheck</button></div>
+            </a>
+            <a class="cand" href="admin-candidate.html" style="padding:11px 16px">
+              <div class="main"><div class="nm" style="font-size:14px">Palma, Mallorca</div><div class="mt">last checked 31h ago</div></div>
+              <div class="right"><button class="btn btn-outline btn-sm">Recheck</button></div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

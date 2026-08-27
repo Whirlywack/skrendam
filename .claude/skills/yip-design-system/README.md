@@ -116,9 +116,23 @@ Photography is central to the FOMO promise — palm trees, crystal water, golden
 
 ---
 
+## V2 — "Poster & Bead" (award direction)
+
+A full-redesign direction layered on top of v1 (v1 stays intact): **Baltic Travel Poster** editorial — huge fluid display type, duotone poster fields instead of photos, issue numbers, index rows that invert to ink, curator pull-quotes — with **the Amber Bead** as the single living brand atom (tittle, bullet, route dot, hover cue, loader, stamp dot). Tasteful micro-interactions only: bead pulse, bead-travel route line, row inversion, bead loader on subscribe.
+
+- Foundations: `v2/poster-bead.css` (poster duotones, display scale, bead utilities, motion tokens, stamp, index rows)
+- Proof screen: `screens/v2-home.html` — the public home rebuilt to this direction
+- Card: `preview/v2-direction.html`
+
+---
+
 ## INDEX — what's in this system
 
+**Components** (compiled to `window.YipDesignSystem_bc53ee`)
+- `DealTicket` — the signature boarding-pass deal card (`components/DealTicket.jsx` + `.d.ts`; preview `components/dealticket.html`)
+
 **Root**
+- `styles.css` — link this ONE file to get the whole system (it imports the rest).
 - `README.md` — this file: context, content + visual foundations, iconography, index.
 - `SKILL.md` — Agent-Skill manifest (works in Claude Code).
 - `colors_and_type.css` — all color scales, semantic tokens, type, spacing, radii, shadows, motion.
@@ -132,5 +146,7 @@ Photography is central to the FOMO promise — palm trees, crystal water, golden
 **`ui_kits/`**
 - `website/` — public deal-browsing site: `index.html` + JSX components (header, deal cards, deal detail, signup, footer).
 - `curator/` — internal curation tool: `index.html` + JSX components (deal queue, suggestion cards, copy drafter, approve flow).
+
+**`screens/`** — the full product screen set from the build brief, on this system. Open `screens/index.html` to launch all 18. **Public** (mobile-first): `public-home`, `public-listing`, `public-detail`, `public-category`, `public-signup`, `public-thankyou`, `public-about`. **Desktop deal selection** (client-facing browse): `public-desktop`. **Internal Deal Desk** (dense): `admin-login`, `admin-today`, `admin-queue`, `admin-candidate` (Review Room + slide-in Publish panel), `admin-published`, `admin-templates`, `admin-template-builder`, `admin-audience`, `admin-moments`, `admin-routes`, `admin-scan-health`. **Mobile Deal Desk app** (native-feel iOS prototype, review→approve on the go): `mobile.html` (+ `mobile-app.jsx`, `ios-frame.jsx`). Shared styles in `screens/screens.css`; the Deal Desk sidebar is injected by `screens/sidebar.js`.
 
 *(No slide template was provided, so no `slides/` were created.)*

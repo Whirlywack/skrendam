@@ -1,4 +1,4 @@
-function App() {
+function CuratorApp() {
   const [tab, setTab] = React.useState("All");
   const [selected, setSelected] = React.useState(null);
   const [items, setItems] = React.useState(window.YIP_CANDIDATES);
@@ -28,4 +28,7 @@ function App() {
     </div>
   );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+const __curRoot = document.getElementById("root");
+if (__curRoot && __curRoot.dataset.app === "curator") {
+  ReactDOM.createRoot(__curRoot).render(<CuratorApp />);
+}

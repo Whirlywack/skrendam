@@ -3,6 +3,7 @@
    The amber bead is positioned as the tittle and scales with font-size (em units).
    Sizes via font-size; pair with --logo-ink / --logo-bead to recolor. */
 
+:root { --logo-ink: #1C1813; /* @kind color */ --logo-bead: #E2820E; /* @kind color */ }
 .yip-logo {
   font-family: 'Bricolage Grotesque', system-ui, sans-serif;
   font-weight: 800;
@@ -25,4 +26,4 @@
   top: 0.015em;
 }
 /* On dark surfaces */
-.yip-logo--light { --logo-ink: #FBF6EC; }
+.yip-logo--light { color: #FBF6EC; }

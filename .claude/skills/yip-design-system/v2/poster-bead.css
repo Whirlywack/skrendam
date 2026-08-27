@@ -1,0 +1,70 @@
+/* =========================================================================
+   YIP V2 — "Poster & Bead" foundations
+   Direction: Baltic Travel Poster (editorial, huge type, duotone posters)
+   × The Amber Bead (one living brand atom: tittle, bullet, loader, route dot).
+   Loads ON TOP of colors_and_type.css. v1 stays intact.
+   ========================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+
+:root {
+  /* v2 palette: deeper ink, hotter amber, unchanged paper/sea */
+  --v2-ink: #16120D;
+  --v2-amber: #F08A00;
+  --v2-amber-deep: #C56A07;
+  --v2-paper: #FBF6EC;
+
+  /* Poster duotone fields (photo-free art direction) */
+  --poster-sun:   linear-gradient(160deg,#F5B93F 0%,#EE7A1F 48%,#B5390F 100%); /* @kind color */
+  --poster-dusk:  linear-gradient(160deg,#ED7660 0%,#B53017 55%,#3F2A20 100%); /* @kind color */
+  --poster-sea:   linear-gradient(160deg,#54B7A2 0%,#0F7C68 55%,#082F2A 100%); /* @kind color */
+  --poster-stone: linear-gradient(160deg,#F3B84E 0%,#B57827 55%,#4A2F12 100%); /* @kind color */
+
+  /* Editorial display scale — poster sizes, fluid */
+  --d-hero:  clamp(64px, 9.5vw, 128px); /* @kind font */
+  --d-poster: clamp(56px, 8vw, 104px); /* @kind font */
+  --d-index: clamp(30px, 3.6vw, 46px); /* @kind font */
+  --d-quote: clamp(26px, 3vw, 38px); /* @kind font */
+
+  /* Signature motion */
+  --bead-ease: cubic-bezier(.34, 1.56, .64, 1); /* @kind other */
+  --ink-ease:  cubic-bezier(.22, 1, .36, 1); /* @kind other */
+  --bead-size: 0.16em; /* @kind spacing */
+}
+
+/* ---------- The Bead — one atom, everywhere ---------- */
+.bead { display: inline-block; width: var(--bead-size); height: var(--bead-size); border-radius: 50%; background: var(--v2-amber); vertical-align: baseline; }
+.bead--lg { width: 0.5em; height: 0.5em; }
+@keyframes bead-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+.bead--live { animation: bead-pulse 2.2s var(--bead-ease) infinite; }
+@keyframes bead-travel { 0% { left: 0; } 100% { left: calc(100% - 10px); } }
+.bead-route { position: relative; height: 10px; }
+.bead-route .track { position: absolute; inset: 4px 0; border-top: 2px dotted rgba(255,255,255,.55); }
+.bead-route .bead { position: absolute; top: 0; width: 10px; height: 10px; animation: bead-travel 6s var(--ink-ease) infinite alternate; }
+/* bead loader (subscribe) */
+@keyframes bead-hop { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-7px); } }
+.bead-loader { display: inline-flex; gap: 6px; }
+.bead-loader .bead { width: 8px; height: 8px; animation: bead-hop 0.9s var(--bead-ease) infinite; }
+.bead-loader .bead:nth-child(2) { animation-delay: .12s; }
+.bead-loader .bead:nth-child(3) { animation-delay: .24s; }
+
+/* ---------- Poster type ---------- */
+.v2-display { font-family: var(--font-display); font-weight: 800; font-optical-sizing: auto; letter-spacing: -.035em; line-height: .96; color: var(--v2-ink); }
+.v2-poster-name { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; line-height: .9; color: #fff; }
+.v2-kicker { font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--v2-ink); }
+.v2-kicker--dim { color: var(--sand-500); }
+.v2-price { font-family: var(--font-display); font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+
+/* ---------- Human-checked stamp ---------- */
+.v2-stamp { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--sea-600); border: 1.5px solid currentColor; border-radius: 6px; padding: 6px 10px; transform: rotate(-1.2deg); }
+
+/* ---------- Editorial index rows ---------- */
+.v2-row { display: grid; grid-template-columns: 64px 1fr auto auto; gap: 24px; align-items: baseline; padding: 26px 8px; border-top: 1px solid var(--line); cursor: pointer; position: relative; transition: background .25s var(--ink-ease), color .25s var(--ink-ease), padding-left .25s var(--ink-ease); }
+.v2-row:hover { background: var(--v2-ink); color: var(--v2-paper); padding-left: 22px; }
+.v2-row:hover .v2-row-name, .v2-row:hover .v2-row-price { color: var(--v2-paper); }
+.v2-row:hover .v2-row-meta { color: var(--sand-300); }
+.v2-row .no { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--sand-400); }
+.v2-row-name { font-family: var(--font-display); font-weight: 800; font-size: var(--d-index); letter-spacing: -.025em; line-height: 1; color: var(--v2-ink); }
+.v2-row-meta { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; color: var(--sand-500); }
+.v2-row-price { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px,2.6vw,32px); letter-spacing: -.03em; color: var(--v2-ink); }
+.v2-row .go { position: absolute; right: 10px; top: 50%; transform: translate(8px,-50%); opacity: 0; transition: all .25s var(--ink-ease); display: inline-flex; width: 10px; height: 10px; border-radius: 50%; background: var(--v2-amber); }
+.v2-row:hover .go { opacity: 1; transform: translate(0,-50%); }

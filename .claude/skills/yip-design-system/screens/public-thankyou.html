@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip — you're in</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  body { background: var(--sand-100); }
+  .tick { width: 72px; height: 72px; border-radius: 50%; background: var(--sea-50); color: var(--sea-600); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+  .tick svg { width: 36px; height: 36px; }
+  .social { display: flex; gap: 10px; }
+  .social a { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 13px; border: 1.5px solid var(--line); border-radius: var(--radius-md); background: var(--bg-surface); font-size: 14px; font-weight: 600; color: var(--fg-1); }
+  .social a svg { width: 17px; height: 17px; }
+</style>
+</head>
+<body>
+<div class="pub">
+<div class="phone" data-screen-label="Public · Thank you">
+
+  <header class="pub-hdr">
+    <a href="public-home.html"><span class="yip-logo" style="font-size:26px">yıp</span></a>
+  </header>
+
+  <div class="pub-pad" style="padding-top:34px;text-align:center">
+    <div class="tick"><i data-lucide="check"></i></div>
+    <h1 style="font-family:var(--font-display);font-weight:800;font-size:30px;letter-spacing:-.02em;margin:0 0 8px">You're in! 🎉</h1>
+    <p style="font-size:16px;color:var(--fg-2);line-height:1.5;margin:0 auto;max-width:32ch">Check your inbox to confirm your email — then we'll start sending the best Baltic flight deals your way.</p>
+  </div>
+
+  <div class="pub-pad" style="padding-top:18px">
+    <div class="step" style="background:var(--amber-50);border-color:var(--amber-100)">
+      <span class="n"><i data-lucide="mail" style="width:15px;height:15px"></i></span>
+      <div><h4>One quick step</h4><p>Tap the confirm link in the email from Yip so we know it's really you.</p></div>
+    </div>
+  </div>
+
+  <div class="pub-pad" style="padding-top:6px">
+    <div class="fgroup-label" style="padding:0;margin-bottom:10px">While you wait — follow along</div>
+    <div class="social">
+      <a href="#"><i data-lucide="music"></i> TikTok</a>
+      <a href="#"><i data-lucide="send"></i> Telegram</a>
+      <a href="#"><i data-lucide="instagram"></i> Insta</a>
+    </div>
+  </div>
+
+  <div class="pub-pad" style="padding-top:18px">
+    <div class="sec-head" style="margin-bottom:12px"><h2>Live right now</h2><a href="public-listing.html">All →</a></div>
+    <a class="mdeal" href="public-detail.html" style="display:block">
+      <div style="display:flex;gap:12px;padding:12px">
+        <span class="photo" style="width:70px;height:70px;border-radius:12px;flex:none;background:linear-gradient(150deg,#EFA227,#D63E22 70%,#9C520A)"></span>
+        <div style="flex:1;min-width:0">
+          <div class="meta" style="font-size:11px">VNO → LCA · 14–21 Oct</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin:3px 0 6px">Larnaca, Cyprus</div>
+          <span class="price-badge" style="font-size:18px">€59<s>€102</s></span>
+        </div>
+      </div>
+    </a>
+    <a class="mdeal" href="public-detail.html" style="display:block">
+      <div style="display:flex;gap:12px;padding:12px">
+        <span class="photo" style="width:70px;height:70px;border-radius:12px;flex:none;background:linear-gradient(150deg,#ED7660,#B53017 70%,#4A4034)"></span>
+        <div style="flex:1;min-width:0">
+          <div class="meta" style="font-size:11px">VNO → VIE · 5–8 Dec</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin:3px 0 6px">Vienna, Austria</div>
+          <span class="price-badge" style="font-size:18px">€45<s>€88</s></span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <footer class="pub-ftr">
+    <span class="yip-logo yip-logo--light" style="font-size:24px">yıp</span>
+    <div class="links"><a href="public-listing.html">All deals</a><a href="public-about.html">About</a><a href="#">Manage preferences</a></div>
+    <div class="legal">© 2026 Yip · Curated in Vilnius 🇱🇹</div>
+  </footer>
+
+</div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

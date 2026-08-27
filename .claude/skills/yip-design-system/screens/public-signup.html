@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip — get deals by email</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  body { background: var(--sand-100); }
+  .pref { display: flex; align-items: center; gap: 11px; padding: 13px 15px; border: 1.5px solid var(--line); border-radius: var(--radius-md); margin-bottom: 9px; cursor: pointer; background: var(--bg-surface); }
+  .pref.sel { border-color: var(--amber-500); background: var(--amber-50); }
+  .pref .box { width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--sand-300); flex: none; display: inline-flex; align-items: center; justify-content: center; }
+  .pref .box svg { width: 14px; height: 14px; color: #fff; opacity: 0; }
+  .pref.sel .box { background: var(--amber-500); border-color: var(--amber-500); } .pref.sel .box svg { opacity: 1; }
+  .pref .t { font-weight: 600; font-size: 15px; }
+  .pref .d { font-size: 12.5px; color: var(--fg-2); }
+  .dots { display: flex; gap: 6px; justify-content: center; margin: 18px 0; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+  .dots span.on { background: var(--amber-500); width: 22px; border-radius: 999px; }
+</style>
+</head>
+<body>
+<div class="pub">
+<div class="phone" data-screen-label="Public · Newsletter signup" style="display:flex;flex-direction:column">
+
+  <header class="pub-hdr">
+    <a href="public-home.html"><span class="yip-logo" style="font-size:26px">yıp</span></a>
+    <a href="public-listing.html" style="font-size:14px;font-weight:600;color:var(--fg-2)">Skip</a>
+  </header>
+
+  <div class="pub-pad" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+
+    <!-- STEP 1 -->
+    <div id="step1">
+      <div style="text-align:center;margin-bottom:8px"><span class="eyebrow">Join the club</span></div>
+      <h1 style="font-family:var(--font-display);font-weight:800;font-size:32px;line-height:1.06;text-align:center;letter-spacing:-.02em;margin:6px 0 10px">Good deals,<br>straight to your inbox.</h1>
+      <p style="text-align:center;font-size:15px;color:var(--fg-2);line-height:1.5;margin:0 auto 22px;max-width:34ch">A few hand-checked flight deals a week from the Baltics. No spam. Unsubscribe anytime.</p>
+      <input class="field" type="email" placeholder="you@email.com" style="text-align:center;font-size:17px;margin-bottom:10px">
+      <button class="btn btn-primary btn-block btn-lg" onclick="document.getElementById('step1').style.display='none';document.getElementById('step2').style.display='block'">Continue <i data-lucide="arrow-right"></i></button>
+      <div class="trust-row" style="margin-top:18px;align-items:center">
+        <div class="t" style="justify-content:center"><i data-lucide="hand"></i> Every deal manually checked</div>
+        <div class="t" style="justify-content:center"><i data-lucide="users"></i> 12,400+ Baltic travelers</div>
+      </div>
+      <div class="dots"><span class="on"></span><span></span></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step2" style="display:none">
+      <h1 style="font-family:var(--font-display);font-weight:800;font-size:28px;line-height:1.08;letter-spacing:-.02em;margin:0 0 6px">Almost there — what should we send?</h1>
+      <p style="font-size:14px;color:var(--fg-2);margin:0 0 20px">Tune it now or later. You can change this anytime.</p>
+
+      <div class="fgroup-label" style="padding:0;margin-bottom:8px">Preferred airports</div>
+      <div class="pref sel"><span class="box"><i data-lucide="check"></i></span><div><div class="t">Vilnius (VNO)</div></div></div>
+      <div class="pref sel"><span class="box"><i data-lucide="check"></i></span><div><div class="t">Kaunas (KUN)</div></div></div>
+      <div class="pref"><span class="box"><i data-lucide="check"></i></span><div><div class="t">Riga (RIX)</div></div></div>
+
+      <div class="fgroup-label" style="padding:0;margin:16px 0 8px">Deal types</div>
+      <div class="pref sel"><span class="box"><i data-lucide="check"></i></span><div><div class="t">☀️ Sun trips</div><div class="d">Beach &amp; warm-weather escapes</div></div></div>
+      <div class="pref"><span class="box"><i data-lucide="check"></i></span><div><div class="t">🏙 City breaks</div><div class="d">Weekends in great cities</div></div></div>
+      <div class="pref sel"><span class="box"><i data-lucide="check"></i></span><div><div class="t">⚡ Last-minute</div><div class="d">Leaving in the next 10 days</div></div></div>
+
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px" onclick="window.location='public-thankyou.html'">Finish — get my deals</button>
+      <div class="dots"><span></span><span class="on"></span></div>
+    </div>
+
+  </div>
+</div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+  document.querySelectorAll('.pref').forEach(p => p.addEventListener('click', () => p.classList.toggle('sel')));
+</script>
+</body>
+</html>

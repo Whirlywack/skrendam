@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Review room</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  .rr { display: grid; grid-template-columns: 1fr 330px; gap: 22px; align-items: start; }
+  .sumhead { height: 150px; position: relative; }
+  .sumhead .cap { position: absolute; left: 22px; bottom: 16px; z-index: 2; color: #fff; }
+  .sumhead .cap .e { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .92; }
+  .sumhead .cap h2 { font-family: var(--font-display); font-weight: 800; font-size: 30px; margin: 4px 0 0; text-shadow: 0 1px 8px rgba(0,0,0,.4); }
+  .route { display: flex; align-items: center; gap: 0; padding: 20px 22px; }
+  .route .leg { text-align: center; }
+  .route .leg .code { font-family: var(--font-display); font-weight: 800; font-size: 24px; }
+  .route .leg .time { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); margin-top: 2px; }
+  .route .line { flex: 1; border-top: 2px dashed var(--sand-300); position: relative; margin: 0 16px; }
+  .route .line .pl { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-surface); padding: 0 6px; color: var(--sea-500); }
+  .route .line .pl svg { width: 18px; height: 18px; display: block; }
+  .route .line .lab { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); white-space: nowrap; text-transform: uppercase; }
+  .baseline { padding: 0 22px 20px; }
+  .bl-track { height: 12px; border-radius: 999px; background: var(--sand-150); position: relative; margin: 10px 0 6px; }
+  .bl-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--sea-500); }
+  .bl-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--fg-2); }
+  .sec-block { margin-top: 22px; }
+  .sec-block > h4 { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); margin: 0 0 12px; }
+  .copybox { background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; }
+  .copybox .cb-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--fg-2); margin-bottom: 9px; }
+  .copybox .cb-head svg { width: 14px; height: 14px; color: var(--sea-600); }
+  .copybox .cb-head .spacer { flex: 1; }
+  .copybox .cb-head .copy { font-size: 12px; font-weight: 600; color: var(--sea-600); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .opt { display: flex; gap: 9px; align-items: flex-start; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 7px; cursor: pointer; }
+  .opt.sel { border-color: var(--amber-500); background: var(--amber-50); }
+  .opt .radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--sand-300); flex: none; margin-top: 2px; position: relative; }
+  .opt.sel .radio { border-color: var(--amber-500); } .opt.sel .radio::after { content:""; position:absolute; inset:3px; border-radius:50%; background:var(--amber-500); }
+  .opt .t { font-size: 14px; line-height: 1.35; }
+  .draft { font-size: 14px; line-height: 1.55; color: var(--fg-1); }
+  .rail .card { background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 16px; }
+  .rail h5 { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-3); margin: 0 0 10px; }
+  .who-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="adm" data-screen-label="Admin · Review room">
+  <aside class="asb">
+    <div class="brand"><span class="yip-logo" style="font-size:24px">yıp</span><span class="tag">Deal Desk</span></div>
+    <div class="grp">Workspace</div>
+    <a class="navi" href="admin-today.html"><i data-lucide="layout-dashboard"></i> Today</a>
+    <a class="navi on" href="admin-queue.html"><i data-lucide="inbox"></i> Deal queue <span class="badge">7</span></a>
+    <a class="navi" href="#"><i data-lucide="send"></i> Published</a>
+    <div class="grp">Strategy</div>
+    <a class="navi" href="#"><i data-lucide="layout-template"></i> Templates</a>
+    <a class="navi" href="admin-template-builder.html"><i data-lucide="wand-2"></i> Template builder</a>
+    <a class="navi" href="#"><i data-lucide="users"></i> Audience</a>
+    <a class="navi" href="#"><i data-lucide="calendar-days"></i> Travel moments</a>
+    <a class="navi" href="#"><i data-lucide="map"></i> Routes &amp; zones</a>
+    <div class="grp">System</div>
+    <a class="navi" href="#"><i data-lucide="activity"></i> Scan health</a>
+    <div class="who"><span class="av">TK</span><div><div class="nm">Tomas K.</div><div class="ro">Founder · Vilnius</div></div></div>
+  </aside>
+
+  <div class="amain">
+    <div class="atop">
+      <a class="iconbtn" href="admin-queue.html" style="width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg-surface);display:inline-flex;align-items:center;justify-content:center;color:var(--fg-2)"><i data-lucide="arrow-left" style="width:16px;height:16px"></i></a>
+      <div><h1>Larnaca, Cyprus</h1><div class="sub">Review room · candidate #VNO-CY-204 · matched <b>Last warm days</b></div></div>
+      <span class="spacer"></span>
+      <button class="btn btn-danger btn-sm"><i data-lucide="x"></i> Reject</button>
+      <button class="btn btn-outline btn-sm">Maybe</button>
+      <button class="btn btn-outline btn-sm"><i data-lucide="rotate-cw"></i> Recheck</button>
+      <button class="btn btn-outline btn-sm">Save draft</button>
+      <button class="btn btn-primary btn-sm" id="openPublish"><i data-lucide="check"></i> Approve &amp; publish</button>
+    </div>
+
+    <div class="abody">
+      <div class="rr">
+
+        <!-- LEFT -->
+        <div>
+          <!-- flight summary -->
+          <div class="panel">
+            <div class="photo sumhead" style="background:linear-gradient(150deg,#EFA227,#D63E22 70%,#9C520A)">
+              <span class="hot-tag" style="position:absolute;top:14px;right:14px;z-index:3"><i data-lucide="flame"></i> Going fast</span>
+              <div class="grad"></div>
+              <div class="cap"><div class="e">Last warm week · September sun</div><h2>Larnaca, Cyprus</h2></div>
+            </div>
+            <div class="route">
+              <div class="leg"><div class="code">VNO</div><div class="time">Sat 14 · 10:05</div></div>
+              <div class="line"><span class="lab">Direct · 4h00</span><span class="pl"><i data-lucide="plane"></i></span></div>
+              <div class="leg"><div class="code">LCA</div><div class="time">Sat 14 · 14:05</div></div>
+              <div style="width:24px"></div>
+              <div class="leg"><div class="code">LCA</div><div class="time">Tue 21 · 21:10</div></div>
+              <div class="line"><span class="lab">Direct · 4h30</span><span class="pl"><i data-lucide="plane" style="transform:scaleX(-1)"></i></span></div>
+              <div class="leg"><div class="code">VNO</div><div class="time">Tue 21 · 23:40</div></div>
+            </div>
+            <div class="baseline">
+              <div class="bl-row" style="margin-bottom:2px"><span><b style="color:var(--fg-1)">Price vs baseline</b></span><span>90-day median <b style="color:var(--fg-1)">€102</b></span></div>
+              <div class="bl-track"><div class="bl-fill" style="width:58%"></div></div>
+              <div class="bl-row"><span class="mono" style="color:var(--sea-700);font-weight:700">€59 now · 42% below</span><span class="mono">low €54 · high €148</span></div>
+            </div>
+          </div>
+
+          <!-- why -->
+          <div class="sec-block">
+            <h4>Why Yip suggests it</h4>
+            <div class="reasons">
+              <div class="reason good"><i data-lucide="trending-down"></i> 42% below the 90-day median for these dates — a real drop, not noise.</div>
+              <div class="reason good"><i data-lucide="plane"></i> Direct both ways with Wizz Air; no self-transfer risk.</div>
+              <div class="reason good"><i data-lucide="sun"></i> Shoulder season: ~27°C, warm sea, far fewer crowds than August.</div>
+              <div class="reason good"><i data-lucide="armchair"></i> Seat availability healthy on the cheap fare class.</div>
+            </div>
+          </div>
+
+          <!-- caveats -->
+          <div class="sec-block">
+            <h4>Caveats to disclose</h4>
+            <div class="reasons">
+              <div class="reason flag"><i data-lucide="luggage"></i> Hand luggage only — checked bag adds ~€25 each way.</div>
+              <div class="reason flag"><i data-lucide="clock"></i> Return lands at 23:40; last public transport into Vilnius is tight.</div>
+            </div>
+          </div>
+
+          <!-- suggested copy -->
+          <div class="sec-block">
+            <h4>Suggested copy · AI-assisted, you approve</h4>
+
+            <div class="copybox">
+              <div class="cb-head"><i data-lucide="type"></i> Headline <span class="spacer"></span></div>
+              <div class="opt sel"><span class="radio"></span><span class="t">€59 return to Cyprus — last warm week of the year</span></div>
+              <div class="opt"><span class="radio"></span><span class="t">Sun's still out in Cyprus, and the crowds have gone — €59</span></div>
+              <div class="opt"><span class="radio"></span><span class="t">Sneak a Cyprus week in before winter: €59 return from Vilnius</span></div>
+            </div>
+
+            <div class="copybox">
+              <div class="cb-head"><i data-lucide="music"></i> TikTok hook <span class="spacer"></span><span class="copy"><i data-lucide="copy"></i> Copy</span></div>
+              <div class="draft">POV: it's 6°C in Vilnius but you just found €59 returns to 27°C Cyprus 🌴 link in bio before it's gone</div>
+            </div>
+
+            <div class="copybox">
+              <div class="cb-head"><i data-lucide="mail"></i> Newsletter snippet <span class="spacer"></span><span class="copy"><i data-lucide="copy"></i> Copy</span></div>
+              <div class="draft">We dug up a €59 return to Larnaca for the last warm week of October — direct from Vilnius, 42% under the usual fare. Hand luggage only and the return lands late, but the sea's still warm and the beaches are empty.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT RAIL -->
+        <div class="rail">
+          <div class="card" style="display:flex;align-items:center;gap:14px">
+            <span class="score hi" style="width:58px;height:58px;font-size:22px">92<small>SCORE</small></span>
+            <div><div style="font-weight:700;font-size:15px">Strong candidate</div><div style="font-size:12.5px;color:var(--fg-2)">High confidence — worth publishing.</div></div>
+          </div>
+
+          <div class="card">
+            <h5>Matched templates</h5>
+            <div class="who-chips"><span class="tag tag-amber"><i data-lucide="sun"></i> Last warm days</span><span class="tag tag-sea">September sun</span></div>
+          </div>
+
+          <div class="card">
+            <h5>Who this is for</h5>
+            <div class="who-chips"><span class="tag">Couples</span><span class="tag">Flexible adults</span><span class="tag">Sun-seekers</span></div>
+          </div>
+
+          <div class="card">
+            <h5>Booking</h5>
+            <a class="btn btn-outline btn-block btn-sm" href="#" onclick="return false"><i data-lucide="external-link"></i> Open deep link · Wizz Air</a>
+            <div class="mono" style="font-size:11px;color:var(--fg-3);margin-top:8px;word-break:break-all">wizzair.com/…/VNO-LCA?d=2026-10-14</div>
+          </div>
+
+          <div class="card">
+            <h5>Verification history</h5>
+            <div class="timeline">
+              <div class="tl-item"><span class="tl-dot sea"><i data-lucide="search"></i></span><div class="tl-body"><div class="t">Found by scanner</div><div class="d">Today · 13:52 · auto</div></div></div>
+              <div class="tl-item"><span class="tl-dot sea"><i data-lucide="check"></i></span><div class="tl-body"><div class="t">Price re-verified live</div><div class="d">Today · 13:54 · €59 confirmed</div></div></div>
+              <div class="tl-item"><span class="tl-dot amber"><i data-lucide="eye"></i></span><div class="tl-body"><div class="t">Opened for review</div><div class="d">Today · 14:01 · Tomas</div></div></div>
+              <div class="tl-item"><span class="tl-dot sand"><i data-lucide="circle-dashed"></i></span><div class="tl-body"><div class="t">Awaiting approval</div><div class="d">—</div></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PUBLISH SIDE PANEL -->
+  <div class="overlay" id="overlay" style="display:none"></div>
+  <aside class="sidepanel" id="publish" style="display:none">
+    <div class="sp-head">
+      <i data-lucide="send" style="width:18px;height:18px;color:var(--amber-600)"></i>
+      <h2>Publish deal</h2>
+      <button class="x" id="closePublish"><i data-lucide="x" style="width:18px;height:18px"></i></button>
+    </div>
+    <div class="sp-body">
+      <div class="formrow">
+        <label>Headline</label>
+        <input class="field" value="€59 return to Cyprus — last warm week of the year">
+      </div>
+      <div class="formrow">
+        <label>Short summary <span class="hint">· shown in listings</span></label>
+        <input class="field" value="Direct from Vilnius, mid-October. Sun's still 27°C and the crowds have gone home.">
+      </div>
+      <div class="formrow">
+        <label>Body</label>
+        <textarea class="field" rows="4">A genuinely good shoulder-season week. Book the Saturday outbound; the Tuesday return is the cheapest leg. Hand luggage only — add a checked bag for ~€25.</textarea>
+      </div>
+      <div class="formrow">
+        <label>TikTok hook</label>
+        <textarea class="field" rows="2">POV: it's 6°C in Vilnius but you just found €59 returns to 27°C Cyprus 🌴 link in bio</textarea>
+      </div>
+      <div class="formrow">
+        <label>Newsletter snippet</label>
+        <textarea class="field" rows="3">We dug up a €59 return to Larnaca for the last warm week of October — direct from Vilnius, 42% under usual.</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="formrow"><label>Public category</label>
+          <select class="field"><option>Last warm days</option><option>September sun</option><option>City breaks</option></select>
+        </div>
+        <div class="formrow"><label>Valid until</label><input class="field" type="text" value="21 Oct 2026"></div>
+      </div>
+      <div class="formrow">
+        <label>Booking URL</label>
+        <input class="field" value="https://wizzair.com/…/VNO-LCA">
+      </div>
+      <div class="formrow">
+        <label>Visibility</label>
+        <div class="seg" style="width:100%"><button class="on" style="flex:1">Public</button><button style="flex:1">Newsletter only</button><button style="flex:1">Premium</button></div>
+      </div>
+    </div>
+    <div class="sp-foot">
+      <button class="btn btn-outline" id="cancelPublish">Cancel</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-outline">Save draft</button>
+      <button class="btn btn-primary"><i data-lucide="check"></i> Publish now</button>
+    </div>
+  </aside>
+
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+  const ov = document.getElementById('overlay'), pp = document.getElementById('publish');
+  const open = () => { ov.style.display='block'; pp.style.display='flex'; };
+  const close = () => { ov.style.display='none'; pp.style.display='none'; };
+  document.getElementById('openPublish').addEventListener('click', open);
+  document.getElementById('closePublish').addEventListener('click', close);
+  document.getElementById('cancelPublish').addEventListener('click', close);
+  ov.addEventListener('click', close);
+  document.querySelectorAll('.opt').forEach(o => o.addEventListener('click', () => {
+    o.parentElement.querySelectorAll('.opt').forEach(x => x.classList.remove('sel')); o.classList.add('sel');
+  }));
+  document.querySelectorAll('.seg').forEach(s => s.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    s.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on');
+  }));
+</script>
+</body>
+</html>
