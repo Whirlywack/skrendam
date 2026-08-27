@@ -14,6 +14,7 @@ from skrendam.fli_adapter.health import HealthVerdict, assess, health_json
 from skrendam.fli_adapter.pacing import CircuitBreaker
 from skrendam.scanning import baseline as baseline_mod
 from skrendam.scanning import content as content_mod
+from skrendam.scanning.checkpoint import ScanCheckpoint
 from skrendam.scanning.dedup import deal_group_key
 from skrendam.scanning.history import DbPriceHistory
 from skrendam.scanning.resolver import resolve
@@ -84,6 +85,7 @@ def run_scan(
     tail_rotation_days: int = 10,
     all_routes: bool = False,
     now: datetime | None = None,
+    checkpoint: "ScanCheckpoint | None" = None,
 ) -> ScanSummary:
     # Production callers (cli, worker) pass the real wall clock so same-day runs
     # get distinct timestamps (earlier runs stay visible in price history and
@@ -113,13 +115,22 @@ def run_scan(
         "tail": len(routes) - core_n,
         "specs_planned": sum(len(s) for _, s in spec_lists),
     }
+    if checkpoint is not None and checkpoint.done:
+        plan["resumed_from_checkpoint"] = len(checkpoint.done)
 
     aborted = False
+    skipped_specs = 0
     for _tpl, specs in spec_lists:  # _tpl reserved for future per-template plan metadata
         if aborted:
             break
         summary.templates_scanned += 1
         for spec in specs:
+            # Resume: an earlier attempt TODAY already scanned and committed this
+            # spec — skip it so retry mornings cost ~1 pass of Google load, not N
+            # (BotGuard punishes repetition; see scanning/checkpoint.py).
+            if checkpoint is not None and checkpoint.is_done(spec):
+                skipped_specs += 1
+                continue
             summary.routes_scanned += 1
             try:
                 points = adapter.search_calendar(spec)
@@ -151,6 +162,10 @@ def run_scan(
                 )
             base = baseline_mod.compute_baseline(points)
             if base is None:
+                # Calendar scanned and rows staged: still a finished spec.
+                session.commit()
+                if checkpoint is not None:
+                    checkpoint.mark(spec)
                 continue
             for p in _flagged(points, base, zone):
                 # Window-relative: counted against THIS spec's calendar points; a second
@@ -192,6 +207,13 @@ def run_scan(
                 )
             if aborted:
                 break
+            # Checkpoint boundary: commit THIS spec's work, then record it done.
+            # Order matters — a death between the two just redoes one spec; the
+            # reverse would skip work that was never persisted. Per-spec commits
+            # also shrink what a mid-run connection death can roll back.
+            session.commit()
+            if checkpoint is not None:
+                checkpoint.mark(spec)
 
     # Persist the scan's findings before the sweep/finalize touch the DB again.
     # The search loop can leave the connection idle long enough for Neon to kill
@@ -213,6 +235,17 @@ def run_scan(
         )
         or 0
     )
+    if skipped_specs:
+        # Resumed attempt: this run's own rows only cover the remainder, which
+        # would false-trigger the cliff detector. Judge the DAY's harvest.
+        price_rows = (
+            session.scalar(
+                select(func.count())
+                .select_from(models.PriceLog)
+                .where(models.PriceLog.scanned_at >= datetime(today.year, today.month, today.day))
+            )
+            or 0
+        )
     # degraded runs count as a cliff baseline on purpose: CLIFF_PRIOR_MIN_ROWS guards
     # against a low-data baseline, and sustained outages are the ratio signal's job.
     prior_run_id = session.scalar(
