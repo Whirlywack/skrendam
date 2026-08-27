@@ -27,12 +27,12 @@ export function CaptureBand() {
       <div className="bcol">
         <h2>
           {done
-            ? "You're in — check your inbox."
+            ? 'Almost there — confirm your email.'
             : 'Get the next rare fare before it sells out.'}
         </h2>
         <p>
           {done
-            ? "We'll send the best deals in one calm weekly email."
+            ? "We've emailed you a confirm link. Tap it and the weekly deals start landing."
             : 'Best rare fares in one calm weekly email. No spam, unsubscribe anytime.'}
         </p>
       </div>

@@ -15,11 +15,11 @@ export interface FaqItem {
 export const HOME_FAQ: FaqItem[] = [
   {
     q: 'Is it free?',
-    a: 'Yes — the weekly email is free. "Early alerts" (the fastest fares) is a paid tier coming soon; join the waitlist.',
+    a: 'Yes — the weekly email is free. "Early alerts" (the fastest fares) is free to join while it\'s getting started; a paid tier may come later, and waitlist members hear first.',
   },
   {
     q: 'How do you find these?',
-    a: "We scan fares constantly and a human checks each one is real before it reaches you. We're a local curator, not a search engine.",
+    a: "We track prices on every route daily and a human checks each fare is real before it reaches you. We're a local curator, not a search engine.",
   },
   {
     q: 'Do I book with Yip?',

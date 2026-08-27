@@ -18,8 +18,10 @@ export function PriceSparkline({ stats, todayPrice }: { stats: PriceStats; today
         </div>
       </div>
       <div className="rangelbl">
-        <span>best <b>&euro;{stats.low}</b></span>
-        <span>typical <b>&euro;{stats.median}</b></span>
+        {/* Show "best" only when today IS the best — a lower historical price
+            under the live one argues against booking (journey audit 08-28). */}
+        {todayPrice <= stats.low && <span>best we&rsquo;ve seen</span>}
+        <span>90-day typical <b>&euro;{stats.median}</b></span>
         <span>highest <b>&euro;{stats.high}</b></span>
       </div>
     </div>

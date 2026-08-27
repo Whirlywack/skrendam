@@ -5,7 +5,8 @@ export function Header() {
       <nav aria-label="Site">
         <a href="/">Deals</a>
         <a href="/collections">Collections</a>
-        <a href="/past-deals">Past fares</a>
+        {/* "Past fares" returns to the nav once real expired deals exist —
+            a proof page with zero proof converts worse than no link (audit 08-28) */}
         <a href="/#how">How it works</a>
       </nav>
       <span className="sp" />

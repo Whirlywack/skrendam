@@ -22,7 +22,7 @@ export function ProcessBand() {
             </svg>
           </div>
           <h4>Find</h4>
-          <p>We scan every fare from VNO/KUN/RIX for real anomalies.</p>
+          <p>We track every fare from VNO/KUN/RIX for real anomalies.</p>
         </div>
 
         {/* Step 2: Check */}
