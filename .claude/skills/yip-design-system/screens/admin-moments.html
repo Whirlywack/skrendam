@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Travel moments</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  .yhead { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; margin-bottom: 8px; }
+  .ymonths { display: grid; grid-template-columns: repeat(12, 1fr); }
+  .ymonths span { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); text-transform: uppercase; text-align: center; }
+  .yrow { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: center; margin-bottom: 10px; }
+  .yrow .lab { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+  .yrow .lab svg { width: 16px; height: 16px; color: var(--fg-2); }
+  .ytrack { position: relative; height: 38px; background: var(--bg-surface); border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+    background-image: repeating-linear-gradient(to right, transparent, transparent calc(8.333% - 1px), var(--line-soft) calc(8.333% - 1px), var(--line-soft) 8.333%); }
+  .bar { position: absolute; top: 5px; bottom: 5px; border-radius: 7px; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; padding: 0 9px; white-space: nowrap; overflow: hidden; box-shadow: var(--shadow-xs); }
+  .now { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--coral-500); z-index: 5; }
+  .now::after { content: "NOW"; position: absolute; top: -16px; left: -10px; font-family: var(--font-mono); font-size: 9px; font-weight: 700; color: var(--coral-600); }
+</style>
+</head>
+<body data-nav="moments">
+<div class="adm" data-screen-label="Admin · Travel moments">
+  <aside class="asb" id="asb"></aside>
+  <div class="amain">
+    <div class="atop">
+      <div><h1>Travel moments</h1><div class="sub">Seasonal windows that drive demand. Templates wake up around these.</div></div>
+      <span class="spacer"></span>
+      <span class="mono" style="font-size:12px;color:var(--fg-3)">2026</span>
+      <button class="btn btn-primary btn-sm"><i data-lucide="plus"></i> New moment</button>
+    </div>
+    <div class="abody">
+      <div class="panel" style="padding:20px 22px">
+
+        <div class="yhead">
+          <span></span>
+          <div class="ymonths"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span></div>
+        </div>
+
+        <div style="position:relative">
+          <!-- now marker positioned ~ early June (45%) -->
+          <div class="now" style="left:calc(150px + 16px + 45% * (100% - 166px) / 100); display:none"></div>
+
+          <div class="yrow"><div class="lab"><i data-lucide="backpack"></i> School holidays</div>
+            <div class="ytrack">
+              <div class="bar" style="left:0;width:8.333%;background:var(--sand-500)">Winter</div>
+              <div class="bar" style="left:25%;width:8.333%;background:var(--sand-500)">Easter</div>
+              <div class="bar" style="left:41.6%;width:25%;background:var(--sand-500)">Summer break</div>
+            </div>
+          </div>
+
+          <div class="yrow"><div class="lab"><i data-lucide="calendar-clock"></i> Long weekends</div>
+            <div class="ytrack">
+              <div class="bar" style="left:8.3%;width:6%;background:var(--sea-400)">Feb 16</div>
+              <div class="bar" style="left:24%;width:6%;background:var(--sea-400)">Easter</div>
+              <div class="bar" style="left:58%;width:6%;background:var(--sea-400)">Jul 6</div>
+              <div class="bar" style="left:83%;width:6%;background:var(--sea-400)">Nov 1</div>
+            </div>
+          </div>
+
+          <div class="yrow"><div class="lab"><i data-lucide="sun"></i> Sun &amp; beach</div>
+            <div class="ytrack">
+              <div class="bar" style="left:41.6%;width:33.3%;background:var(--amber-500)">Summer holidays</div>
+              <div class="bar" style="left:66.6%;width:8.333%;background:var(--coral-400)">September sun</div>
+            </div>
+          </div>
+
+          <div class="yrow"><div class="lab"><i data-lucide="sunset"></i> Last warm days</div>
+            <div class="ytrack">
+              <div class="bar" style="left:75%;width:8.333%;background:var(--coral-500)">October</div>
+              <div class="bar" style="left:83.3%;width:8.333%;background:var(--amber-600)">November sun</div>
+            </div>
+          </div>
+
+          <div class="yrow"><div class="lab"><i data-lucide="snowflake"></i> Christmas markets</div>
+            <div class="ytrack">
+              <div class="bar" style="left:87.5%;width:12.5%;background:var(--sea-600)">Late Nov – Dec</div>
+            </div>
+          </div>
+
+        </div>
+
+        <p style="font-size:13px;color:var(--fg-3);margin:18px 0 0;line-height:1.5">Bars show when each moment's deals should be live. The scanner ramps a template up ~6–10 weeks before its window opens, so deals publish while there's still time to book.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="sidebar.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

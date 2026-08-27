@@ -1,0 +1,27 @@
+<!-- @dsCard group="Components" viewport="700x360" name="DealTicket (exported)" subtitle="The signature boarding-pass deal card — window.YipDesignSystem_bc53ee.DealTicket" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>html,body{margin:0}.card{width:700px;box-sizing:border-box;background:var(--bg-page);padding:24px;display:flex;gap:20px;justify-content:center}</style>
+</head>
+<body>
+<div class="card" id="dt-mount"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<script>
+  const NS = window.YipDesignSystem_bc53ee;
+  if (NS && NS.DealTicket) {
+    const e = React.createElement;
+    ReactDOM.createRoot(document.getElementById("dt-mount")).render(
+      e(React.Fragment, null,
+        e(NS.DealTicket, { hot: true }),
+        e(NS.DealTicket, { place: "Vienna", country: "Austria", origin: "Vilnius", from: "VNO", to: "VIE", dates: "5–8 Dec", legs: "Direct · 1h45", airline: "Ryanair", price: 45, usual: 88, eyebrow: "Christmas markets", headline: "Vienna market weekend for €45", gradient: "linear-gradient(150deg,#ED7660,#B53017 70%,#4A4034)" })
+      )
+    );
+  }
+</script>
+</body>
+</html>

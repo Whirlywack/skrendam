@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip — screens</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  body { background: var(--bg-page); }
+  .launch { max-width: 1120px; margin: 0 auto; padding: 48px 32px 64px; }
+  .lh { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .launch h1 { font-family: var(--font-display); font-weight: 800; font-size: 40px; letter-spacing: -.025em; margin: 18px 0 6px; }
+  .launch .lead { font-size: 17px; color: var(--fg-2); max-width: 62ch; line-height: 1.5; margin: 0 0 36px; }
+  .grp-title { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--sea-700); margin: 32px 0 14px; }
+  .grp-title .ln { flex: 1; height: 1px; background: var(--line); }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .scard { display: block; background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+  .scard:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .scard .thumb { height: 92px; display: flex; align-items: center; justify-content: center; color: #fff; position: relative; }
+  .scard .thumb svg { width: 30px; height: 30px; opacity: .95; }
+  .scard .thumb .n { position: absolute; top: 9px; left: 11px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; opacity: .8; }
+  .scard .b { padding: 12px 14px 14px; }
+  .scard h3 { font-family: var(--font-display); font-weight: 700; font-size: 15.5px; margin: 0 0 3px; }
+  .scard p { font-size: 12px; color: var(--fg-2); line-height: 1.4; margin: 0; }
+  .pub-th { background: linear-gradient(150deg,#EFA227,#D63E22 80%); }
+  .adm-th { background: linear-gradient(150deg,#0F7C68,#093D36 80%); }
+  .pill { display:inline-block; font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--amber-100);color:var(--amber-800); }
+</style>
+</head>
+<body>
+<div class="launch">
+  <div class="lh"><span class="yip-logo" style="font-size:30px">yıp</span></div>
+  <span class="pill">Full screen set · built on the Yip design system</span>
+  <h1>Yip — screen designs</h1>
+  <p class="lead">The complete brief, designed: the public deal-browsing site (mobile-first, for TikTok traffic) and the internal Deal Desk where a human approves every deal before it goes live. Click any screen to open it; the flows are interlinked.</p>
+
+  <a class="scard" href="v2-home.html" style="display:flex;align-items:center;gap:18px;margin-bottom:8px;border:1.5px solid var(--sand-900);background:var(--bg-surface)">
+    <div style="width:84px;height:84px;border-radius:18px;flex:none;background:var(--poster-sun,linear-gradient(160deg,#F5B93F,#EE7A1F 48%,#B5390F));display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:800;font-size:30px">№</div>
+    <div style="flex:1"><div style="font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:-.01em">★ V2 — Poster &amp; Bead direction</div><div style="font-size:13.5px;color:var(--fg-2);margin-top:3px">The award-level redesign: travel-poster editorial, huge type, living amber bead. Foundations in <code>v2/poster-bead.css</code>.</div></div>
+    <i data-lucide="arrow-right" style="width:20px;height:20px;color:var(--fg-1)"></i>
+  </a>
+
+  <a class="scard" href="mobile.html" style="display:flex;align-items:center;gap:18px;margin-bottom:8px;border:1.5px solid var(--amber-200);background:var(--amber-50)">
+    <div style="width:84px;height:84px;border-radius:18px;flex:none;background:linear-gradient(150deg,#0F7C68,#093D36);display:flex;align-items:center;justify-content:center;color:#fff"><i data-lucide="smartphone" style="width:32px;height:32px"></i></div>
+    <div style="flex:1"><div style="font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:-.01em">★ Deal Desk — mobile app</div><div style="font-size:13.5px;color:var(--fg-2);margin-top:3px">Native-feel iOS prototype: review &amp; approve deals on the go. Tap a deal, approve via a bottom sheet. Fully interactive.</div></div>
+    <i data-lucide="arrow-right" style="width:20px;height:20px;color:var(--amber-700)"></i>
+  </a>
+
+  <div class="grp-title"><i data-lucide="globe" style="width:15px;height:15px"></i> Public website <span class="ln"></span></div>
+  <div class="cards">
+    <a class="scard" href="public-desktop.html" style="grid-column:span 2"><div class="thumb pub-th"><span class="n">00</span><i data-lucide="monitor"></i></div><div class="b"><h3>Deal selection — desktop ★</h3><p>The client-facing desktop browse: hero, sticky filters &amp; sort, 3-column ticket deal grid, signup band.</p></div></a>
+    <a class="scard" href="public-home.html"><div class="thumb pub-th"><span class="n">01</span><i data-lucide="home"></i></div><div class="b"><h3>Home / landing</h3><p>Promise + signup, latest deals, how it works.</p></div></a>
+    <a class="scard" href="public-listing.html"><div class="thumb pub-th"><span class="n">02</span><i data-lucide="layout-grid"></i></div><div class="b"><h3>Deals listing</h3><p>Browse with airport, type &amp; season filters.</p></div></a>
+    <a class="scard" href="public-detail.html"><div class="thumb pub-th"><span class="n">03</span><i data-lucide="ticket"></i></div><div class="b"><h3>Deal detail</h3><p>Why it's good, the catch, sticky book CTA.</p></div></a>
+    <a class="scard" href="public-category.html"><div class="thumb pub-th"><span class="n">04</span><i data-lucide="folder-open"></i></div><div class="b"><h3>Category page</h3><p>SEO / TikTok landing per template.</p></div></a>
+    <a class="scard" href="public-signup.html"><div class="thumb pub-th"><span class="n">05</span><i data-lucide="mail-plus"></i></div><div class="b"><h3>Newsletter signup</h3><p>Email first, then preferences.</p></div></a>
+    <a class="scard" href="public-thankyou.html"><div class="thumb pub-th"><span class="n">06</span><i data-lucide="party-popper"></i></div><div class="b"><h3>Thank you</h3><p>Confirm inbox, follow, live deals.</p></div></a>
+    <a class="scard" href="public-about.html"><div class="thumb pub-th"><span class="n">07</span><i data-lucide="info"></i></div><div class="b"><h3>About / how it works</h3><p>Trust: we check, you don't search.</p></div></a>
+  </div>
+
+  <div class="grp-title"><i data-lucide="layout-dashboard" style="width:15px;height:15px"></i> Internal Deal Desk · dense desktop <span class="ln"></span></div>
+  <div class="cards">
+    <a class="scard" href="admin-login.html"><div class="thumb adm-th"><span class="n">08</span><i data-lucide="log-in"></i></div><div class="b"><h3>Login</h3><p>Admin-only sign in.</p></div></a>
+    <a class="scard" href="admin-today.html"><div class="thumb adm-th"><span class="n">09</span><i data-lucide="layout-dashboard"></i></div><div class="b"><h3>Today / Command Center</h3><p>What to do today + scan status.</p></div></a>
+    <a class="scard" href="admin-queue.html"><div class="thumb adm-th"><span class="n">10</span><i data-lucide="inbox"></i></div><div class="b"><h3>Deal queue</h3><p>Candidates grouped by template.</p></div></a>
+    <a class="scard" href="admin-candidate.html"><div class="thumb adm-th"><span class="n">11</span><i data-lucide="clipboard-check"></i></div><div class="b"><h3>Review room + Publish</h3><p>Full review + slide-in publish panel.</p></div></a>
+    <a class="scard" href="admin-published.html"><div class="thumb adm-th"><span class="n">12</span><i data-lucide="send"></i></div><div class="b"><h3>Published deals</h3><p>Live / Draft / Expired / Rejected.</p></div></a>
+    <a class="scard" href="admin-templates.html"><div class="thumb adm-th"><span class="n">13</span><i data-lucide="layout-template"></i></div><div class="b"><h3>Deal templates</h3><p>The curation strategies.</p></div></a>
+    <a class="scard" href="admin-template-builder.html"><div class="thumb adm-th"><span class="n">14</span><i data-lucide="wand-2"></i></div><div class="b"><h3>Template builder</h3><p>Wizard for a new strategy.</p></div></a>
+    <a class="scard" href="admin-audience.html"><div class="thumb adm-th"><span class="n">15</span><i data-lucide="users"></i></div><div class="b"><h3>Audience segments</h3><p>Reusable buyer profiles.</p></div></a>
+    <a class="scard" href="admin-moments.html"><div class="thumb adm-th"><span class="n">16</span><i data-lucide="calendar-days"></i></div><div class="b"><h3>Travel moments</h3><p>Seasonal demand calendar.</p></div></a>
+    <a class="scard" href="admin-routes.html"><div class="thumb adm-th"><span class="n">17</span><i data-lucide="map"></i></div><div class="b"><h3>Routes &amp; zones</h3><p>Origins, destinations, thresholds.</p></div></a>
+    <a class="scard" href="admin-scan-health.html"><div class="thumb adm-th"><span class="n">18</span><i data-lucide="activity"></i></div><div class="b"><h3>Scan health</h3><p>Coverage, errors, rate limits.</p></div></a>
+  </div>
+
+  <p style="font-size:13px;color:var(--fg-3);margin-top:36px;line-height:1.5">18 screens across both surfaces, all on the Yip design system (<code style="font-size:12px">colors_and_type.css</code> + <code style="font-size:12px">screens.css</code>). Photos are warm-gradient placeholders — drop real shots into <b>Imagery — drop a photo.html</b> to preview them in context.</p>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

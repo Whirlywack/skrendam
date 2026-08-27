@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Scan health</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body data-nav="scan">
+<div class="adm" data-screen-label="Admin · Scan health">
+  <aside class="asb" id="asb"></aside>
+  <div class="amain">
+    <div class="atop">
+      <div><h1>Scan health</h1><div class="sub">Is the scanner doing its job? Last run, coverage, errors and rate limits.</div></div>
+      <span class="spacer"></span>
+      <button class="btn btn-outline btn-sm"><i data-lucide="settings"></i> Scan settings</button>
+      <button class="btn btn-primary btn-sm"><i data-lucide="refresh-cw"></i> Run scan now</button>
+    </div>
+    <div class="abody">
+
+      <div class="scan" style="margin-bottom:22px">
+        <span class="dot"></span>
+        <span>Last scan completed <b>4 min ago</b> in <b>3m 12s</b> · next scheduled run in <b>26 min</b></span>
+        <span class="spacer"></span>
+        <span class="verified"><i data-lucide="check"></i> Healthy</span>
+      </div>
+
+      <div class="kv-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:22px">
+        <div class="kv"><span class="ic"><i data-lucide="route"></i></span><div><div class="k">Routes scanned</div><div class="v">109</div></div></div>
+        <div class="kv"><span class="ic"><i data-lucide="radio"></i></span><div><div class="k">API calls</div><div class="v">2,143</div></div></div>
+        <div class="kv"><span class="ic"><i data-lucide="sparkles"></i></span><div><div class="k">Candidates found</div><div class="v">7</div></div></div>
+        <div class="kv warn"><span class="ic"><i data-lucide="gauge"></i></span><div><div class="k">429 rate-limits</div><div class="v">11</div></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px">
+        <div class="panel" style="padding:18px 20px">
+          <div class="panel-head" style="padding:0 0 14px;border:none"><h3>Candidates found · last 14 scans</h3></div>
+          <div class="bars">
+            <div class="bar" style="height:30%"></div><div class="bar" style="height:50%"></div>
+            <div class="bar" style="height:20%"></div><div class="bar" style="height:65%"></div>
+            <div class="bar" style="height:40%"></div><div class="bar hi" style="height:85%"></div>
+            <div class="bar" style="height:55%"></div><div class="bar" style="height:35%"></div>
+            <div class="bar" style="height:70%"></div><div class="bar" style="height:45%"></div>
+            <div class="bar" style="height:60%"></div><div class="bar" style="height:25%"></div>
+            <div class="bar" style="height:50%"></div><div class="bar hi" style="height:78%"></div>
+          </div>
+          <div class="mono" style="font-size:11px;color:var(--fg-3);margin-top:10px;display:flex;justify-content:space-between"><span>14 scans ago</span><span>now · 7 found</span></div>
+        </div>
+
+        <div class="panel" style="padding:18px 20px">
+          <div class="panel-head" style="padding:0 0 14px;border:none"><h3>Errors &amp; limits</h3></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="kv warn" style="border:none;padding:10px 0"><span class="ic"><i data-lucide="gauge"></i></span><div><div class="k">429 — too many requests</div></div><span class="spacer"></span><span class="v" style="font-size:17px">11</span></div>
+            <div class="kv bad" style="border:none;padding:10px 0"><span class="ic"><i data-lucide="alert-octagon"></i></span><div><div class="k">5xx provider errors</div></div><span class="spacer"></span><span class="v" style="font-size:17px">3</span></div>
+            <div class="kv" style="border:none;padding:10px 0"><span class="ic"><i data-lucide="timer-off"></i></span><div><div class="k">Timeouts</div></div><span class="spacer"></span><span class="v" style="font-size:17px">2</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="panel-head"><i data-lucide="triangle-alert" style="width:17px;height:17px;color:var(--coral-500)"></i><h3>Failed routes this scan</h3><span class="spacer"></span><span class="cnt">4</span></div>
+        <table class="dtable">
+          <thead><tr><th style="padding-left:18px">Route</th><th>Provider</th><th>Error</th><th>Last success</th><th style="text-align:right;padding-right:18px">Action</th></tr></thead>
+          <tbody>
+            <tr><td style="padding-left:18px"><span class="airport">RIX → AYT</span></td><td>Skyscanner</td><td><span class="status-pill st-rejected">429</span></td><td class="mono" style="font-size:12px;color:var(--fg-2)">2h ago</td><td style="text-align:right;padding-right:18px"><button class="btn btn-outline btn-sm">Retry</button></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → FCO</span></td><td>Kiwi</td><td><span class="status-pill st-rejected">503</span></td><td class="mono" style="font-size:12px;color:var(--fg-2)">5h ago</td><td style="text-align:right;padding-right:18px"><button class="btn btn-outline btn-sm">Retry</button></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">KUN → BCN</span></td><td>Skyscanner</td><td><span class="status-pill st-expired">timeout</span></td><td class="mono" style="font-size:12px;color:var(--fg-2)">1h ago</td><td style="text-align:right;padding-right:18px"><button class="btn btn-outline btn-sm">Retry</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="sidebar.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

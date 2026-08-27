@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Routes &amp; zones</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  .origins { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px; }
+  .origin { background: var(--bg-surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 16px; }
+  .origin.off { opacity: .55; }
+  .origin .code { font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+  .origin .city { font-size: 13px; color: var(--fg-2); }
+  .origin .row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .origin .n { font-size: 12px; color: var(--fg-3); }
+</style>
+</head>
+<body data-nav="routes">
+<div class="adm" data-screen-label="Admin · Routes & zones">
+  <aside class="asb" id="asb"></aside>
+  <div class="amain">
+    <div class="atop">
+      <div><h1>Routes &amp; zones</h1><div class="sub">Operational config: origins, destinations, zones and the price thresholds that flag a deal.</div></div>
+      <span class="spacer"></span>
+      <button class="btn btn-outline btn-sm"><i data-lucide="layers"></i> Manage zones</button>
+      <button class="btn btn-primary btn-sm"><i data-lucide="plus"></i> Add route</button>
+    </div>
+    <div class="abody">
+
+      <div class="origins">
+        <div class="origin"><div class="code">VNO</div><div class="city">Vilnius</div><div class="row"><span class="n">38 routes</span><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></div></div>
+        <div class="origin"><div class="code">KUN</div><div class="city">Kaunas</div><div class="row"><span class="n">24 routes</span><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></div></div>
+        <div class="origin"><div class="code">RIX</div><div class="city">Riga</div><div class="row"><span class="n">41 routes</span><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></div></div>
+        <div class="origin off"><div class="code">PLQ</div><div class="city">Palanga</div><div class="row"><span class="n">6 routes</span><label class="row-toggle"><input type="checkbox"><span class="track"></span></label></div></div>
+        <div class="origin off"><div class="code">WAW</div><div class="city">Warsaw · soon</div><div class="row"><span class="n">— routes</span><label class="row-toggle"><input type="checkbox"><span class="track"></span></label></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Routes from Vilnius</h3><span class="spacer"></span><span class="cnt">38 active</span></div>
+        <table class="dtable">
+          <thead><tr><th style="padding-left:18px">Route</th><th>Destination</th><th>Zone</th><th>Deal threshold</th><th>Median fare</th><th style="text-align:right;padding-right:18px">Enabled</th></tr></thead>
+          <tbody>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → LCA</span></td><td>Larnaca, Cyprus</td><td><span class="tag tag-amber">East Med</span></td><td class="mono" style="font-size:13px">&lt; €70</td><td class="mono" style="font-size:13px;color:var(--fg-2)">€102</td><td style="text-align:right;padding-right:18px"><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → VIE</span></td><td>Vienna, Austria</td><td><span class="tag tag-sea">Central EU</span></td><td class="mono" style="font-size:13px">&lt; €55</td><td class="mono" style="font-size:13px;color:var(--fg-2)">€88</td><td style="text-align:right;padding-right:18px"><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → AGP</span></td><td>Málaga, Spain</td><td><span class="tag">Iberia</span></td><td class="mono" style="font-size:13px">&lt; €75</td><td class="mono" style="font-size:13px;color:var(--fg-2)">€121</td><td style="text-align:right;padding-right:18px"><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → ATH</span></td><td>Athens, Greece</td><td><span class="tag tag-amber">East Med</span></td><td class="mono" style="font-size:13px">&lt; €80</td><td class="mono" style="font-size:13px;color:var(--fg-2)">€119</td><td style="text-align:right;padding-right:18px"><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → FCO</span></td><td>Rome, Italy</td><td><span class="tag">Iberia &amp; IT</span></td><td class="mono" style="font-size:13px">&lt; €65</td><td class="mono" style="font-size:13px;color:var(--fg-2)">€96</td><td style="text-align:right;padding-right:18px"><label class="row-toggle"><input type="checkbox"><span class="track"></span></label></td></tr>
+            <tr><td style="padding-left:18px"><span class="airport">VNO → TFS</span></td><td>Tenerife, Spain</td><td><span class="tag">Canaries</span></td><td class="mono" style="font-size:13px">&lt; €130</td><td class="mono" style="font-size:13px;color:var(--fg-2)">€198</td><td style="text-align:right;padding-right:18px"><label class="row-toggle"><input type="checkbox" checked><span class="track"></span></label></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="sidebar.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

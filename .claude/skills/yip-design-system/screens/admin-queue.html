@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Deal queue</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+<style>
+  .qrow { display: grid; grid-template-columns: 48px 56px 1fr auto auto; align-items: center; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
+  .qrow:last-child { border-bottom: none; }
+  .qrow:hover { background: var(--bg-sunken); }
+  .qrow .thumb { width: 56px; height: 56px; border-radius: var(--radius-sm); }
+  .qrow .nm { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+  .qrow .mt { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; color: var(--fg-2); margin: 3px 0 7px; }
+  .qrow .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .qrow .pr { text-align: right; }
+  .qrow .acts { display: flex; gap: 6px; }
+  .iconbtn { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--bg-surface); display: inline-flex; align-items: center; justify-content: center; color: var(--fg-2); cursor: pointer; }
+  .iconbtn:hover { border-color: var(--sand-400); color: var(--fg-1); }
+  .iconbtn svg { width: 16px; height: 16px; }
+</style>
+</head>
+<body>
+<div class="adm" data-screen-label="Admin · Deal queue">
+  <aside class="asb">
+    <div class="brand"><span class="yip-logo" style="font-size:24px">yıp</span><span class="tag">Deal Desk</span></div>
+    <div class="grp">Workspace</div>
+    <a class="navi" href="admin-today.html"><i data-lucide="layout-dashboard"></i> Today</a>
+    <a class="navi on" href="admin-queue.html"><i data-lucide="inbox"></i> Deal queue <span class="badge">7</span></a>
+    <a class="navi" href="#"><i data-lucide="send"></i> Published</a>
+    <div class="grp">Strategy</div>
+    <a class="navi" href="#"><i data-lucide="layout-template"></i> Templates</a>
+    <a class="navi" href="admin-template-builder.html"><i data-lucide="wand-2"></i> Template builder</a>
+    <a class="navi" href="#"><i data-lucide="users"></i> Audience</a>
+    <a class="navi" href="#"><i data-lucide="calendar-days"></i> Travel moments</a>
+    <a class="navi" href="#"><i data-lucide="map"></i> Routes &amp; zones</a>
+    <div class="grp">System</div>
+    <a class="navi" href="#"><i data-lucide="activity"></i> Scan health</a>
+    <div class="who"><span class="av">TK</span><div><div class="nm">Tomas K.</div><div class="ro">Founder · Vilnius</div></div></div>
+  </aside>
+
+  <div class="amain">
+    <div class="atop">
+      <div><h1>Deal queue</h1><div class="sub">Candidates the scanner surfaced — grouped by template. Review, recheck or reject.</div></div>
+      <span class="spacer"></span>
+      <div class="seg"><button class="on">All</button><button>Suggested</button><button>Maybe</button><button>Rejected</button></div>
+      <button class="btn btn-outline btn-sm"><i data-lucide="refresh-cw"></i> Run scan</button>
+    </div>
+
+    <div class="abody">
+
+      <!-- Group: Last warm days -->
+      <div class="tgroup">
+        <div class="tgroup-head">
+          <span class="ic"><i data-lucide="sun"></i></span>
+          <h3>Last warm days</h3><span class="cnt">2 candidates</span>
+        </div>
+        <div class="panel">
+          <a class="qrow" href="admin-candidate.html">
+            <span class="score hi">92<small>SCORE</small></span>
+            <span class="photo thumb" style="background:linear-gradient(150deg,#EFA227,#D63E22 70%,#9C520A)"></span>
+            <div>
+              <div class="nm">Larnaca, Cyprus</div>
+              <div class="mt">VNO → LCA · 14–21 Oct · Direct · Wizz Air</div>
+              <div class="chips"><span class="good-chip"><i data-lucide="trending-down"></i> 42% below median</span><span class="good-chip"><i data-lucide="plane"></i> Direct</span><span class="caveat"><i data-lucide="luggage"></i> Hand luggage</span></div>
+            </div>
+            <div class="pr"><div class="price-badge" style="font-size:20px">€59<s>€102</s></div></div>
+            <div class="acts" onclick="event.preventDefault()">
+              <button class="btn btn-primary btn-sm">Review</button>
+              <button class="iconbtn" title="Recheck"><i data-lucide="rotate-cw"></i></button>
+              <button class="iconbtn" title="Reject"><i data-lucide="x"></i></button>
+            </div>
+          </a>
+          <a class="qrow" href="admin-candidate.html">
+            <span class="score mid">71<small>SCORE</small></span>
+            <span class="photo thumb" style="background:linear-gradient(150deg,#F3B84E,#C56A07 70%,#5C320F)"></span>
+            <div>
+              <div class="nm">Heraklion, Crete</div>
+              <div class="mt">KUN → HER · 2–9 Oct · Direct · Ryanair</div>
+              <div class="chips"><span class="good-chip"><i data-lucide="trending-down"></i> 38% below median</span><span class="caveat"><i data-lucide="clock"></i> 06:10 outbound</span></div>
+            </div>
+            <div class="pr"><div class="price-badge" style="font-size:20px">€81<s>€131</s></div></div>
+            <div class="acts" onclick="event.preventDefault()">
+              <button class="btn btn-primary btn-sm">Review</button>
+              <button class="iconbtn" title="Recheck"><i data-lucide="rotate-cw"></i></button>
+              <button class="iconbtn" title="Reject"><i data-lucide="x"></i></button>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Group: Christmas markets -->
+      <div class="tgroup">
+        <div class="tgroup-head">
+          <span class="ic"><i data-lucide="snowflake"></i></span>
+          <h3>Christmas markets</h3><span class="cnt">1 candidate</span>
+        </div>
+        <div class="panel">
+          <a class="qrow" href="admin-candidate.html">
+            <span class="score hi">88<small>SCORE</small></span>
+            <span class="photo thumb" style="background:linear-gradient(150deg,#ED7660,#B53017 70%,#4A4034)"></span>
+            <div>
+              <div class="nm">Vienna, Austria</div>
+              <div class="mt">VNO → VIE · 5–8 Dec · Direct · Ryanair</div>
+              <div class="chips"><span class="good-chip"><i data-lucide="trending-down"></i> 49% below median</span><span class="good-chip"><i data-lucide="snowflake"></i> Peak market season</span><span class="caveat"><i data-lucide="bus"></i> Bus to airport</span></div>
+            </div>
+            <div class="pr"><div class="price-badge" style="font-size:20px">€45<s>€88</s></div></div>
+            <div class="acts" onclick="event.preventDefault()">
+              <button class="btn btn-primary btn-sm">Review</button>
+              <button class="iconbtn" title="Recheck"><i data-lucide="rotate-cw"></i></button>
+              <button class="iconbtn" title="Reject"><i data-lucide="x"></i></button>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Group: Last-minute weekends -->
+      <div class="tgroup">
+        <div class="tgroup-head">
+          <span class="ic"><i data-lucide="zap"></i></span>
+          <h3>Last-minute weekends</h3><span class="cnt">1 candidate</span>
+        </div>
+        <div class="panel">
+          <a class="qrow" href="admin-candidate.html">
+            <span class="score mid">76<small>SCORE</small></span>
+            <span class="photo thumb" style="background:linear-gradient(150deg,#EFA227,#E55438 70%,#7A410E)"></span>
+            <div>
+              <div class="nm">Málaga, Spain</div>
+              <div class="mt">KUN → AGP · This Fri–Mon · Direct · Ryanair</div>
+              <div class="chips"><span class="good-chip"><i data-lucide="trending-down"></i> 53% below median</span><span class="caveat"><i data-lucide="clock"></i> Lands 00:35</span><span class="caveat"><i data-lucide="alert-triangle"></i> Limited seats</span></div>
+            </div>
+            <div class="pr"><div class="price-badge" style="font-size:20px">€52<s>€110</s></div></div>
+            <div class="acts" onclick="event.preventDefault()">
+              <button class="btn btn-primary btn-sm">Review</button>
+              <button class="iconbtn" title="Recheck"><i data-lucide="rotate-cw"></i></button>
+              <button class="iconbtn" title="Reject"><i data-lucide="x"></i></button>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Group: September sun -->
+      <div class="tgroup">
+        <div class="tgroup-head">
+          <span class="ic"><i data-lucide="sun"></i></span>
+          <h3>September sun, fewer crowds</h3><span class="cnt">1 candidate</span>
+        </div>
+        <div class="panel">
+          <a class="qrow" href="admin-candidate.html">
+            <span class="score lo">58<small>SCORE</small></span>
+            <span class="photo thumb" style="background:linear-gradient(150deg,#54B7A2,#0F7C68 70%,#093D36)"></span>
+            <div>
+              <div class="nm">Valletta, Malta</div>
+              <div class="mt">KUN → MLA · 19–22 Sep · 1 stop · Ryanair</div>
+              <div class="chips"><span class="good-chip"><i data-lucide="trending-down"></i> 46% below median</span><span class="caveat"><i data-lucide="repeat"></i> 1 stop · self-transfer</span></div>
+            </div>
+            <div class="pr"><div class="price-badge" style="font-size:20px">€74<s>€138</s></div></div>
+            <div class="acts" onclick="event.preventDefault()">
+              <button class="btn btn-primary btn-sm">Review</button>
+              <button class="iconbtn" title="Recheck"><i data-lucide="rotate-cw"></i></button>
+              <button class="iconbtn" title="Reject"><i data-lucide="x"></i></button>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+  document.querySelectorAll('.seg').forEach(s => s.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    s.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on');
+  }));
+</script>
+</body>
+</html>

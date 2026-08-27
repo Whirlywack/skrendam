@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip Deal Desk — Template builder</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="adm" data-screen-label="Admin · Template builder">
+  <aside class="asb">
+    <div class="brand"><span class="yip-logo" style="font-size:24px">yıp</span><span class="tag">Deal Desk</span></div>
+    <div class="grp">Workspace</div>
+    <a class="navi" href="admin-today.html"><i data-lucide="layout-dashboard"></i> Today</a>
+    <a class="navi" href="admin-queue.html"><i data-lucide="inbox"></i> Deal queue <span class="badge">7</span></a>
+    <a class="navi" href="#"><i data-lucide="send"></i> Published</a>
+    <div class="grp">Strategy</div>
+    <a class="navi" href="#"><i data-lucide="layout-template"></i> Templates</a>
+    <a class="navi on" href="admin-template-builder.html"><i data-lucide="wand-2"></i> Template builder</a>
+    <a class="navi" href="#"><i data-lucide="users"></i> Audience</a>
+    <a class="navi" href="#"><i data-lucide="calendar-days"></i> Travel moments</a>
+    <a class="navi" href="#"><i data-lucide="map"></i> Routes &amp; zones</a>
+    <div class="grp">System</div>
+    <a class="navi" href="#"><i data-lucide="activity"></i> Scan health</a>
+    <div class="who"><span class="av">TK</span><div><div class="nm">Tomas K.</div><div class="ro">Founder · Vilnius</div></div></div>
+  </aside>
+
+  <div class="amain">
+    <div class="atop">
+      <div><h1>New deal template</h1><div class="sub">Describe a kind of trip worth hunting for. Yip turns it into a search-and-curation strategy.</div></div>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost btn-sm">Save &amp; exit</button>
+    </div>
+
+    <div class="abody">
+      <div class="wizard">
+
+        <!-- step progress -->
+        <div class="wz-steps">
+          <div class="wz-step on"><div class="bar"></div><div class="lab">1 · Who for</div></div>
+          <div class="wz-step"><div class="bar"></div><div class="lab">2 · When</div></div>
+          <div class="wz-step"><div class="bar"></div><div class="lab">3 · Where</div></div>
+          <div class="wz-step"><div class="bar"></div><div class="lab">4 · What's cheap</div></div>
+          <div class="wz-step"><div class="bar"></div><div class="lab">5 · Pain</div></div>
+          <div class="wz-step"><div class="bar"></div><div class="lab">6 · Angle</div></div>
+        </div>
+
+        <div class="wz-card">
+          <div class="eyebrow" style="margin-bottom:12px">Step 1 of 6</div>
+          <h2 class="wz-q">Who is this for?</h2>
+          <p class="wz-sub">Pick the traveler this template should chase deals for. It shapes which dates, prices and itineraries count as a win.</p>
+
+          <div class="choice-grid">
+            <div class="choice sel">
+              <span class="ic"><i data-lucide="baby"></i></span>
+              <div><div class="t">Families with kids</div><div class="d">School-holiday windows, direct flights, sensible timings.</div></div>
+            </div>
+            <div class="choice">
+              <span class="ic"><i data-lucide="heart"></i></span>
+              <div><div class="t">Couples</div><div class="d">Romantic short breaks, flexible on dates, value over comfort.</div></div>
+            </div>
+            <div class="choice">
+              <span class="ic"><i data-lucide="briefcase"></i></span>
+              <div><div class="t">Flexible adults</div><div class="d">Can leave any day, tolerant of odd hours for a great price.</div></div>
+            </div>
+            <div class="choice">
+              <span class="ic"><i data-lucide="graduation-cap"></i></span>
+              <div><div class="t">Students &amp; budget</div><div class="d">Cheapest possible, hand luggage, will accept layovers.</div></div>
+            </div>
+            <div class="choice">
+              <span class="ic"><i data-lucide="building-2"></i></span>
+              <div><div class="t">City-break travelers</div><div class="d">2–4 nights, weekends, culture &amp; food over beaches.</div></div>
+            </div>
+            <div class="choice">
+              <span class="ic"><i data-lucide="plus"></i></span>
+              <div><div class="t">New segment…</div><div class="d">Define a custom audience profile for this template.</div></div>
+            </div>
+          </div>
+
+          <div class="wz-foot">
+            <button class="btn btn-ghost"><i data-lucide="arrow-left"></i> Back</button>
+            <span style="flex:1"></span>
+            <button class="btn btn-outline">Skip</button>
+            <button class="btn btn-primary">Continue <i data-lucide="arrow-right"></i></button>
+          </div>
+        </div>
+
+        <p style="text-align:center;font-size:13px;color:var(--fg-3);margin-top:18px">
+          Example templates: <b style="color:var(--fg-2)">Family school-holiday sun</b> · September sun, fewer crowds · Last warm days · Christmas markets · Last-minute long weekends
+        </p>
+
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+  document.querySelectorAll('.choice').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('.choice').forEach(x => x.classList.remove('sel')); c.classList.add('sel');
+  }));
+</script>
+</body>
+</html>

@@ -25,4 +25,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+const __webRoot = document.getElementById("root");
+if (__webRoot && __webRoot.dataset.app === "website") {
+  ReactDOM.createRoot(__webRoot).render(<App />);
+}

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yip — we find the gems</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<link rel="stylesheet" href="../assets/logo.css">
+<link rel="stylesheet" href="../v2/poster-bead.css">
+<style>
+  *{box-sizing:border-box}html,body{margin:0}
+  body{background:var(--v2-paper);color:var(--v2-ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}a:hover{color:var(--v2-amber-deep)}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 40px}
+  /* masthead */
+  .mast{border-bottom:1.5px solid var(--v2-ink)}
+  .mast .in{display:flex;align-items:center;gap:28px;height:64px}
+  .mast .rule{flex:1;text-align:center}
+  .mast a.cta{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+  .mast a.cta .bead{width:8px;height:8px}
+  /* hero */
+  .hero{padding:74px 0 56px}
+  .hero h1{font-size:var(--d-hero);margin:18px 0 0;max-width:11ch}
+  .hero h1 .bead{width:.13em;height:.13em;margin-left:.06em}
+  .hero .sub{display:flex;align-items:baseline;justify-content:space-between;gap:40px;margin-top:26px;flex-wrap:wrap}
+  .hero .sub p{font-size:19px;line-height:1.5;color:var(--sand-600);max-width:44ch;margin:0}
+  /* featured poster */
+  .poster{position:relative;border-radius:28px;overflow:hidden;background:var(--poster-sun);color:#fff;min-height:520px;display:flex;flex-direction:column;justify-content:space-between;padding:36px 40px;margin-bottom:8px}
+  .poster::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(22,18,13,.42),transparent 55%);pointer-events:none}
+  .poster>*{position:relative;z-index:1}
+  .poster .top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  .poster .kick{font-family:var(--font-mono);font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.9)}
+  .poster .stamp{color:#fff;border-color:rgba(255,255,255,.85)}
+  .poster .name{font-size:var(--d-poster);text-shadow:0 2px 24px rgba(0,0,0,.25)}
+  .poster .name small{display:block;font-family:var(--font-body);font-weight:500;font-size:clamp(15px,1.6vw,19px);text-transform:none;letter-spacing:0;line-height:1.4;margin-top:14px;opacity:.95;max-width:44ch}
+  .poster .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap}
+  .poster .route{flex:1;min-width:260px;max-width:420px}
+  .poster .route .codes{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:14px;font-weight:700;letter-spacing:.08em;margin-bottom:10px}
+  .poster .route .bead-route .bead{background:#fff}
+  .poster .buy{display:flex;align-items:flex-end;gap:28px}
+  .poster .v2-price{font-size:clamp(56px,7vw,96px);line-height:.9}
+  .poster .v2-price s{font-family:var(--font-body);font-weight:500;font-size:18px;opacity:.8;letter-spacing:0;margin-left:10px}
+  .poster .btn{display:inline-flex;align-items:center;gap:10px;background:var(--v2-paper);color:var(--v2-ink);font-weight:700;font-size:16px;padding:16px 26px;border-radius:14px;border:none;cursor:pointer;transition:transform .2s var(--ink-ease),box-shadow .2s var(--ink-ease)}
+  .poster .btn:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.25)}
+  .poster .btn .bead{width:9px;height:9px}
+  .caveats{display:flex;gap:22px;flex-wrap:wrap;padding:14px 6px 0;font-family:var(--font-mono);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--sand-500)}
+  .caveats span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--v2-amber);margin-right:9px;vertical-align:2px}
+  /* index */
+  .index{padding:72px 0 24px}
+  .index .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px}
+  .index h2{font-family:var(--font-display);font-weight:800;font-size:clamp(28px,3.4vw,42px);letter-spacing:-.03em;margin:0}
+  .v2-row:last-of-type{border-bottom:1px solid var(--line)}
+  /* quote */
+  .quote{padding:88px 0}
+  .quote .in{max-width:850px;margin:0 auto;text-align:center}
+  .quote .mark{width:14px;height:14px;border-radius:50%;background:var(--v2-amber);margin:0 auto 26px}
+  .quote blockquote{font-family:var(--font-display);font-weight:600;font-size:var(--d-quote);line-height:1.25;letter-spacing:-.02em;margin:0}
+  .quote cite{display:block;font-style:normal;font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--sand-500);margin-top:24px}
+  /* ink band */
+  .band{background:var(--v2-ink);color:var(--v2-paper);padding:92px 0;position:relative;overflow:hidden}
+  .band .bigbead{position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle at 35% 35%,var(--v2-amber),#9C520A);right:-120px;top:-140px;opacity:.85}
+  .band .in{position:relative;z-index:1;display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center}
+  .band h2{font-family:var(--font-display);font-weight:800;font-size:clamp(36px,4.6vw,58px);line-height:1.02;letter-spacing:-.03em;margin:0}
+  .band p{color:var(--sand-300);font-size:17px;line-height:1.55;margin:16px 0 0;max-width:40ch}
+  .sig{display:flex;gap:10px}
+  .sig input{flex:1;font-family:var(--font-body);font-size:16px;padding:16px 18px;border-radius:14px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07);color:#fff;outline:none;transition:border .15s}
+  .sig input::placeholder{color:var(--sand-400)}
+  .sig input:focus{border-color:var(--v2-amber)}
+  .sig button{font-family:var(--font-body);font-weight:700;font-size:16px;padding:16px 26px;border-radius:14px;border:none;background:var(--v2-amber);color:var(--v2-ink);cursor:pointer;min-width:150px;transition:transform .2s var(--ink-ease)}
+  .sig button:hover{transform:translateY(-2px)}
+  .band .fine{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--sand-500);margin-top:16px}
+  /* footer */
+  .ftr{border-top:1.5px solid var(--v2-ink);padding:26px 0}
+  .ftr .in{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
+  .ftr .links{display:flex;gap:24px;flex:1;justify-content:center;font-size:14px;font-weight:500;color:var(--sand-600)}
+  .ftr .fine{font-family:var(--font-mono);font-size:11px;color:var(--sand-500);text-transform:uppercase;letter-spacing:.08em}
+  @media(max-width:900px){.band .in{grid-template-columns:1fr}.v2-row{grid-template-columns:44px 1fr auto}.v2-row-meta{display:none}}
+</style>
+</head>
+<body data-screen-label="V2 · Poster & Bead — home">
+
+<header class="mast">
+  <div class="wrap in">
+    <a href="#"><span class="yip-logo" style="font-size:27px">yıp</span></a>
+    <span class="rule v2-kicker v2-kicker--dim">Curated flight deals — Vilnius · Kaunas · Riga</span>
+    <a class="cta" href="#signup"><span class="bead bead--live"></span> Get deals by email</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="v2-kicker">Issue № 47 — Late summer</div>
+    <h1 class="v2-display">We find the gems<span class="bead"></span></h1>
+    <div class="sub">
+      <p>Hand-checked cheap flights from the Baltics. No search boxes, no fare roulette — just the trips worth taking, and the catch up front.</p>
+      <span class="v2-stamp"><span class="bead" style="width:7px;height:7px"></span> Checked by a human · today 14:02</span>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <article class="poster">
+    <div class="top">
+      <span class="kick">№ 01 — Last warm week</span>
+      <span class="v2-stamp stamp">Going fast</span>
+    </div>
+    <h2 class="v2-poster-name name">Larnaca<small>The sea's still 27°C and the crowds flew home. Direct from Vilnius, mid-October, 42% under the usual fare.</small></h2>
+    <div class="foot">
+      <div class="route">
+        <div class="codes"><span>VNO</span><span>4H00 · DIRECT</span><span>LCA</span></div>
+        <div class="bead-route"><span class="track"></span><span class="bead"></span></div>
+      </div>
+      <div class="buy">
+        <div class="v2-price">€59<s>€102</s></div>
+        <button class="btn">See the deal <span class="bead"></span></button>
+      </div>
+    </div>
+  </article>
+  <div class="caveats"><span>Hand luggage only</span><span>Return lands 23:40</span><span>Wizz Air · 14–21 Oct</span></div>
+</section>
+
+<section class="index">
+  <div class="wrap">
+    <div class="head">
+      <h2>This week's finds</h2>
+      <span class="v2-kicker v2-kicker--dim">05 deals — updated 4 min ago</span>
+    </div>
+    <div>
+      <div class="v2-row"><span class="no">№ 02</span><span class="v2-row-name">Vienna</span><span class="v2-row-meta">VNO → VIE · 5–8 Dec · Christmas markets</span><span class="v2-row-price">€45</span><span class="go"></span></div>
+      <div class="v2-row"><span class="no">№ 03</span><span class="v2-row-name">Málaga</span><span class="v2-row-meta">KUN → AGP · Fri–Mon · Last-minute</span><span class="v2-row-price">€52</span><span class="go"></span></div>
+      <div class="v2-row"><span class="no">№ 04</span><span class="v2-row-name">Athens</span><span class="v2-row-meta">RIX → ATH · 9–16 Oct · Sun + culture</span><span class="v2-row-price">€68</span><span class="go"></span></div>
+      <div class="v2-row"><span class="no">№ 05</span><span class="v2-row-name">Valletta</span><span class="v2-row-meta">KUN → MLA · 19–22 Sep · September sun</span><span class="v2-row-price">€74</span><span class="go"></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="quote">
+  <div class="wrap in">
+    <div class="mark"></div>
+    <blockquote>„The Tuesday return is the cheapest leg — book the Saturday out, and you get a whole extra beach day for free."</blockquote>
+    <cite>Tomas — Yip curator, Vilnius</cite>
+  </div>
+</section>
+
+<section class="band" id="signup">
+  <span class="bigbead"></span>
+  <div class="wrap in">
+    <div>
+      <h2>The next gem sells out in hours.</h2>
+      <p>A short email when we find something worth your weekend. A few a week, never more.</p>
+    </div>
+    <div>
+      <form class="sig" id="sig">
+        <input type="email" placeholder="you@email.com" required>
+        <button type="submit" id="sigbtn">Get deals</button>
+      </form>
+      <div class="fine">12,400+ Baltic travelers · no spam · unsubscribe anytime</div>
+    </div>
+  </div>
+</section>
+
+<footer class="ftr">
+  <div class="wrap in">
+    <span class="yip-logo" style="font-size:22px">yıp</span>
+    <span class="links"><a href="#">All deals</a><a href="#">From Vilnius</a><a href="#">From Kaunas</a><a href="#">From Riga</a><a href="#">How it works</a></span>
+    <span class="fine">© 2026 · Made in Vilnius</span>
+  </div>
+</footer>
+
+<script>
+document.getElementById('sig').addEventListener('submit',function(e){
+  e.preventDefault();
+  var b=document.getElementById('sigbtn');
+  b.innerHTML='<span class="bead-loader"><span class="bead"></span><span class="bead"></span><span class="bead"></span></span>';
+  setTimeout(function(){b.textContent="You're in ✓";b.style.background='var(--sea-400)';},1200);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+/* YIP — root stylesheet. Link this one file to get the whole design system. */
+@import url('colors_and_type.css');
+@import url('assets/logo.css');
+@import url('assets/imagery.css');
+@import url('v2/poster-bead.css');
