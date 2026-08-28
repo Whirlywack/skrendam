@@ -197,7 +197,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       {pd.body && (
         <section className="wrap">
           <div className="v2-curator">
-            <div className="txt">{pd.body}</div>
+            <div className="mark" aria-hidden="true" />
+            <div className="txt">„{pd.body}“</div>
             <div className="sig">— {curator().sig}</div>
           </div>
         </section>

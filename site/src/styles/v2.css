@@ -175,10 +175,14 @@
 .v2-context .big { font-family: var(--font-display); font-weight: 800;
   font-size: clamp(24px, 3vw, 36px); letter-spacing: -.02em; color: var(--v2-ink); margin: 6px 0 10px; }
 
-.v2-curator { border-left: 3px solid var(--v2-amber); padding: 6px 0 6px 20px; margin: 34px 0 0; }
-.v2-curator .txt { font-family: var(--font-body); font-size: 17px; line-height: 1.6; color: var(--v2-ink); }
+/* curator pull-quote — the design system's centered bead-mark pattern
+   (screens/v2-home.html .quote), not a side-tab border */
+.v2-curator { max-width: 850px; margin: 44px auto 0; text-align: center; }
+.v2-curator .mark { width: 14px; height: 14px; border-radius: 50%; background: var(--v2-amber); margin: 0 auto 22px; }
+.v2-curator .txt { font-family: var(--font-display); font-weight: 600;
+  font-size: var(--d-quote, clamp(26px, 3vw, 38px)); line-height: 1.25; letter-spacing: -.02em; color: var(--v2-ink); }
 .v2-curator .sig { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
-  letter-spacing: .14em; color: var(--sand-500); margin-top: 8px; }
+  letter-spacing: .14em; color: var(--sand-500); margin-top: 20px; }
 
 .v2-linkband { padding: 26px 0 0; font-family: var(--font-mono); font-size: 12px;
   text-transform: uppercase; letter-spacing: .14em; color: var(--sand-500); }
