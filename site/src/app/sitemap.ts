@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { siteUrl } from '@/lib/seo';
 import { COLLECTIONS } from '@/lib/collections';
-import { getFreeWindowIds, getLiveDeals } from '@/lib/queries';
+import { getLiveDeals } from '@/lib/queries';
+import { FREE_WINDOW } from '@/lib/scarcity';
 
 export const revalidate = 300;
 
@@ -28,9 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let dealRoutes: MetadataRoute.Sitemap = [];
   try {
-    // LIVE free-window only — expired deals are noindex, locked deals redirect
-    const freeIds = await getFreeWindowIds();
-    const live = (await getLiveDeals()).filter((r) => freeIds.has(r.pd.id));
+    // LIVE free-window only — expired deals are noindex, locked deals redirect.
+    // getLiveDeals shares LIVE_ORDER with getFreeWindowIds, so the head of the
+    // list IS the free window.
+    const live = (await getLiveDeals()).slice(0, FREE_WINDOW);
     dealRoutes = live.map((r) => {
       // lastSeenAt and publishedAt are mode:'string' timestamps — coerce to Date
       const rawModified = r.pd.lastSeenAt ?? r.pd.publishedAt;

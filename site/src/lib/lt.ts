@@ -30,6 +30,7 @@ export const S = {
   lockedChip: 'kaina — laiške',
   lockedFootnote: 'Prenumeratoriai jau žino šias kainas.',
   lockedFootnoteCta: 'Noriu radinių',
+  lockedInLetter: 'tik laiške', // collection count suffix: "· dar 2 tik laiške"
   foundToday: 'Šįryt radom', // kicker: "Šįryt radom 5 · čia rodom 3 · atnaujinta šįryt"
   shownHere: 'čia rodom',
 

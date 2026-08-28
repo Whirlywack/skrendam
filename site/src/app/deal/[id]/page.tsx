@@ -283,6 +283,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (Number.isNaN(numId)) return { title: 'Radinys — Yip' };
   const row = await getDeal(numId);
   if (!row) return { title: 'Radinys — Yip' };
+
+  // Locked deals: the page 307s to signup, but metadata must not carry the
+  // price either — mirror the page guard (review 08-28).
+  if (row.pd.status === 'live') {
+    const freeIds = await getFreeWindowIds();
+    if (!freeIds.has(row.pd.id)) {
+      return { title: 'Radinys — Yip', robots: { index: false, follow: true } };
+    }
+  }
+
   const d = toPublicDeal(row, new Date());
 
   // Expired deals: preserved noindex logic from prior task
