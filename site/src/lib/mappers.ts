@@ -1,10 +1,12 @@
 import type { PublicDeal, TicketView } from './types';
 import { qualityTag } from './quality';
 import { bookingCta } from './booking';
-import { city, country, dealHeadline } from './airports';
+import { ltCity } from './cities-lt';
+import { ltDealHeadline, stopsChip } from './dealDetail';
 import { formatDates, freshnessLabel } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
+import { S } from './lt';
 
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 
@@ -21,7 +23,7 @@ export function toTicket(r: Row, now: Date): TicketView {
   const pd = r.pd;
   const { stops, airline } = legs(r.snapshot);
   const s = (r.snapshot ?? {}) as Record<string, unknown>;
-  const dur = s.duration ? `${Math.floor(Number(s.duration) / 60)}h` : '';
+  const dur = s.duration ? `${Math.floor(Number(s.duration) / 60)} val.` : '';
   const drop = Math.round(Number(pd.discountPct ?? 0));
   // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
@@ -29,19 +31,19 @@ export function toTicket(r: Row, now: Date): TicketView {
     ? r.qualityTier : (qualityTag(score) ?? 'great');
   return {
     id: pd.id,
-    destination: city(pd.destination),
-    country: country(pd.destination),
+    destination: ltCity(pd.destination).nom,
+    country: ltCity(pd.destination).country,
     origin: pd.origin,
     route: `${pd.origin} → ${pd.destination}`,
     dates: formatDates(String(pd.travelDate), pd.returnDate ? String(pd.returnDate) : null),
-    legs: `${stops === 0 ? 'Direct' : `${stops} stop${stops > 1 ? 's' : ''}`}${dur ? ` · ${dur}` : ''}`,
+    legs: `${stopsChip(stops)}${dur ? ` · ${dur}` : ''}`,
     price: Number(pd.price),
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
     quality,
-    headline: dealHeadline(pd.headline, Number(pd.price), pd.destination),
-    eyebrow: pd.publicLabel ?? 'Found by hand',
-    catchChip: stops === 0 ? 'Direct' : `${stops} stop${stops > 1 ? 's' : ''}`,
+    headline: ltDealHeadline(pd.headline, Number(pd.price), pd.destination),
+    eyebrow: pd.publicLabel ?? S.foundByHand,
+    catchChip: stopsChip(stops),
     scene: sceneClass(pd.destination),
     airline,
     goingFast: Boolean(pd.goingFast),
@@ -57,7 +59,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
   const drop = Math.round(Number(pd.discountPct ?? 0));
   const fresh = pd.lastSeenAt ?? r.candLastSeen ?? null;
   const status = pd.goingFast
-    ? { kind: 'going_fast' as const, label: 'Going fast' }
+    ? { kind: 'going_fast' as const, label: S.chipGoingFast }
     : { kind: 'fresh' as const, label: freshnessLabel(fresh ? String(fresh) : null) };
 
   // reserved for Task 8 — will be threaded into timeAgo() for the detail page's relative time
@@ -65,8 +67,8 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
 
   return {
     id: pd.id,
-    destination: city(pd.destination),
-    origin: city(pd.origin),
+    destination: ltCity(pd.destination).nom,
+    origin: ltCity(pd.origin).nom,
     route: `${pd.origin} → ${pd.destination}`,
     tripType: pd.tripType,
     dates: formatDates(String(pd.travelDate), pd.returnDate ? String(pd.returnDate) : null),
@@ -76,9 +78,9 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
     quality,
-    verdict: 'Book this — it rarely drops this low.',
-    why: drop ? `${drop}% below typical` : 'Below typical',
-    catchLine: stops >= 1 ? `Catch: ${stops} stop${stops > 1 ? 's' : ''}` : null,
+    verdict: 'Verta imti — taip pigiai būna retai.',
+    why: drop ? `${drop} % pigiau nei įprastai` : 'Pigiau nei įprastai',
+    catchLine: stops >= 1 ? `Kabliukas: ${stopsChip(stops)}` : null,
     status,
     booking: bookingCta(pd.bookingUrl ?? null),
   };

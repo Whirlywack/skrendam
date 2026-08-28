@@ -13,17 +13,19 @@ describe('toTicket', () => {
   it('maps the ticket fields', () => {
     const t = toTicket(row(), new Date('2026-06-04T12:00:00Z'));
     expect(t.id).toBe(1);
-    expect(t.destination).toBe('Larnaca'); expect(t.country).toBe('Cyprus'); expect(t.origin).toBe('VNO');
+    // LT exonym in nominative for list rows (spec §4); country in LT
+    expect(t.destination).toBe('Larnaka'); expect(t.country).toBe('Kipras'); expect(t.origin).toBe('VNO');
     expect(t.route).toBe('VNO → LCA'); expect(t.drop).toBe(53); expect(t.airline).toBe('airBaltic');
     expect(t.headline).toContain('€140'); expect(t.scene).toBe('ph-coast'); expect(t.quality).toBe('rare');
-    expect(t.baseline).toBe(301); expect(t.catchChip).toBe('1 stop');
+    expect(t.baseline).toBe(301); expect(t.catchChip).toBe('1 persėdimas');
   });
-  it('generates a headline when pd.headline is absent', () => {
+  it('generates an LT headline (accusative after „į") when pd.headline is absent', () => {
     const t = toTicket(row({ pd: { headline: null } }), new Date('2026-06-04T12:00:00Z'));
-    expect(t.headline).toMatch(/Larnaca|€140/);
+    expect(t.headline).toContain('į Larnaką');
+    expect(t.headline).toContain('140');
   });
-  it('direct flight → "Direct" chip', () => {
+  it('direct flight → „Tiesioginis" chip', () => {
     const t = toTicket(row({ snapshot: { stops: 0, duration: 120, legs: [{ airline: { code: 'FR' } }] } }), new Date());
-    expect(t.catchChip).toBe('Direct');
+    expect(t.catchChip).toBe('Tiesioginis');
   });
 });

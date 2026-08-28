@@ -21,17 +21,17 @@ export function isValidEmail(email: string): boolean {
 export const PREF_ORIGINS = [
   { code: 'VNO', label: 'Vilnius' },
   { code: 'KUN', label: 'Kaunas' },
-  { code: 'RIX', label: 'Riga' },
+  { code: 'RIX', label: 'Ryga' },
   { code: 'PLQ', label: 'Palanga' },
-  { code: 'WAW', label: 'Warsaw' },
+  { code: 'WAW', label: 'Varšuva' },
 ] as const;
 
 export const PREF_MOMENTS = [
-  { code: 'sun', label: 'Sun' },
-  { code: 'city', label: 'City breaks' },
-  { code: 'family', label: 'Family' },
-  { code: 'weekend', label: 'Weekends' },
-  { code: 'last_minute', label: 'Last-minute' },
+  { code: 'sun', label: 'Saulė' },
+  { code: 'city', label: 'Miestai' },
+  { code: 'family', label: 'Su šeima' },
+  { code: 'weekend', label: 'Savaitgaliai' },
+  { code: 'last_minute', label: 'Paskutinė minutė' },
 ] as const;
 
 export const ORIGIN_CODES = PREF_ORIGINS.map((o) => o.code);

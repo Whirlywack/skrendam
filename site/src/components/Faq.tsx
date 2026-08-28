@@ -6,6 +6,7 @@
  *
  * Source of truth: site/design-reference/homepage-v2.html (line 241–246)
  */
+import { S } from '@/lib/lt';
 
 export interface FaqItem {
   q: string;
@@ -13,25 +14,16 @@ export interface FaqItem {
 }
 
 export const HOME_FAQ: FaqItem[] = [
-  {
-    q: 'Is it free?',
-    a: 'Yes — the weekly email is free. "Early alerts" (the fastest fares) is free to join while it\'s getting started; a paid tier may come later, and waitlist members hear first.',
-  },
-  {
-    q: 'How do you find these?',
-    a: "We track prices on every route daily and a human checks each fare is real before it reaches you. We're a local curator, not a search engine.",
-  },
-  {
-    q: 'Do I book with Yip?',
-    a: 'No — you book direct with the airline (or via Google Flights). We just find and verify the deal and show you the live price.',
-  },
+  { q: S.faqFreeQ, a: S.faqFreeA },
+  { q: S.faqHowQ, a: S.faqHowA },
+  { q: S.faqBookQ, a: S.faqBookA },
 ];
 
 export function Faq({ items }: { items: FaqItem[] }) {
   return (
     <div className="faq">
-      <div className="eyebrow">Good to know</div>
-      <div className="sec-h">Questions, answered.</div>
+      <div className="eyebrow">{S.faqEyebrow}</div>
+      <div className="sec-h">{S.faqHeader}</div>
 
       {items.map((item, i) => (
         <details key={item.q} open={i === 0}>

@@ -7,6 +7,7 @@
  * Source of truth: site/design-reference/homepage-v2.html (line 175–193)
  */
 import type { TicketView } from '@/lib/types';
+import { S } from '@/lib/lt';
 import { DealTicket } from './DealTicket';
 
 export function LiveDeals({
@@ -18,7 +19,7 @@ export function LiveDeals({
 }) {
   return (
     <div className="pad pad-bordered">
-      <div className="eyebrow">This week · rarest fare</div>
+      <div className="eyebrow">{S.liveEyebrow}</div>
 
       {featured ? (
         <>
@@ -35,7 +36,7 @@ export function LiveDeals({
         </>
       ) : (
         <p className="sec-lead" style={{ marginTop: 12 }}>
-          No live deals right now — check back soon.
+          {S.liveEmpty}
         </p>
       )}
     </div>

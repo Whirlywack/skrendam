@@ -10,6 +10,7 @@
  * CaptureBand (which is also interactive).
  */
 import { useEffect, useState, useCallback } from 'react';
+import { S } from '@/lib/lt';
 
 const SCROLL_THRESHOLD = 420; // px — roughly past the hero + first deal group
 
@@ -45,18 +46,18 @@ export function StickyCta() {
     <div
       className={`yip-site sticky-cta${visible ? ' visible' : ''}`}
       role="complementary"
-      aria-label="Sign up prompt"
+      aria-label={S.stickyAria}
     >
       <p>
-        <strong>Get free weekly deals</strong> — hand-checked fares from VNO, KUN &amp; RIX.
+        <strong>{S.ctaBandFull}</strong> — {S.stickyTail}
       </p>
       <button
         type="button"
         className="btn-primary"
         onClick={handleClick}
-        aria-label="Sign up for free weekly deals"
+        aria-label={S.stickyBtnAria}
       >
-        Get free weekly deals
+        {S.ctaSubmit}
       </button>
     </div>
   );

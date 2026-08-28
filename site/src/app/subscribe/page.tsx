@@ -6,6 +6,7 @@ import {
   joinEarlyAlertsAction,
 } from '@/app/subscribe-action';
 import { PREF_ORIGINS, PREF_MOMENTS } from '@/lib/subscribe-prefs';
+import { S } from '@/lib/lt';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,10 +45,10 @@ function IdleState() {
   return (
     <div className="sub-card" style={{ textAlign: 'center' }}>
       <div className="sub-wm">yıp</div>
-      <h1 className="sub-h">Get hand-checked cheap flights by email.</h1>
+      <h1 className="sub-h">{S.ctaBandFull}.</h1>
       <p className="sub-body">
-        A few genuinely good deals a week from Vilnius, Kaunas &amp; Riga —
-        checked by a real person, the catch shown up front.
+        Keli tikrai geri radiniai per savaitę iš Vilniaus, Kauno ir Rygos —
+        patikrinti gyvo žmogaus, kabliukas parodytas iš karto.
       </p>
 
       <form action={subscribePageAction}>
@@ -58,29 +59,29 @@ function IdleState() {
           <input
             type="email"
             name="email"
-            placeholder="you@email.com"
-            aria-label="Email address"
+            placeholder={S.emailPlaceholder}
+            aria-label={S.emailAria}
             required
           />
           <button type="submit" className="sub-btn">
-            Get free weekly deals
+            {S.ctaSubmit}
           </button>
         </div>
 
         <div className="sub-ea-row">
           <input type="checkbox" name="early_alerts" id="ea-idle" value="on" />
-          <label htmlFor="ea-idle">Also get early alerts — rarest fares the moment we find them</label>
+          <label htmlFor="ea-idle">{S.earlyCheckbox}</label>
         </div>
       </form>
 
       <div className="sub-trust">
-        <span>No spam</span>
-        <span>Unsubscribe anytime</span>
-        <span>Hand-checked fares</span>
+        <span>{S.trustNoSpam}</span>
+        <span>{S.trustUnsub}</span>
+        <span>{S.trustHuman}</span>
       </div>
 
       <a href="/early-alerts" className="sub-ea-link">
-        Want them sooner? Get early alerts →
+        Nori anksčiau? Skubios žinutės →
       </a>
     </div>
   );
@@ -97,15 +98,15 @@ function CheckEmailState() {
         <EnvelopeIcon />
       </div>
       <h1 className="sub-h" style={{ textAlign: 'left' }}>
-        Almost there — check your inbox.
+        {S.successTitle}
       </h1>
       <p style={{ fontSize: 13.5, color: 'var(--fg2)', marginTop: 8, lineHeight: 1.5 }}>
-        We&apos;ve sent a confirmation link to your email. Tap it and you&apos;re set.
+        {S.successSub}
       </p>
       <p style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 10, lineHeight: 1.5 }}>
-        Didn&apos;t get it? Check your spam folder, or{' '}
+        Negavai? Patikrink šlamšto aplanką arba{' '}
         <a href="/subscribe" className="sub-resend">
-          try again with your email
+          pabandyk dar kartą
         </a>
         .
       </p>
@@ -124,23 +125,23 @@ function ConfirmedState({ prefsSaved }: { prefsSaved: boolean }) {
         <CheckIcon />
       </div>
       <h1 className="sub-h" style={{ textAlign: 'left' }}>
-        You&apos;re confirmed.
+        {S.subscribedTitle}
       </h1>
       <p style={{ fontSize: 13.5, color: 'var(--fg2)', marginTop: 6, marginBottom: 16, lineHeight: 1.5 }}>
-        First deals land in your inbox this week. Tell us what you&apos;re into — or skip.
+        {S.subscribedSub} Papasakok, kas tave domina — arba praleisk.
       </p>
 
       {prefsSaved && (
         <div className="sub-saved" role="status">
-          Preferences saved ✓
+          Išsaugota ✓
         </div>
       )}
 
       <form action={savePreferencesAction}>
         {/* Token is read from the httpOnly yip_pt cookie by the server action — not a form field. */}
 
-        <p className="pref-lbl">Departing from</p>
-        <div className="pref-chips" role="group" aria-label="Departure airports">
+        <p className="pref-lbl">Iš kur skrendi</p>
+        <div className="pref-chips" role="group" aria-label="Išvykimo oro uostai">
           {PREF_ORIGINS.map((o) => (
             <label key={o.code} className="pref-chip">
               <input type="checkbox" name="origins" value={o.code} />
@@ -149,8 +150,8 @@ function ConfirmedState({ prefsSaved }: { prefsSaved: boolean }) {
           ))}
         </div>
 
-        <p className="pref-lbl" style={{ marginTop: 13 }}>Trips you like</p>
-        <div className="pref-chips" role="group" aria-label="Trip types">
+        <p className="pref-lbl" style={{ marginTop: 13 }}>Kokios kelionės domina</p>
+        <div className="pref-chips" role="group" aria-label="Kelionių tipai">
           {PREF_MOMENTS.map((m) => (
             <label key={m.code} className="pref-chip">
               <input type="checkbox" name="moments" value={m.code} />
@@ -160,7 +161,7 @@ function ConfirmedState({ prefsSaved }: { prefsSaved: boolean }) {
         </div>
 
         <button type="submit" className="sub-btn" style={{ marginTop: 14, width: '100%', display: 'block' }}>
-          Save
+          Išsaugoti
         </button>
       </form>
 
@@ -168,7 +169,7 @@ function ConfirmedState({ prefsSaved }: { prefsSaved: boolean }) {
         href="/subscribe?state=upsell"
         className="sub-skip"
       >
-        Skip — I&apos;ll take everything
+        Praleisk — noriu visų radinių
       </a>
     </div>
   );
@@ -183,30 +184,30 @@ function UpsellState({ prefsSaved }: { prefsSaved: boolean }) {
     <div className="sub-card">
       {prefsSaved && (
         <div className="sub-saved" role="status" style={{ marginBottom: 12 }}>
-          Preferences saved ✓
+          Išsaugota ✓
         </div>
       )}
 
-      <span className="early-chip">Early alerts</span>
+      <span className="early-chip">Skubios žinutės</span>
       <h2
         className="sub-h"
         style={{ textAlign: 'left', fontSize: 18, marginTop: 0 }}
       >
-        Some fares are gone by the weekly email.
+        Dalis radinių dingsta dar prieš savaitinį laišką.
       </h2>
       <p style={{ fontSize: 13, color: 'var(--fg2)', marginTop: 6, lineHeight: 1.5 }}>
-        Early alerts get you the rare ones first — the moment Yip finds them.
+        {S.earlyCheckboxSub}
       </p>
 
       <form action={joinEarlyAlertsAction}>
         {/* Token is read from the httpOnly yip_pt cookie by the server action — not a form field. */}
         <button type="submit" className="sub-btn-sea">
-          Join the early-alerts waitlist →
+          Į skubių žinučių sąrašą →
         </button>
       </form>
 
       <a href="/" className="sub-skip">
-        Free weekly is plenty — no thanks
+        Užteks savaitinio laiško — ačiū, ne
       </a>
     </div>
   );
@@ -222,9 +223,9 @@ function EarlyJoinedState() {
       <div className="sub-ok" style={{ margin: '0 auto 12px' }}>
         <CheckIcon />
       </div>
-      <h1 className="sub-h">You&apos;re on the early-alerts list.</h1>
+      <h1 className="sub-h">Tu skubių žinučių sąraše.</h1>
       <p style={{ fontSize: 13.5, color: 'var(--fg2)', marginTop: 8, lineHeight: 1.5, textAlign: 'center' }}>
-        We&apos;ll ping you the moment we find a rare fare — before the weekly email.
+        Parašysim vos radę retą radinį — dar prieš savaitinį laišką.
       </p>
       <a
         href="/"
@@ -237,7 +238,7 @@ function EarlyJoinedState() {
           textDecoration: 'none',
         }}
       >
-        ← Back to deals
+        ← Grįžti prie radinių
       </a>
     </div>
   );
@@ -251,12 +252,12 @@ function ErrorState({ isInvalid }: { isInvalid: boolean }) {
   return (
     <div className="sub-card" style={{ textAlign: 'center' }}>
       <h1 className="sub-h">
-        {isInvalid ? 'Link expired or already used' : 'Something went wrong'}
+        {isInvalid ? 'Nuoroda nebegalioja arba jau panaudota' : 'Kažkas nepavyko'}
       </h1>
       <p style={{ fontSize: 13.5, color: 'var(--fg2)', marginTop: 8, lineHeight: 1.5 }}>
         {isInvalid
-          ? "This confirmation link has expired or has already been used. If you've confirmed your email, you're all set."
-          : 'There was a problem — please try again.'}
+          ? 'Ši patvirtinimo nuoroda nebegalioja arba jau panaudota. Jei el. paštą jau patvirtinai — viskas gerai.'
+          : S.genericError}
       </p>
       <a
         href="/subscribe"
@@ -269,7 +270,7 @@ function ErrorState({ isInvalid }: { isInvalid: boolean }) {
           textDecoration: 'none',
         }}
       >
-        ← Try again
+        ← Bandyti dar kartą
       </a>
     </div>
   );
@@ -280,8 +281,8 @@ function ErrorState({ isInvalid }: { isInvalid: boolean }) {
 // ---------------------------------------------------------------------------
 
 export const metadata = {
-  title: 'Subscribe — Yip cheap flights',
-  description: 'Get hand-checked cheap flights from Vilnius, Kaunas and Riga by email, a few times a week.',
+  title: 'Prenumerata — Yip radiniai el. paštu',
+  description: 'Gauk žmogaus patikrintus pigius skrydžius iš Vilniaus, Kauno ir Rygos el. paštu — kelis kartus per savaitę.',
 };
 
 export default async function SubscribePage({ searchParams }: PageProps) {

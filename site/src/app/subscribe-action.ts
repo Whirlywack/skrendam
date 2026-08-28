@@ -14,6 +14,7 @@ import {
   cleanSource,
   cleanPrefs,
 } from '@/lib/subscribe-prefs';
+import { S } from '@/lib/lt';
 
 // NOTE: this is a 'use server' module — every export MUST be an async server
 // action. Do NOT re-export the pure helpers above (normalizeEmail/cleanPrefs/…);
@@ -60,7 +61,7 @@ export async function subscribeAction(
     if (mode === 'page') {
       redirect('/subscribe?state=invalid');
     }
-    return { ok: false, error: 'Enter a valid email.' };
+    return { ok: false, error: S.emailInvalid };
   }
 
   const token = randomBytes(24).toString('hex');
@@ -148,7 +149,7 @@ export async function subscribeAction(
     if (mode === 'page') {
       redirect('/subscribe?state=error');
     }
-    return { ok: false, error: 'Something went wrong — try again.' };
+    return { ok: false, error: S.genericError };
   }
 
   // Same state regardless of touched — no enumeration of confirmed addresses.

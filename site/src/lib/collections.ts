@@ -12,54 +12,56 @@ export interface Collection {
   filter: CollectionFilter;
 }
 
+// Origin collections own the LT search terms (spec §5): „pigūs skrydžiai iš …".
+// Their old English slugs 301 → these in next.config.ts redirects().
 export const COLLECTIONS: Collection[] = [
   {
-    slug: 'cheap-flights-from-vilnius',
-    label: 'Cheap flights from Vilnius',
+    slug: 'pigus-skrydziai-is-vilniaus',
+    label: 'Pigūs skrydžiai iš Vilniaus',
     scene: 'ph-city',
-    h1: 'Cheap flights from Vilnius',
+    h1: 'Pigūs skrydžiai iš Vilniaus — atrinkti žmogaus',
     promise:
-      "The genuinely cheap fares we've hand-checked from Vilnius — why each is good, and the catch.",
+      'Tikrai pigios kainos iš Vilniaus, patikrintos žmogaus — prie kiekvienos: kodėl verta ir koks kabliukas.',
     filter: { kind: 'origin', iata: 'VNO' },
   },
   {
-    slug: 'cheap-flights-from-kaunas',
-    label: 'Cheap flights from Kaunas',
+    slug: 'pigus-skrydziai-is-kauno',
+    label: 'Pigūs skrydžiai iš Kauno',
     scene: 'ph-snow',
-    h1: 'Cheap flights from Kaunas',
-    promise: 'Hand-checked cheap fares from Kaunas.',
+    h1: 'Pigūs skrydžiai iš Kauno — atrinkti žmogaus',
+    promise: 'Žmogaus patikrintos pigios kainos iš Kauno.',
     filter: { kind: 'origin', iata: 'KUN' },
   },
   {
-    slug: 'cheap-flights-from-riga',
-    label: 'Cheap flights from Riga',
+    slug: 'pigus-skrydziai-is-rygos',
+    label: 'Pigūs skrydžiai iš Rygos',
     scene: 'ph-city',
-    h1: 'Cheap flights from Riga',
-    promise: 'Hand-checked cheap fares from Riga.',
+    h1: 'Pigūs skrydžiai iš Rygos — atrinkti žmogaus',
+    promise: 'Žmogaus patikrintos pigios kainos iš Rygos.',
     filter: { kind: 'origin', iata: 'RIX' },
   },
   {
     slug: 'september-sun-deals',
-    label: 'September sun',
+    label: 'Rugsėjo saulė',
     scene: 'ph-sun',
-    h1: 'Cheap September sun flights from the Baltics',
-    promise: 'Late-summer warmth, fewer crowds, lower fares — hand-checked.',
+    h1: 'Pigūs skrydžiai į rugsėjo saulę iš Baltijos šalių',
+    promise: 'Vėlyvos vasaros šiluma, mažiau minios, mažesnės kainos — patikrinta žmogaus.',
     filter: { kind: 'moment', slug: 'sept_shoulder' },
   },
   {
     slug: 'christmas-market-flights',
-    label: 'Christmas markets',
+    label: 'Kalėdų mugės',
     scene: 'ph-market',
-    h1: 'Cheap Christmas-market flights from the Baltics',
-    promise: "Glühwein-weekend fares to Europe's best markets.",
+    h1: 'Pigūs skrydžiai į Kalėdų muges iš Baltijos šalių',
+    promise: 'Savaitgalis prie karšto vyno geriausiose Europos mugėse.',
     filter: { kind: 'moment', slug: 'xmas_markets' },
   },
   {
     slug: 'cyprus-flight-deals-from-lithuania',
-    label: 'Cyprus from Lithuania',
+    label: 'Kipras iš Lietuvos',
     scene: 'ph-coast',
-    h1: 'Cheap flights to Cyprus from Lithuania',
-    promise: 'Warm-sea Cyprus fares from Vilnius & Kaunas.',
+    h1: 'Pigūs skrydžiai į Kiprą iš Lietuvos',
+    promise: 'Šiltos jūros Kipras iš Vilniaus ir Kauno.',
     filter: { kind: 'zone', zone: 'MEDITERRANEAN' },
   },
 ];

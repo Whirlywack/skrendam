@@ -5,10 +5,11 @@ import { getDeal, getSimilarDeals } from '@/lib/queries';
 import { toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
-import { dealWhyAndCatch } from '@/lib/dealDetail';
+import { dealWhyAndCatch, ltDealHeadline, stopsChip } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
-import { city, country, dealHeadline } from '@/lib/airports';
-import { freshnessLabel } from '@/lib/format';
+import { ltCity } from '@/lib/cities-lt';
+import { eur, freshnessLabel } from '@/lib/format';
+import { S, curator } from '@/lib/lt';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Photo } from '@/components/Photo';
@@ -54,7 +55,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const now = new Date();
   const pd = row.pd;
   const deal = toPublicDeal(row, now);
-  const headline = dealHeadline(pd.headline, Number(pd.price), pd.destination);
+  const headline = ltDealHeadline(pd.headline, Number(pd.price), pd.destination);
 
   // Price context (real data — no fake sparklines)
   const stats = await priceContext(pd.origin, pd.destination, pd.tripType, deal.price, now);
@@ -85,27 +86,29 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   // Freshness label
   const fresh = pd.lastSeenAt ?? row.candLastSeen ?? null;
   const freshLabel = pd.goingFast
-    ? 'Going fast'
+    ? S.chipGoingFast
     : freshnessLabel(fresh ? String(fresh) : null);
 
   // Quality chip (words only — score stays internal)
-  const qualityLabel = deal.quality === 'rare' ? 'Rare deal' : 'Great deal';
+  const qualityLabel = deal.quality === 'rare' ? S.badgeRare : S.badgeGreat;
+
+  // Trip-type label — LT convention, price symbol after („96 € į abi puses")
+  const tripLabel = pd.tripType === 'roundtrip' ? S.retRoundTrip : S.retOneWay;
 
   // Hero photo scene
   const scene = sceneClass(pd.destination);
-  const destCity = city(pd.destination);
-  const destCountry = country(pd.destination);
+  const dest = ltCity(pd.destination);
 
   // Article description (price-free: drop%, route, dates — no € figure)
   const articleDescription = deal.drop > 0
-    ? `${deal.drop}% below typical ${deal.route} flight. ${deal.dates}. Found and checked by hand.`
-    : `${deal.route}. ${deal.dates}. Found and checked by hand.`;
+    ? `${deal.drop} % pigiau nei įprastai maršrute ${deal.route}. ${deal.dates}. ${S.checkedByHand}`
+    : `${deal.route}. ${deal.dates}. ${S.checkedByHand}`;
 
   return (
     <div className="yip-site">
       <JsonLd data={breadcrumbJsonLd([
-        { name: 'Home', path: '/' },
-        { name: 'Deals', path: '/' },
+        { name: S.navHome, path: '/' },
+        { name: S.navDeals, path: '/' },
         { name: deal.destination, path: `/deal/${pd.id}` },
       ])} />
       <JsonLd data={dealArticleJsonLd({
@@ -118,7 +121,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
       {/* ── Back link ─────────────────────────────────────────────────────── */}
       <div style={{ padding: '14px 26px 0' }}>
-        <Link className="back" href="/">&larr; All deals</Link>
+        <Link className="back" href="/">&larr; {S.navAllDeals}</Link>
       </div>
 
       {/* ── Boarding-pass hero ────────────────────────────────────────────── */}
@@ -131,10 +134,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         {/* Caption overlaid on the photo */}
         <div className="himg-cap">
           <span className="eyebrow himg-eyebrow">
-            {pd.publicLabel ?? 'Found by hand'} &middot; {freshLabel}
+            {pd.publicLabel ?? S.foundByHand} &middot; {freshLabel}
           </span>
           <h1 className="himg-h1">
-            {destCity}{destCountry ? `, ${destCountry}` : ''}
+            {dest.nom}{dest.country ? `, ${dest.country}` : ''}
           </h1>
         </div>
       </div>
@@ -144,7 +147,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
         {/* Meta row */}
         <div className="dmeta">
-          <span>{deal.route} &middot; {deal.dates} &middot; {deal.stops === 0 ? 'Direct' : `${deal.stops} stop${deal.stops > 1 ? 's' : ''}`} &middot; {deal.airline}</span>
+          <span>{deal.route} &middot; {deal.dates} &middot; {stopsChip(deal.stops)} &middot; {deal.airline}</span>
           <span className={`chip ${deal.quality === 'rare' ? 'chip-rare' : 'chip-great'}`}>{qualityLabel}</span>
           <span className="chip chip-fresh">&#x25CF; {freshLabel}</span>
         </div>
@@ -155,9 +158,9 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         {/* ── Book row ──────────────────────────────────────────────────── */}
         <div className="dbook">
           <div className="price">
-            &euro;{Math.round(deal.price)}
-            {deal.baseline ? <s>&euro;{Math.round(deal.baseline)}</s> : null}
-            <span className="ret">{pd.tripType === 'roundtrip' ? 'return' : 'one-way'} &middot; per person</span>
+            {eur(deal.price)}
+            {deal.baseline ? <s>{eur(deal.baseline)}</s> : null}
+            <span className="ret">{tripLabel} &middot; asmeniui</span>
           </div>
           <div className="dbook-cta">
             <a className="bookbtn" href={booking.url} target="_blank" rel="noopener noreferrer">
@@ -167,10 +170,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
-        {/* ── Why it's good | The catch ─────────────────────────────────── */}
+        {/* ── Kodėl verta | Kabliukas ───────────────────────────────────── */}
         <div className="dcols">
           <div>
-            <h5 className="good">Why it&apos;s good</h5>
+            <h5 className="good">Kodėl verta</h5>
             <div className="dlist">
               {whyAndCatch.why.map((line, i) => (
                 <div key={i} className="li good">
@@ -181,7 +184,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
           <div>
-            <h5 className="cav">The catch</h5>
+            <h5 className="cav">Kabliukas</h5>
             <div className="dlist">
               {whyAndCatch.catch.map((line, i) => (
                 <div key={i} className="li cav">
@@ -192,7 +195,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               {whyAndCatch.catch.length === 0 && (
                 <div className="li good">
                   <IconCheck />
-                  <span>No catches — this one&apos;s clean.</span>
+                  <span>Kabliukų nėra — švarus radinys.</span>
                 </div>
               )}
             </div>
@@ -205,7 +208,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             <div className="av" />
             <div>
               <div className="txt">{pd.body}</div>
-              <div className="sig">— Your Yip curator</div>
+              <div className="sig">— {curator().sig}</div>
             </div>
           </div>
         )}
@@ -217,11 +220,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         {/* Price context fallback — point stats when no sparkline history */}
         {!stats.hasHistory && deal.baseline && deal.drop > 0 && (
           <div className="sec">
-            <h3>Why it&apos;s a good price</h3>
-            <div className="bignote">{deal.drop}% below typical for this route.</div>
+            <h3>Kodėl kaina gera</h3>
+            <div className="bignote">{deal.drop} % pigiau nei įprastai šiame maršrute.</div>
             <div className="rangelbl">
-              <span>this deal <b>&euro;{Math.round(deal.price)}</b></span>
-              <span>typical <b>&euro;{Math.round(deal.baseline)}</b></span>
+              <span>šis radinys <b>{eur(deal.price)}</b></span>
+              <span>įprasta <b>{eur(deal.baseline)}</b></span>
             </div>
           </div>
         )}
@@ -229,7 +232,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         {/* ── Similar deals ─────────────────────────────────────────────── */}
         {similarTickets.length > 0 && (
           <div style={{ marginTop: 24 }}>
-            <div className="sec-h">More deals like this</div>
+            <div className="sec-h">Daugiau tokių radinių</div>
             <div className="grid3">
               {similarTickets.map((t) => (
                 <DealTicket key={t.id} t={t} />
@@ -247,8 +250,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         {/* ── Booking CTA (repeat at bottom) ────────────────────────────── */}
         <div className="dbook" style={{ marginTop: 16 }}>
           <div className="price">
-            &euro;{Math.round(deal.price)}
-            <span className="ret">{pd.tripType === 'roundtrip' ? 'return' : 'one-way'} &middot; per person</span>
+            {eur(deal.price)}
+            <span className="ret">{tripLabel} &middot; asmeniui</span>
           </div>
           <div className="dbook-cta">
             <a className="bookbtn" href={booking.url} target="_blank" rel="noopener noreferrer">
@@ -270,18 +273,22 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const numId = Number(id);
-  if (Number.isNaN(numId)) return { title: 'Deal — Yip' };
+  if (Number.isNaN(numId)) return { title: 'Radinys — Yip' };
   const row = await getDeal(numId);
-  if (!row) return { title: 'Deal — Yip' };
+  if (!row) return { title: 'Radinys — Yip' };
   const d = toPublicDeal(row, new Date());
 
   // Expired deals: preserved noindex logic from prior task
   const noindex = row.pd.status !== 'live';
 
-  const title = `${d.destination} €${Math.round(d.price)} — ${d.route} · Yip`;
+  const tripLabel = d.tripType === 'roundtrip' ? S.retRoundTrip : S.retOneWay;
+  // Sentence position after „į" declines the destination (spec §4 — never nominative after „į").
+  const destAcc = ltCity(row.pd.destination).acc;
+
+  const title = `${d.destination} ${eur(d.price)} — ${d.route} · Yip`;
   const description = d.drop > 0
-    ? `€${Math.round(d.price)} ${d.tripType === 'roundtrip' ? 'return' : 'one-way'} to ${d.destination} — ${d.drop}% below typical. ${d.dates}. Found and checked by hand.`
-    : `€${Math.round(d.price)} ${d.tripType === 'roundtrip' ? 'return' : 'one-way'} to ${d.destination}. ${d.dates}. Found and checked by hand.`;
+    ? `${eur(d.price)} ${tripLabel} į ${destAcc} — ${d.drop} % pigiau nei įprastai. ${d.dates}. ${S.checkedByHand}`
+    : `${eur(d.price)} ${tripLabel} į ${destAcc}. ${d.dates}. ${S.checkedByHand}`;
 
   return {
     title,
