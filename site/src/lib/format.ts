@@ -1,5 +1,16 @@
 // Lithuanian formatting (V2 spec §4): VLKK month abbreviations, month-first
 // genitive date order („rugs. 12–19"), „prieš X" relative time, „102 €" prices.
+const MONTHS_NOM = [
+  'sausis', 'vasaris', 'kovas', 'balandis', 'gegužė', 'birželis',
+  'liepa', 'rugpjūtis', 'rugsėjis', 'spalis', 'lapkritis', 'gruodis',
+];
+
+/** Full nominative LT month from an ISO date — locked rows show the month, not the dates. */
+export function ltMonthNom(iso: string): string {
+  const m = Number(iso.split('-')[1]);
+  return MONTHS_NOM[m - 1] ?? '';
+}
+
 const MONTHS = [
   'saus.', 'vas.', 'kov.', 'bal.', 'geg.', 'birž.',
   'liep.', 'rugpj.', 'rugs.', 'spal.', 'lapkr.', 'gruod.',

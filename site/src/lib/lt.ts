@@ -26,6 +26,14 @@ export const S = {
   liveHeader: 'Dar spėji',
   thisWeek: 'Šios savaitės radiniai',
 
+  // Locked rows (edition scarcity — founder-approved mock 2026-08-28)
+  lockedChip: 'kaina — laiške',
+  lockedFootnote: 'Prenumeratoriai jau žino šias kainas.',
+  lockedFootnoteCta: 'Noriu radinių',
+  lockedInLetter: 'tik laiške', // collection count suffix: "· dar 2 tik laiške"
+  foundToday: 'Šįryt radom', // kicker: "Šįryt radom 5 · čia rodom 3 · atnaujinta šįryt"
+  shownHere: 'čia rodom',
+
   // CTAs
   ctaSeeDeal: 'Žiūrėti skrydį',
   ctaSeeDealHero: 'Skrendam?', // hero card only, max once per page (spec §8.3)

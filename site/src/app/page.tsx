@@ -1,4 +1,5 @@
 import { getLiveDeals, getInspirationDeals } from '@/lib/queries';
+import { splitFreeLocked } from '@/lib/scarcity';
 import { toTicket, toPublicDeal } from '@/lib/mappers';
 import { freshInfo } from '@/lib/format';
 import { S } from '@/lib/lt';
@@ -14,9 +15,9 @@ export const revalidate = 300; // ISR: refresh every 5 min
 export default async function Home() {
   const now = new Date();
   const rows = await getLiveDeals();
-  const live = rows.map((r) => toTicket(r, now));
+  const { free, locked } = splitFreeLocked(rows.map((r) => toTicket(r, now)));
   const past = (await getInspirationDeals(3)).map((r) => toTicket(r, now));
-  const [featured = null, ...rest] = live;
+  const [featured = null, ...rest] = free;
   // Real freshness + the tier-honest LT verdict line of the featured deal.
   const featuredRow = rows[0];
   const fresh = featuredRow
@@ -51,14 +52,14 @@ export default async function Home() {
         </div>
       </section>
 
-      {featured && <Poster t={featured} count={live.length} freshness={catchFreshness} hook={hook} />}
+      {featured && <Poster t={featured} count={free.length + locked.length} freshness={catchFreshness} hook={hook} />}
 
       {/* The ask lives next to the desire — never a full viewport below it */}
       <CaptureRow />
 
       {/* Artboard order: what you missed → what's left → the email */}
       <TrophyCase deals={past} />
-      <LiveIndex deals={rest} startAt={2} />
+      <LiveIndex deals={rest} locked={locked} startAt={2} />
       <InkBand />
 
       <V2Footer />

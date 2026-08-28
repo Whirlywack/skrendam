@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
 import {
@@ -8,6 +9,7 @@ import {
   travelMoments,
 } from '@/db/generated/schema';
 import type { CollectionFilter } from './collections';
+import { FREE_WINDOW } from './scarcity';
 
 // Dedup guard: candidate_template_matches has no composite unique constraint on
 // (candidate_id, deal_template_id) yet — proper fix is a deferred migration (out-of-scope §2).
@@ -38,9 +40,29 @@ function dedupeById<T extends { pd: { id: number } }>(rows: T[]): T[] {
   });
 }
 
+// publishedAt ties (batch publishes, seeds) need the id tiebreaker so every
+// free/locked boundary derivation orders identically (review 08-28).
+const LIVE_ORDER = [desc(publishedDeals.publishedAt), desc(publishedDeals.id)];
+
 export async function getLiveDeals() {
-  return dedupeById(await dealBase().where(eq(publishedDeals.status, 'live')).orderBy(desc(publishedDeals.publishedAt)));
+  return dedupeById(await dealBase().where(eq(publishedDeals.status, 'live')).orderBy(...LIVE_ORDER));
 }
+
+/**
+ * Ids of the free-window deals (newest FREE_WINDOW live). Everything live
+ * outside this set is "locked" — shown price-free on the homepage, excluded
+ * from similar/collection lists, and its detail page redirects to signup.
+ * cache(): one consistent snapshot per request (deal page asks twice).
+ */
+export const getFreeWindowIds = cache(async (): Promise<Set<number>> => {
+  const rows = await db
+    .select({ id: publishedDeals.id })
+    .from(publishedDeals)
+    .where(eq(publishedDeals.status, 'live'))
+    .orderBy(...LIVE_ORDER)
+    .limit(FREE_WINDOW);
+  return new Set(rows.map((r) => r.id));
+});
 
 export async function getInspirationDeals(limit = INSPIRATION_LIMIT) {
   // Dedupe BEFORE limiting: the candidate_template_matches join can fan out (no
@@ -61,15 +83,18 @@ export async function getSimilarDeals(
   limit = 3,
 ) {
   const excludeId = Number(opts.excludeId);
+  // Locked deals never appear with prices outside the homepage teaser rows.
+  const freeIds = await getFreeWindowIds();
 
   // Fetch zone-matched live deals (excluding self)
   const zoneRows: Awaited<ReturnType<typeof dealBase>> = opts.zone
     ? await dealBase()
       .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, opts.zone)))
-      .orderBy(desc(publishedDeals.publishedAt))
+      .orderBy(...LIVE_ORDER)
     : [];
 
-  const zoneDeduped = dedupeById(zoneRows).filter((r) => r.pd.id !== excludeId);
+  const zoneDeduped = dedupeById(zoneRows)
+    .filter((r) => r.pd.id !== excludeId && freeIds.has(r.pd.id));
 
   if (zoneDeduped.length >= limit) return zoneDeduped.slice(0, limit);
 
@@ -77,32 +102,42 @@ export async function getSimilarDeals(
   const originRows: Awaited<ReturnType<typeof dealBase>> = opts.origin
     ? await dealBase()
       .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, opts.origin)))
-      .orderBy(desc(publishedDeals.publishedAt))
+      .orderBy(...LIVE_ORDER)
     : [];
 
   const merged = dedupeById([
     ...zoneDeduped,
-    ...originRows.filter((r) => r.pd.id !== excludeId),
+    ...originRows.filter((r) => r.pd.id !== excludeId && freeIds.has(r.pd.id)),
   ]);
 
   return merged.slice(0, limit);
 }
 
 export async function getCollectionDeals(filter: CollectionFilter) {
+  // Collection pages still wear V1 dress (no locked-row rendering yet), so
+  // locked deals are excluded rather than leaked with full prices — but their
+  // COUNT is returned so the page never claims emptiness while deals exist
+  // in the letter (review 08-28).
+  const freeIds = await getFreeWindowIds();
+  const split = <T extends { pd: { id: number } }>(rows: T[]) => ({
+    deals: rows.filter((r) => freeIds.has(r.pd.id)),
+    lockedCount: rows.filter((r) => !freeIds.has(r.pd.id)).length,
+  });
+
   if (filter.kind === 'origin') {
-    return dedupeById(
+    return split(dedupeById(
       await dealBase()
         .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, filter.iata)))
-        .orderBy(desc(publishedDeals.publishedAt)),
-    );
+        .orderBy(...LIVE_ORDER),
+    ));
   }
 
   if (filter.kind === 'zone') {
-    return dedupeById(
+    return split(dedupeById(
       await dealBase()
         .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, filter.zone)))
-        .orderBy(desc(publishedDeals.publishedAt)),
-    );
+        .orderBy(...LIVE_ORDER),
+    ));
   }
 
   // kind === 'moment': resolve travel moment → template ids → deals
@@ -111,16 +146,16 @@ export async function getCollectionDeals(filter: CollectionFilter) {
     .from(travelMoments)
     .where(eq(travelMoments.slug, filter.slug));
 
-  if (tms.length === 0) return [];
+  if (tms.length === 0) return { deals: [], lockedCount: 0 };
 
   const tpls = await db
     .select({ id: dealTemplates.id })
     .from(dealTemplates)
     .where(inArray(dealTemplates.travelMomentId, tms.map((t) => t.id)));
 
-  if (tpls.length === 0) return [];
+  if (tpls.length === 0) return { deals: [], lockedCount: 0 };
 
-  return dedupeById(
+  return split(dedupeById(
     await dealBase()
       .where(
         and(
@@ -131,6 +166,6 @@ export async function getCollectionDeals(filter: CollectionFilter) {
           ),
         ),
       )
-      .orderBy(desc(publishedDeals.publishedAt)),
-  );
+      .orderBy(...LIVE_ORDER),
+  ));
 }

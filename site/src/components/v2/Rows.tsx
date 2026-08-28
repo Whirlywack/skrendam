@@ -3,11 +3,18 @@ import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur, ltPlural } from '@/lib/format';
 
-/** Live index — „Dar spėji": the design system's ink-inverting rows, from № 02. */
-export function LiveIndex({ deals, startAt }: { deals: TicketView[]; startAt: number }) {
-  if (deals.length === 0) return null;
-  const n = deals.length + startAt - 1;
-  const kicker = `Tik ${n} ${ltPlural(n, 'vertas', 'verti', 'vertų')} tavo pinigų šiandien · ${S.updatedMorning}`;
+/** Live index — „Dar spėji": the design system's ink-inverting rows, from № 02.
+ *  Deals past the free window render locked: destination + month, price in the letter. */
+export function LiveIndex({ deals, locked = [], startAt }: {
+  deals: TicketView[]; locked?: TicketView[]; startAt: number;
+}) {
+  if (deals.length === 0 && locked.length === 0) return null;
+  const shown = deals.length + startAt - 1;
+  const total = shown + locked.length;
+  // With a locked tail the kicker states the honest split; otherwise the count claim.
+  const kicker = locked.length > 0
+    ? `${S.foundToday} ${total} · ${S.shownHere} ${shown} · ${S.updatedMorning}`
+    : `Tik ${shown} ${ltPlural(shown, 'vertas', 'verti', 'vertų')} tavo pinigų šiandien · ${S.updatedMorning}`;
   return (
     <section className="wrap v2-sec">
       <div className="head">
@@ -26,7 +33,23 @@ export function LiveIndex({ deals, startAt }: { deals: TicketView[]; startAt: nu
             <span className="go" aria-hidden="true" />
           </Link>
         ))}
+        {locked.map((t, i) => (
+          <a key={t.id} href="#kapote" className="v2-row v2-row--locked">
+            <span className="no">Nr. {String(startAt + deals.length + i).padStart(2, '0')}</span>
+            <span className="v2-row-name">{t.destination}</span>
+            <span className="v2-row-meta">{t.route} · {t.month} · {t.catchChip}</span>
+            <span className="v2-row-price">
+              <span className="bead" aria-hidden="true" />{S.lockedChip}
+            </span>
+            <span className="go" aria-hidden="true" />
+          </a>
+        ))}
       </div>
+      {locked.length > 0 && (
+        <div className="mono v2-footnote">
+          {S.lockedFootnote} <a href="#kapote">{S.lockedFootnoteCta} →</a>
+        </div>
+      )}
     </section>
   );
 }

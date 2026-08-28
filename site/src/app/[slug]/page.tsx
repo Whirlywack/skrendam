@@ -46,7 +46,8 @@ export default async function CollectionPage({
   if (!c) notFound();
 
   const now = new Date();
-  const deals = (await getCollectionDeals(c.filter)).map((r) => toTicket(r, now));
+  const { deals: rows, lockedCount } = await getCollectionDeals(c.filter);
+  const deals = rows.map((r) => toTicket(r, now));
 
   return (
     <main className="yip-collection">
@@ -71,10 +72,14 @@ export default async function CollectionPage({
         <div className="eyebrow">{c.label} · iš VNO · KUN · RIX</div>
         <h1 className="coll-h1">{c.h1}</h1>
         <p className="lead">{c.promise}</p>
-        {deals.length > 0 && (
+        {(deals.length > 0 || lockedCount > 0) && (
           <p className="coll-count">
-            Šiuo metu: {deals.length}{' '}
-            {ltPlural(deals.length, 'gyvas radinys', 'gyvi radiniai', 'gyvų radinių')}
+            {deals.length > 0 && (
+              <>Šiuo metu: {deals.length}{' '}
+              {ltPlural(deals.length, 'gyvas radinys', 'gyvi radiniai', 'gyvų radinių')}</>
+            )}
+            {deals.length > 0 && lockedCount > 0 && ' · '}
+            {lockedCount > 0 && `dar ${lockedCount} ${S.lockedInLetter}`}
           </p>
         )}
       </div>
@@ -90,7 +95,9 @@ export default async function CollectionPage({
         ) : (
           <div className="coll-empty">
             <p>
-              „<strong>{c.label}</strong>“ gyvų radinių šiuo metu nėra — kitą gauk el. paštu.
+              {lockedCount > 0
+                ? <>„<strong>{c.label}</strong>“ radiniai šiuo metu — {S.lockedInLetter}. Gauk juos el. paštu.</>
+                : <>„<strong>{c.label}</strong>“ gyvų radinių šiuo metu nėra — kitą gauk el. paštu.</>}
             </p>
             <a href="#capture" className="btn-primary">
               {S.ctaSubmit}

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getDeal, getSimilarDeals } from '@/lib/queries';
+import { notFound, redirect } from 'next/navigation';
+import { getDeal, getFreeWindowIds, getSimilarDeals } from '@/lib/queries';
 import { toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
@@ -51,6 +51,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   const row = await getDeal(numId);
   if (!row) notFound();
+
+  // Locked deals (live but past the free window) exist only as homepage
+  // teasers — their detail lives in the letter. Expired deals keep rendering.
+  if (row.pd.status === 'live') {
+    const freeIds = await getFreeWindowIds();
+    if (!freeIds.has(row.pd.id)) redirect('/#kapote');
+  }
 
   const now = new Date();
   const pd = row.pd;
@@ -276,6 +283,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (Number.isNaN(numId)) return { title: 'Radinys — Yip' };
   const row = await getDeal(numId);
   if (!row) return { title: 'Radinys — Yip' };
+
+  // Locked deals: the page 307s to signup, but metadata must not carry the
+  // price either — mirror the page guard (review 08-28).
+  if (row.pd.status === 'live') {
+    const freeIds = await getFreeWindowIds();
+    if (!freeIds.has(row.pd.id)) {
+      return { title: 'Radinys — Yip', robots: { index: false, follow: true } };
+    }
+  }
+
   const d = toPublicDeal(row, new Date());
 
   // Expired deals: preserved noindex logic from prior task
