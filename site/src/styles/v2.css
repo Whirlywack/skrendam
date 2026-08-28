@@ -155,6 +155,40 @@
 .v2-footnote { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-500); padding: 14px 8px 0; }
 .v2-footnote a { color: var(--accent, #0F7C68); }
 
+/* ---------- inner pages (deal / collections / past) ---------- */
+.v2-crumb { padding: 22px 0 2px; font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--sand-500); }
+.v2-crumb a { color: var(--accent, #0F7C68); text-decoration: none; }
+.v2-crumb a:hover { text-decoration: underline; }
+
+.v2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 40px 0 8px; }
+.v2-cols h3 { font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; margin: 0 0 14px; }
+.v2-cols h3.good { color: var(--accent, #0F7C68); }
+.v2-cols h3.cav { color: var(--sand-500); }
+.v2-li { display: flex; gap: 12px; align-items: baseline; font-family: var(--font-body);
+  font-size: 16.5px; line-height: 1.55; color: var(--v2-ink); padding: 7px 0; }
+.v2-li .bead { flex: none; width: 7px; height: 7px; }
+.v2-li.cav .bead { background: var(--sand-400); }
+
+.v2-context { border-top: 1px solid var(--line); padding: 34px 0 6px; }
+.v2-context .big { font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(24px, 3vw, 36px); letter-spacing: -.02em; color: var(--v2-ink); margin: 6px 0 10px; }
+
+.v2-curator { border-left: 3px solid var(--v2-amber); padding: 6px 0 6px 20px; margin: 34px 0 0; }
+.v2-curator .txt { font-family: var(--font-body); font-size: 17px; line-height: 1.6; color: var(--v2-ink); }
+.v2-curator .sig { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
+  letter-spacing: .14em; color: var(--sand-500); margin-top: 8px; }
+
+.v2-linkband { padding: 26px 0 0; font-family: var(--font-mono); font-size: 12px;
+  text-transform: uppercase; letter-spacing: .14em; color: var(--sand-500); }
+.v2-linkband a { color: var(--accent, #0F7C68); margin-right: 18px; text-decoration: none; }
+.v2-linkband a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .v2-cols { grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }
+}
+
 /* ---------- ink band ---------- */
 .v2-ink-band { background: var(--v2-ink); color: var(--v2-paper); padding: 84px 0; position: relative; overflow: hidden; margin-top: 64px; }
 .v2-ink-band .sunball {

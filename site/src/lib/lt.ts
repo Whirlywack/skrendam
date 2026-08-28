@@ -31,6 +31,14 @@ export const S = {
   lockedFootnote: 'Prenumeratoriai jau žino šias kainas.',
   lockedFootnoteCta: 'Noriu radinių',
   lockedInLetter: 'tik laiške', // collection count suffix: "· dar 2 tik laiške"
+
+  // Inner pages (V2 reflow)
+  crumbAria: 'Naršymo kelias',
+  moreLabel: 'Daugiau:',
+  similarHeader: 'Daugiau tokių radinių',
+  priceContextH: 'Kodėl kaina gera',
+  priceContextMethod: 'Pagal paskutines maršruto patikras',
+  pastEyebrow: 'Nebegalioja · bet įrodo',
   foundToday: 'Šįryt radom', // kicker: "Šįryt radom 5 · čia rodom 3 · atnaujinta šįryt"
   shownHere: 'čia rodom',
 

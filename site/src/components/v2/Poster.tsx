@@ -5,7 +5,8 @@ import { eur } from '@/lib/format';
 import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
 
 // Photo scenes map onto the design system's duotone poster fields.
-const POSTER: Record<string, string> = {
+// Exported: the deal page's poster hero shares the mapping.
+export const POSTER: Record<string, string> = {
   'ph-sun': 'v2-poster--sun',
   'ph-coast': 'v2-poster--sun',
   'ph-city': 'v2-poster--stone',

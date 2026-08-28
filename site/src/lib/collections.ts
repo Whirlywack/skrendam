@@ -68,3 +68,10 @@ export const COLLECTIONS: Collection[] = [
 
 export const collectionBySlug = (slug: string): Collection | undefined =>
   COLLECTIONS.find((c) => c.slug === slug);
+
+// Interlink helpers — deal pages link the collections they belong to (SEO).
+export const originCollection = (iata: string): Collection | undefined =>
+  COLLECTIONS.find((c) => c.filter.kind === 'origin' && c.filter.iata === iata);
+
+export const zoneCollection = (zone: string | null | undefined): Collection | undefined =>
+  zone ? COLLECTIONS.find((c) => c.filter.kind === 'zone' && c.filter.zone === zone) : undefined;

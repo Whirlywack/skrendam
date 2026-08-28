@@ -4,13 +4,14 @@ import type { Metadata } from 'next';
 import { COLLECTIONS, collectionBySlug } from '@/lib/collections';
 import { getCollectionDeals } from '@/lib/queries';
 import { toTicket } from '@/lib/mappers';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { DealTicket } from '@/components/DealTicket';
-import { CaptureBand } from '@/components/CaptureBand';
+import { Masthead } from '@/components/v2/Masthead';
+import { Crumb } from '@/components/v2/Crumb';
+import { LinkBand } from '@/components/v2/LinkBand';
+import { InkBand } from '@/components/v2/InkBand';
+import { V2Footer } from '@/components/v2/V2Footer';
 import { JsonLd } from '@/components/JsonLd';
 import { breadcrumbJsonLd } from '@/lib/seo';
-import { ltPlural } from '@/lib/format';
+import { eur, ltPlural } from '@/lib/format';
 import { S } from '@/lib/lt';
 
 export const revalidate = 300;
@@ -49,65 +50,75 @@ export default async function CollectionPage({
   const { deals: rows, lockedCount } = await getCollectionDeals(c.filter);
   const deals = rows.map((r) => toTicket(r, now));
 
+  // Sibling collections — every collection links the others (SEO interlink)
+  const siblings = COLLECTIONS.filter((x) => x.slug !== c.slug)
+    .map((x) => ({ label: x.label, href: `/${x.slug}` }));
+
   return (
-    <main className="yip-collection">
+    <main className="v2">
       <JsonLd data={breadcrumbJsonLd([
         { name: S.navHome, path: '/' },
         { name: S.navCollections, path: '/collections' },
         { name: c.label, path: `/${c.slug}` },
       ])} />
-      <Header />
+      <Masthead />
 
-      {/* Breadcrumb */}
-      <nav className="crumb" aria-label="Naršymo kelias">
-        <Link href="/">{S.navHome}</Link>
-        {' › '}
-        <Link href="/collections">{S.navCollections}</Link>
-        {' › '}
-        <span>{c.label}</span>
-      </nav>
+      <Crumb items={[
+        { label: S.navDeals, href: '/' },
+        { label: S.navCollections, href: '/collections' },
+        { label: c.label },
+      ]} />
 
       {/* Collection hero */}
-      <div className="coll-hero pad">
-        <div className="eyebrow">{c.label} · iš VNO · KUN · RIX</div>
-        <h1 className="coll-h1">{c.h1}</h1>
-        <p className="lead">{c.promise}</p>
-        {(deals.length > 0 || lockedCount > 0) && (
-          <p className="coll-count">
-            {deals.length > 0 && (
-              <>Šiuo metu: {deals.length}{' '}
-              {ltPlural(deals.length, 'gyvas radinys', 'gyvi radiniai', 'gyvų radinių')}</>
-            )}
-            {deals.length > 0 && lockedCount > 0 && ' · '}
-            {lockedCount > 0 && `dar ${lockedCount} ${S.lockedInLetter}`}
-          </p>
-        )}
-      </div>
+      <section className="wrap v2-hero" style={{ padding: '34px 0 10px' }}>
+        <div className="v2-kicker v2-kicker--dim">{c.label} · iš VNO · KUN · RIX</div>
+        <h1 className="v2-display" style={{ fontSize: 'var(--d-h1, clamp(38px, 5vw, 64px))', margin: '14px 0 0' }}>
+          {c.h1}
+          <span className="bead" aria-hidden="true" />
+        </h1>
+        <div className="sub-row">
+          <p className="lead">{c.promise}</p>
+          {(deals.length > 0 || lockedCount > 0) && (
+            <span className="v2-kicker v2-kicker--dim">
+              {deals.length > 0 &&
+                `Šiuo metu: ${deals.length} ${ltPlural(deals.length, 'gyvas radinys', 'gyvi radiniai', 'gyvų radinių')}`}
+              {deals.length > 0 && lockedCount > 0 && ' · '}
+              {lockedCount > 0 && `dar ${lockedCount} ${S.lockedInLetter}`}
+            </span>
+          )}
+        </div>
+      </section>
 
-      {/* Deal grid or empty state */}
-      <div className="pad" style={{ paddingTop: 0 }}>
+      {/* Deals as the home page's ink-inverting rows */}
+      <section className="wrap v2-sec" style={{ paddingTop: 26 }}>
         {deals.length > 0 ? (
-          <div className="grid3">
-            {deals.map((d) => (
-              <DealTicket key={d.id} t={d} />
+          <div className="v2-rows">
+            {deals.map((t, i) => (
+              <Link key={t.id} href={`/deal/${t.id}`} className="v2-row">
+                <span className="no">Nr. {String(i + 1).padStart(2, '0')}</span>
+                <span className="v2-row-name">{t.destination}</span>
+                <span className={`v2-row-meta${t.goingFast ? ' v2-row-meta--flag' : ''}`}>
+                  {t.route} · {t.dates} · {t.catchChip}{t.goingFast ? ` · ${S.chipGoingFast}` : ''}
+                </span>
+                <span className="v2-row-price">{eur(t.price)}</span>
+                <span className="go" aria-hidden="true" />
+              </Link>
             ))}
           </div>
         ) : (
-          <div className="coll-empty">
-            <p>
-              {lockedCount > 0
-                ? <>„<strong>{c.label}</strong>“ radiniai šiuo metu — {S.lockedInLetter}. Gauk juos el. paštu.</>
-                : <>„<strong>{c.label}</strong>“ gyvų radinių šiuo metu nėra — kitą gauk el. paštu.</>}
-            </p>
-            <a href="#capture" className="btn-primary">
-              {S.ctaSubmit}
-            </a>
+          <div className="mono v2-footnote" style={{ padding: '4px 0 0' }}>
+            {lockedCount > 0
+              ? <>„{c.label}“ radiniai šiuo metu — {S.lockedInLetter}. </>
+              : <>„{c.label}“ gyvų radinių šiuo metu nėra. </>}
+            <a href="#kapote">{S.ctaSubmit} →</a>
           </div>
         )}
-      </div>
+      </section>
 
-      <CaptureBand />
-      <Footer />
+      <LinkBand links={siblings} />
+
+      <InkBand />
+      <V2Footer />
     </main>
   );
 }
