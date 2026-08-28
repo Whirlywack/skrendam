@@ -20,23 +20,23 @@ export async function sendConfirmEmail(email: string, token: string): Promise<vo
   await resend.emails.send({
     from: FROM,
     to: email,
-    subject: 'Confirm your email — Yip',
-    text: `Almost there — confirm your subscription to Yip's hand-checked cheap flights:\n\n${url}\n\nIf you didn't sign up, ignore this email.`,
+    subject: 'Patvirtink el. paštą — Yip',
+    text: `Liko vienas žingsnis — patvirtink, ir žmogaus patikrinti pigūs skrydžiai keliaus tiesiai tau:\n\n${url}\n\nJei neprenumeravai — tiesiog ignoruok šį laišką.`,
     html: `<!DOCTYPE html>
-<html lang="en">
+<html lang="lt">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#FFFDF7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:520px;margin:0 auto;padding:48px 24px;">
     <p style="margin:0 0 32px;font-size:28px;font-weight:700;letter-spacing:-0.5px;color:#1C1813;">yıp</p>
     <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:#1C1813;">
-      Almost there — tap to confirm and you'll start getting hand-checked cheap flights from Vilnius, Kaunas &amp; Riga.
+      Liko vienas žingsnis — paspausk, ir gausi žmogaus patikrintus pigius skrydžius iš Vilniaus, Kauno ir Rygos.
     </p>
     <a href="${url}"
        style="display:inline-block;background:#E2820E;color:#FFFDF7;text-decoration:none;font-size:15px;font-weight:600;padding:14px 28px;border-radius:8px;letter-spacing:0.01em;">
-      Confirm my email
+      Patvirtinti el. paštą
     </a>
     <p style="margin:32px 0 0;font-size:13px;color:#6B6560;line-height:1.5;">
-      If you didn't sign up to Yip, you can safely ignore this email.
+      Jei Yip neprenumeravai — tiesiog ignoruok šį laišką.
     </p>
   </div>
 </body>

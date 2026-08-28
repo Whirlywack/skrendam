@@ -13,7 +13,7 @@ export function orgJsonLd() {
     '@type': 'Organization',
     name: 'Yip',
     url: base,
-    description: 'Hand-checked cheap flights from Vilnius, Kaunas and Riga.',
+    description: 'Žmogaus patikrinti pigūs skrydžiai iš Vilniaus, Kauno ir Rygos.',
     areaServed: 'Lithuania',
   };
 }

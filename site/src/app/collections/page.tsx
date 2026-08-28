@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { Header } from '@/components/Header';
 import { Collections } from '@/components/Collections';
 import { Footer } from '@/components/Footer';
+import { S } from '@/lib/lt';
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Flight-deal collections · Yip',
+  title: 'Kryptys · Yip',
   description:
-    'Browse hand-checked cheap flights by departure city and travel moment — Vilnius, Kaunas, Riga, September sun, Christmas markets, Cyprus.',
+    'Žmogaus patikrinti pigūs skrydžiai pagal išvykimo miestą ir kelionės tipą — Vilnius, Kaunas, Ryga, rugsėjo saulė, Kalėdų mugės, Kipras.',
   alternates: { canonical: '/collections' },
 };
 
@@ -19,11 +20,11 @@ export default function CollectionsIndex() {
 
       {/* Page heading band */}
       <div className="coll-hero pad">
-        <div className="eyebrow">Browse by</div>
-        <h1 className="coll-h1">Where do you want to go?</h1>
+        <div className="eyebrow">{S.collEyebrow}</div>
+        <h1 className="coll-h1">{S.collHeader}</h1>
         <p className="lead">
-          Hand-checked cheap flights by departure city and travel moment. Every deal is verified
-          by a real person — we tell you why it&apos;s good, and the catch.
+          Žmogaus patikrinti pigūs skrydžiai pagal išvykimo miestą ir kelionės momentą.
+          Kiekvieną radinį patikrino gyvas žmogus — sakom, kodėl verta ir koks kabliukas.
         </p>
       </div>
 

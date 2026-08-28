@@ -9,7 +9,8 @@
    If you need offline TTFs, see /fonts (flag to user — currently CDN-linked).
    ========================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:ital,wght@0,400..800;1,400..600&family=Space+Mono:wght@400;700&display=swap');
+/* Fonts load from app/layout.tsx <link> tags — a nested @import here is
+   silently stripped by the Next.js CSS pipeline (2026-08-28 audit). */
 
 :root {
   /* ---------------------------------------------------------------------

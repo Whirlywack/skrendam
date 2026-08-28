@@ -3,15 +3,16 @@ import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { subscribePageAction } from '@/app/subscribe-action';
+import { S } from '@/lib/lt';
 
 export const metadata: Metadata = {
-  title: 'Early alerts — get the rare fares first · Yip',
+  title: 'Skubios žinutės — rečiausi radiniai pirmam · Yip',
   description:
-    'Some cheap flights from Vilnius, Kaunas & Riga sell out before the weekly email. Join the early-alerts waitlist to get the rarest fares the moment Yip finds them.',
+    'Dalis pigių skrydžių iš Vilniaus, Kauno ir Rygos dingsta dar prieš savaitinį laišką. Prisijunk prie skubių žinučių sąrašo — rečiausius radinius gausi vos tik juos randam.',
   alternates: { canonical: '/early-alerts' },
   openGraph: {
-    title: 'Early alerts — get the rare fares first · Yip',
-    description: 'Get the rarest Baltic flight deals the moment we find them.',
+    title: 'Skubios žinutės — rečiausi radiniai pirmam · Yip',
+    description: 'Rečiausi Baltijos radiniai — vos tik juos randam.',
   },
 };
 
@@ -72,13 +73,13 @@ export default function EarlyAlertsPage() {
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <section className="pad">
-        <div className="eyebrow">Early alerts · waitlist</div>
+        <div className="eyebrow">Skubios žinutės · renkam sąrašą</div>
         <h1 className="coll-h1">
-          Get the best fares <span style={{ color: 'var(--amber)' }}>first</span>.
+          Gauk geriausius radinius <span style={{ color: 'var(--amber)' }}>pirmas</span>.
         </h1>
         <p className="lead">
-          Some rare fares are gone by the time the weekly email goes out. Early alerts send them
-          the moment Yip finds them — before the email, before they sell out.
+          Dalis retų radinių dingsta dar prieš savaitinį laišką. Skubios žinutės atskrenda
+          vos tik radinį randam — anksčiau nei laiškas, anksčiau nei jis dingsta.
         </p>
       </section>
 
@@ -88,42 +89,42 @@ export default function EarlyAlertsPage() {
 
           {/* Free weekly — left column */}
           <div className="cmpcard">
-            <span className="cmptag tag-now">Included free</span>
-            <h3>Free weekly email</h3>
-            <div className="cmp-price">Always free</div>
+            <span className="cmptag tag-now">Visada nemokama</span>
+            <h3>Savaitinis laiškas</h3>
+            <div className="cmp-price">Nemokamai</div>
             <ul className="cmplist">
               <li>
                 <CheckIcon />
-                One calm email a week
+                Vienas ramus laiškas per savaitę
               </li>
               <li>
                 <CheckIcon />
-                The best of what we found that week
+                Geriausi savaitės radiniai
               </li>
               <li className="cmp-dim">
                 <ClockIcon />
-                <span>Slower — some rare fares may be gone</span>
+                <span>Lėčiau — dalis retų radinių jau būna dingę</span>
               </li>
             </ul>
           </div>
 
           {/* Early alerts — right column (featured) */}
           <div className="cmpcard cmpcard--early">
-            <span className="cmptag tag-wait">Waitlist</span>
-            <h3>Early alerts</h3>
-            <div className="cmp-price">Free to join · coming soon</div>
+            <span className="cmptag tag-wait">Renkam sąrašą</span>
+            <h3>Skubios žinutės</h3>
+            <div className="cmp-price">Nemokama · jau netrukus</div>
             <ul className="cmplist">
               <li>
                 <ZapIcon />
-                The rarest fares <strong>the moment we find them</strong>
+                Rečiausi radiniai — <strong>vos tik juos randam</strong>
               </li>
               <li>
                 <ZapIcon />
-                Before the weekly email — before they sell out
+                Anksčiau nei savaitinis laiškas — kol dar neišpirkta
               </li>
               <li>
                 <ZapIcon />
-                Your airports &amp; trip types, prioritised
+                Tavo oro uostai ir kelionių tipai — pirmiausia
               </li>
             </ul>
 
@@ -131,7 +132,7 @@ export default function EarlyAlertsPage() {
             <form
               action={subscribePageAction}
               className="ea-form"
-              aria-label="Join the early-alerts waitlist"
+              aria-label="Prisijungti prie skubių žinučių sąrašo"
             >
               <input type="hidden" name="mode" value="page" />
               <input type="hidden" name="early_alerts" value="on" />
@@ -140,16 +141,16 @@ export default function EarlyAlertsPage() {
                 <input
                   type="email"
                   name="email"
-                  placeholder="you@email.com"
+                  placeholder={S.emailPlaceholder}
                   required
-                  aria-label="Email address"
+                  aria-label={S.emailAria}
                   autoComplete="email"
                 />
                 <button type="submit" className="btn">
-                  Join the early-alerts waitlist
+                  Į skubių žinučių sąrašą
                 </button>
               </div>
-              <p className="ea-trust">No spam · Unsubscribe anytime</p>
+              <p className="ea-trust">Be spamo · atsisakai kada nori</p>
             </form>
           </div>
         </div>
@@ -159,11 +160,11 @@ export default function EarlyAlertsPage() {
       <section className="pad" style={{ paddingTop: 0 }}>
         <div className="ea-premium-note">
           <span className="cmptag tag-later" style={{ marginBottom: '10px', display: 'inline-block' }}>
-            Later
+            Vėliau
           </span>
           <p>
-            A premium tier with vendor-direct booking and instant price-drop alerts is on the
-            roadmap — not yet. For now, early alerts are free to join.
+            Mokamas planas su pirkimu tiesiai iš pardavėjo ir žaibiškais kainos kritimo
+            pranešimais — planuose, bet dar ne dabar. Kol kas skubios žinutės nemokamos.
           </p>
         </div>
       </section>
@@ -171,7 +172,7 @@ export default function EarlyAlertsPage() {
       {/* ── BACK TO FREE ─────────────────────────────────────────────── */}
       <section className="pad" style={{ paddingTop: 0 }}>
         <Link href="/#capture" className="ea-back-link">
-          Just want the weekly email? Get free weekly deals →
+          Užtenka savaitinio laiško? Gauk radinius el. paštu →
         </Link>
       </section>
 

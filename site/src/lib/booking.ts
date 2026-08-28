@@ -14,8 +14,8 @@ export function bookingCta(bookingUrl: string | null, vendor: string | null = nu
                            kind: BookingKind = 'google'): BookingCta {
   const url = bookingUrl && isSafeUrl(bookingUrl) ? bookingUrl : 'https://www.google.com/travel/flights';
   if (kind === 'airline' && vendor)
-    return { kind, button: `Book with ${vendor}`, sub: 'Airline-direct · live price shown there', url };
+    return { kind, button: `Pirk tiesiai iš ${vendor}`, sub: 'Tiesiai iš aviakompanijos · gyvą kainą matai ten', url };
   if (kind === 'ota')
-    return { kind, button: 'Open booking partner', sub: 'Live price shown before you pay', url };
-  return { kind: 'google', button: 'Open in Google Flights', sub: 'Use this to check live availability & book', url };
+    return { kind, button: 'Atidaryti partnerio puslapį', sub: 'Gyvą kainą matai prieš mokėdamas', url };
+  return { kind: 'google', button: 'Atidaryti „Google Flights“', sub: 'Pasitikrink gyvą kainą ir vietas — bilietą perki ten', url };
 }

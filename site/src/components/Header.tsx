@@ -1,16 +1,18 @@
+import { S } from '@/lib/lt';
+
 export function Header() {
   return (
     <header className="hdr">
-      <span className="wm">yıp</span>
-      <nav aria-label="Site">
-        <a href="/">Deals</a>
-        <a href="/collections">Collections</a>
+      <span className="wm" aria-label="Yip">yıp</span>
+      <nav aria-label={S.navAria}>
+        <a href="/">{S.navDeals}</a>
+        <a href="/collections">{S.navCollections}</a>
         {/* "Past fares" returns to the nav once real expired deals exist —
             a proof page with zero proof converts worse than no link (audit 08-28) */}
-        <a href="/#how">How it works</a>
+        <a href="/#how">{S.navHow}</a>
       </nav>
       <span className="sp" />
-      <span className="frompill">From VNO · KUN · RIX</span>
+      <span className="frompill">{S.fromPill}</span>
     </header>
   );
 }

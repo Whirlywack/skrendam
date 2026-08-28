@@ -3,15 +3,15 @@ import { bookingCta } from './booking';
 test('google fallback (v1 default — stored tfs link)', () => {
   const c = bookingCta('https://www.google.com/travel/flights?tfs=ABC');
   expect(c.kind).toBe('google');
-  expect(c.button).toBe('Open in Google Flights');
+  expect(c.button).toContain('Google Flights'); // „Atidaryti „Google Flights“"
 });
 test('airline-direct upgrade (fast-follow data)', () => {
   const c = bookingCta('https://airbaltic.com/x', 'airBaltic', 'airline');
-  expect(c.button).toBe('Book with airBaltic');
-  expect(c.sub).toMatch(/Airline-direct/);
+  expect(c.button).toBe('Pirk tiesiai iš airBaltic');
+  expect(c.sub).toMatch(/aviakompanijos/);
 });
 test('ota', () => {
-  expect(bookingCta('https://ota/x', null, 'ota').button).toBe('Open booking partner');
+  expect(bookingCta('https://ota/x', null, 'ota').button).toBe('Atidaryti partnerio puslapį');
 });
 test('airline kind + null vendor → google fallback (v1 spec)', () => {
   const c = bookingCta('https://airline.com/x', null, 'airline');

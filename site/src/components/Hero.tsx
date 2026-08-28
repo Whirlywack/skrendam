@@ -1,5 +1,8 @@
 import { Photo } from './Photo';
 import { SignupCard } from './SignupCard';
+import { S } from '@/lib/lt';
+import { eur, ltPlural } from '@/lib/format';
+import { ltCity } from '@/lib/cities-lt';
 import type { TicketView } from '@/lib/types';
 
 export function Hero({
@@ -10,27 +13,25 @@ export function Hero({
   topDeal: TicketView | null;
 }) {
   const scene = topDeal?.scene ?? 'ph-coast';
-  const captionEyebrow = 'This week · live now';
+  const captionEyebrow = S.heroCaptionEyebrow;
   const captionTitle = topDeal
-    ? `${topDeal.destination}, from €${topDeal.price}`
-    : 'Larnaca, from €140';
+    ? `${topDeal.destination}, nuo ${eur(topDeal.price)}`
+    : `${ltCity('LCA').nom}, nuo ${eur(140)}`;
 
   return (
     <div className="hero">
       <div className="hero-grid">
         <div className="hero-left">
           <div className="eyebrow">
-            Found &amp; checked by hand ·{' '}
-            {newCount >= 3 ? `${newCount} live right now` : "this week's pick — only what survives the check"}
+            {S.heroEyebrow} ·{' '}
+            {newCount >= 3
+              ? `${newCount} ${ltPlural(newCount, 'radinys', 'radiniai', 'radinių')} — dar spėji`
+              : S.heroEyebrowFallback}
           </div>
           <h1>
-            Hand-checked <span className="amber">cheap flights</span> from
-            Vilnius, Kaunas and Riga.
+            <span className="amber">{S.heroTitleAmber}</span> {S.heroTitleTail}
           </h1>
-          <p className="lead">
-            We find the cheap ones, check they&apos;re real, and tell you why
-            each is good — and the catch. You book direct.
-          </p>
+          <p className="lead">{S.heroSub}</p>
           <SignupCard />
         </div>
 
@@ -43,7 +44,7 @@ export function Hero({
       </div>
 
       <div className="microproof">
-        From <b>VNO, KUN and RIX</b>. No search engine, just the good ones.
+        Iš <b>VNO, KUN ir RIX</b>. {S.microproofTail}
       </div>
     </div>
   );

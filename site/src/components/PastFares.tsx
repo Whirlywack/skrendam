@@ -8,14 +8,15 @@
  */
 import Link from 'next/link';
 import type { TicketView } from '@/lib/types';
+import { S } from '@/lib/lt';
 import { DealTicket } from './DealTicket';
 
 export function PastFares({ deals }: { deals: TicketView[] }) {
   return (
     <div className="pad">
-      <div className="eyebrow">Expired, but useful proof</div>
-      <div className="sec-h">Past rare fares.</div>
-      <p className="sec-lead">These are gone now. Get the next one before it disappears.</p>
+      <div className="eyebrow">{S.pastEyebrow}</div>
+      <div className="sec-h">{S.trophyHeader}</div>
+      <p className="sec-lead">{S.trophyFootnote}</p>
 
       <div className="grid3">
         {deals.map((t) => (
@@ -28,7 +29,7 @@ export function PastFares({ deals }: { deals: TicketView[] }) {
           href="/past-deals"
           style={{ color: 'var(--sea-ink)', fontWeight: 700, fontSize: 13 }}
         >
-          See all past fares →
+          {S.pastAll} →
         </Link>
       </div>
     </div>

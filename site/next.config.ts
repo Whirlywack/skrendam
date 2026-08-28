@@ -16,6 +16,26 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
+  // Old English collection slugs 301 → LT slugs (V2 spec §5).
+  async redirects() {
+    return [
+      {
+        source: "/cheap-flights-from-vilnius",
+        destination: "/pigus-skrydziai-is-vilniaus",
+        permanent: true,
+      },
+      {
+        source: "/cheap-flights-from-kaunas",
+        destination: "/pigus-skrydziai-is-kauno",
+        permanent: true,
+      },
+      {
+        source: "/cheap-flights-from-riga",
+        destination: "/pigus-skrydziai-is-rygos",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

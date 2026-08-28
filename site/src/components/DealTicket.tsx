@@ -15,6 +15,8 @@
 import Link from 'next/link';
 import type { TicketView } from '@/lib/types';
 import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
+import { S } from '@/lib/lt';
+import { eur } from '@/lib/format';
 import { Photo } from './Photo';
 
 export function DealTicket({ t, featured = false }: { t: TicketView; featured?: boolean }) {
@@ -22,7 +24,7 @@ export function DealTicket({ t, featured = false }: { t: TicketView; featured?: 
     <Link
       href={`/deal/${t.id}`}
       className={featured ? 'feat' : 'deal'}
-      aria-label={`${t.destination} from €${t.price}`}
+      aria-label={`${t.destination} nuo ${eur(t.price)}`}
     >
       {/* Photo panel — .ph makes it the positioned container for eyebrow + place overlays */}
       <Photo scene={t.scene} className="ph">
@@ -33,10 +35,10 @@ export function DealTicket({ t, featured = false }: { t: TicketView; featured?: 
           {t.destination}
           {/* .deal shows country + origin sub-line; .feat omits it (no <small> in feat mockup) */}
           {!featured && (
-            <small>{t.country} · from {t.origin}</small>
+            <small>{t.country} · iš {t.origin}</small>
           )}
         </div>
-        {t.goingFast && <span className="hot-tag">&#x25B2; Going fast</span>}
+        {t.goingFast && <span className="hot-tag">&#x25B2; {S.chipGoingFast}</span>}
       </Photo>
 
       {/* Card body */}
@@ -44,18 +46,22 @@ export function DealTicket({ t, featured = false }: { t: TicketView; featured?: 
         <div className="meta">{t.route} · {t.dates} · {t.legs}</div>
         <h3>{t.headline}</h3>
         <div className="chips">
-          {t.drop > 0 && <span className="chip chip-good">&#x2193; {t.drop}% under</span>}
+          {t.drop > 0 && <span className="chip chip-good">&#x2193; {t.drop} % {S.chipCheaper}</span>}
           {t.catchChip && <span className="chip chip-caveat">{t.catchChip}</span>}
         </div>
         <div className="ticket-foot">
           <div className="price">
-            €{t.price}
+            {eur(t.price)}
             {/* was-price only on deep deals — a strikethrough on a shallow
                 discount spends trust for nothing (reference-price research) */}
-            {t.baseline && t.drop >= WAS_PRICE_MIN_DROP_PCT ? <s>€{t.baseline}</s> : null}
-            <span className="ret">return · {t.airline}</span>
+            {t.baseline && t.drop >= WAS_PRICE_MIN_DROP_PCT ? <s>{eur(t.baseline)}</s> : null}
+            <span className="ret">{S.retRoundTrip} · {t.airline}</span>
           </div>
-          <span className="btn-see">See deal &#x2192;</span>
+          {/* Hero/featured card may say „Skrendam?" once per page (spec §8.3);
+              every other ticket uses the neutral CTA. */}
+          <span className="btn-see">
+            {featured ? S.ctaSeeDealHero : <>{S.ctaSeeDeal} &#x2192;</>}
+          </span>
         </div>
       </div>
     </Link>

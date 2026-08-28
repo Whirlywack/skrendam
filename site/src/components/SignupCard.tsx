@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { subscribeAction, type SubscribeResult } from '@/app/subscribe-action';
+import { S } from '@/lib/lt';
 
 interface SignupCardProps {
   /** Where the signup originates — stored in the DB; defaults to 'home'. */
@@ -21,7 +22,7 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
         setResult(res);
         setError(null);
       } else if (res && !res.ok) {
-        setError(res.error ?? 'Something went wrong.');
+        setError(res.error ?? S.genericError);
       }
     });
   }
@@ -30,7 +31,7 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
 
   return (
     <div className="cap">
-      <span className="freebadge">Free</span>
+      <span className="freebadge">{S.freeBadge}</span>
 
       {done && result ? (
         <>
@@ -53,30 +54,28 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
               </svg>
             </div>
             <div className="cap-lbl">
-              {result.state === 'check-email' ? 'Almost there — confirm your email.' : "You're in."}
+              {result.state === 'check-email' ? S.successTitle : S.subscribedTitle}
             </div>
           </div>
           <div className="cap-sub" style={{ marginTop: 6 }}>
-            {result.state === 'check-email'
-              ? "We've emailed you a confirm link. Tap it and the next rare fare is yours."
-              : 'First deals land in your inbox this week.'}
+            {result.state === 'check-email' ? S.successSub : S.subscribedSub}
           </div>
         </>
       ) : (
         <>
-          <div className="cap-lbl">Get the next rare fare by email</div>
+          <div className="cap-lbl">{S.capTitle}</div>
           <form id={`signup-card-${source}`} className="cap-row" onSubmit={onSubmit}>
             <input type="hidden" name="source" value={source} />
             <input type="hidden" name="mode" value="inline" />
             <input
               type="email"
               name="email"
-              placeholder="you@email.com"
-              aria-label="Email address"
+              placeholder={S.emailPlaceholder}
+              aria-label={S.emailAria}
               required
             />
             <button type="submit" className="btn-primary" disabled={pending}>
-              {pending ? 'Adding…' : 'Get free weekly deals'}
+              {pending ? S.submitting : S.ctaSubmit}
             </button>
           </form>
           {error && (
@@ -84,11 +83,11 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
               {error}
             </div>
           )}
-          <div className="cap-sub">Best rare fares in one calm weekly email.</div>
+          <div className="cap-sub">{S.capSub}</div>
           <div className="trust">
-            <span>✓ No spam</span>
-            <span>✓ Unsubscribe anytime</span>
-            <span>✓ Hand-checked fares</span>
+            <span>✓ {S.trustNoSpam}</span>
+            <span>✓ {S.trustUnsub}</span>
+            <span>✓ {S.trustHuman}</span>
           </div>
 
           <div className="cap-div" />
@@ -101,10 +100,10 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
             />
             <span>
               <span style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>
-                Also join early alerts — free
+                {S.earlyCheckbox}
               </span>
               <span className="cap-sub" style={{ marginTop: 1, display: 'block' }}>
-                The rarest fares the moment Yip finds them — before the weekly email.
+                {S.earlyCheckboxSub}
               </span>
             </span>
           </label>

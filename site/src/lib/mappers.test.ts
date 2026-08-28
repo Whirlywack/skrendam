@@ -22,14 +22,14 @@ describe('toPublicDeal', () => {
     expect(d.quality).toBe('rare');           // score 0.96 → 96 → rare
     expect(d.drop).toBe(36);
     expect(d.route).toBe('VNO → BCN');
-    expect(d.booking.button).toBe('Open in Google Flights');
+    expect(d.booking.button).toContain('Google Flights'); // „Atidaryti „Google Flights“"
     expect(d.status.kind).toBe('fresh');
     expect(d.airline).toBe('airBaltic');      // legs[0].airline.code → display name
   });
   it('going_fast flag wins the status', () => {
     const d = toPublicDeal(row({ pd: { goingFast: true } }), new Date('2026-06-03T12:00:00Z'));
     expect(d.status.kind).toBe('going_fast');
-    expect(d.status.label).toBe('Going fast');
+    expect(d.status.label).toBe('Tirpsta');
   });
   it('non-stop → no catch line', () => {
     const d = toPublicDeal(row({ snapshot: { stops: 0, legs: [{ airline: { code: 'FR' } }], duration: 120 } }), new Date('2026-06-03T12:00:00Z'));

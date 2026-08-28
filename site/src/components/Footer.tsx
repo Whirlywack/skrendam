@@ -4,6 +4,7 @@
  * Source of truth: site/design-reference/homepage-v2.html (line 249–254)
  */
 import Link from 'next/link';
+import { S } from '@/lib/lt';
 
 export function Footer() {
   return (
@@ -11,34 +12,31 @@ export function Footer() {
       <div className="ftr-in">
         {/* Brand column */}
         <div className="lead-col">
-          <span className="wm">yıp</span>
-          <p>
-            Curated flight deals from Vilnius, Kaunas, Riga and nearby. We find
-            the gems so you don&apos;t have to.
-          </p>
+          <span className="wm" aria-label="Yip">yıp</span>
+          <p>{S.footerLead}</p>
         </div>
 
         {/* Deals column */}
         <div>
-          <h4>Deals</h4>
-          <Link href="/cheap-flights-from-vilnius">From Vilnius</Link>
-          <Link href="/cheap-flights-from-kaunas">From Kaunas</Link>
-          <Link href="/cheap-flights-from-riga">From Riga</Link>
-          <Link href="/christmas-market-flights">Christmas markets</Link>
+          <h4>{S.navDeals}</h4>
+          <Link href="/cheap-flights-from-vilnius">{S.fromVilnius}</Link>
+          <Link href="/cheap-flights-from-kaunas">{S.fromKaunas}</Link>
+          <Link href="/cheap-flights-from-riga">{S.fromRiga}</Link>
+          <Link href="/christmas-market-flights">{S.footerXmas}</Link>
         </div>
 
         {/* Yip column */}
         <div>
           <h4>Yip</h4>
           {/* "Past rare fares" returns once real expired deals exist (audit 08-28) */}
-          <Link href="/#how">How it works</Link>
-          <Link href="/early-alerts">Get early alerts</Link>
-          <a href="mailto:hello@yip.lt">Contact</a>
+          <Link href="/#how">{S.navHow}</Link>
+          <Link href="/early-alerts">{S.footerEarly}</Link>
+          <a href="mailto:hello@yip.lt">{S.footerContact}</a>
         </div>
 
         {/* Follow column */}
         <div>
-          <h4>Follow</h4>
+          <h4>{S.footerFollow}</h4>
           <a href="https://tiktok.com/@yipfares" target="_blank" rel="noopener noreferrer">
             TikTok
           </a>
@@ -52,8 +50,8 @@ export function Footer() {
       </div>
 
       <div className="legal">
-        <span>© 2026 Yip. We link to airlines &amp; OTAs to book — prices change fast.</span>
-        <span>Made in Vilnius 🇱🇹</span>
+        <span>{S.footerLegal}</span>
+        <span>{S.footerMade} 🇱🇹</span>
       </div>
     </footer>
   );

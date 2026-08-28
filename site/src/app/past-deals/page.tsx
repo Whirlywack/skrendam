@@ -5,13 +5,14 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DealTicket } from '@/components/DealTicket';
 import { CaptureBand } from '@/components/CaptureBand';
+import { S } from '@/lib/lt';
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Past rare fares · Yip',
+  title: 'Buvę radiniai · Yip',
   description:
-    'Cheap flights from Vilnius, Kaunas & Riga that Yip found and that have since sold out. Proof we find real deals — get the next one by email before it disappears.',
+    'Pigūs skrydžiai iš Vilniaus, Kauno ir Rygos, kuriuos radom — ir kurie jau išpirkti. Įrodymas, kad randam tikrus. Kitą gauk el. paštu, kol nedingo.',
   alternates: { canonical: '/past-deals' },
 };
 
@@ -25,11 +26,10 @@ export default async function PastDeals() {
 
       {/* Hero band */}
       <div className="coll-hero pad">
-        <div className="eyebrow">Expired · But useful proof</div>
-        <h1 className="coll-h1">Past rare fares.</h1>
+        <div className="eyebrow">Nebegalioja · bet įrodo</div>
+        <h1 className="coll-h1">{S.trophyHeader}</h1>
         <p className="lead">
-          These are gone now. They&apos;re proof Yip finds real ones — get the next before it
-          disappears.
+          Šitų jau nebėra. Bet jie įrodo, kad randam tikrus — kitą gauk el. paštu, kol nedingo.
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export default async function PastDeals() {
           </div>
         ) : (
           <div className="coll-empty">
-            <p>No past fares to show yet.</p>
+            <p>Kol kas nėra ką rodyti.</p>
           </div>
         )}
       </div>

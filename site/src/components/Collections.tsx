@@ -8,6 +8,7 @@
  */
 import Link from 'next/link';
 import { COLLECTIONS } from '@/lib/collections';
+import { S } from '@/lib/lt';
 import { Photo } from './Photo';
 
 export function Collections({ showHeading = true }: { showHeading?: boolean }) {
@@ -15,8 +16,8 @@ export function Collections({ showHeading = true }: { showHeading?: boolean }) {
     <div className="pad" style={{ background: 'var(--sunken)' }}>
       {showHeading && (
         <>
-          <div className="eyebrow">Browse by</div>
-          <div className="sec-h">Where do you want to go?</div>
+          <div className="eyebrow">{S.collEyebrow}</div>
+          <div className="sec-h">{S.collHeader}</div>
         </>
       )}
 

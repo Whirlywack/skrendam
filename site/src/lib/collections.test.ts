@@ -2,25 +2,31 @@ import { describe, expect, it } from 'vitest';
 import { COLLECTIONS, collectionBySlug } from './collections';
 
 describe('collectionBySlug', () => {
-  it('returns the correct filter for cheap-flights-from-vilnius', () => {
-    expect(collectionBySlug('cheap-flights-from-vilnius')?.filter).toEqual({
+  it('returns the correct filter for pigus-skrydziai-is-vilniaus', () => {
+    expect(collectionBySlug('pigus-skrydziai-is-vilniaus')?.filter).toEqual({
       kind: 'origin',
       iata: 'VNO',
     });
   });
 
-  it('returns the correct filter for cheap-flights-from-kaunas', () => {
-    expect(collectionBySlug('cheap-flights-from-kaunas')?.filter).toEqual({
+  it('returns the correct filter for pigus-skrydziai-is-kauno', () => {
+    expect(collectionBySlug('pigus-skrydziai-is-kauno')?.filter).toEqual({
       kind: 'origin',
       iata: 'KUN',
     });
   });
 
-  it('returns the correct filter for cheap-flights-from-riga', () => {
-    expect(collectionBySlug('cheap-flights-from-riga')?.filter).toEqual({
+  it('returns the correct filter for pigus-skrydziai-is-rygos', () => {
+    expect(collectionBySlug('pigus-skrydziai-is-rygos')?.filter).toEqual({
       kind: 'origin',
       iata: 'RIX',
     });
+  });
+
+  it('old English origin slugs are no longer served (301 in next.config.ts)', () => {
+    expect(collectionBySlug('cheap-flights-from-vilnius')).toBeUndefined();
+    expect(collectionBySlug('cheap-flights-from-kaunas')).toBeUndefined();
+    expect(collectionBySlug('cheap-flights-from-riga')).toBeUndefined();
   });
 
   it("returns kind 'moment' for september-sun-deals", () => {
