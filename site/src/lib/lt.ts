@@ -39,6 +39,8 @@ export const S = {
   priceContextH: 'Kodėl kaina gera',
   priceContextMethod: 'Pagal paskutines maršruto patikras',
   pastEyebrow: 'Nebegalioja · bet įrodo',
+  navPast: 'Buvę radiniai',
+  emptyLive: 'Gyvų radinių šiuo metu nėra — medžiojam kitą.',
   foundToday: 'Šįryt radom', // kicker: "Šįryt radom 5 · čia rodom 3 · atnaujinta šįryt"
   shownHere: 'čia rodom',
 

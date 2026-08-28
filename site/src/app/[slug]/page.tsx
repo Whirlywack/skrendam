@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { COLLECTIONS, collectionBySlug } from '@/lib/collections';
 import { getCollectionDeals } from '@/lib/queries';
@@ -7,11 +6,12 @@ import { toTicket } from '@/lib/mappers';
 import { Masthead } from '@/components/v2/Masthead';
 import { Crumb } from '@/components/v2/Crumb';
 import { LinkBand } from '@/components/v2/LinkBand';
+import { DealRow } from '@/components/v2/Rows';
 import { InkBand } from '@/components/v2/InkBand';
 import { V2Footer } from '@/components/v2/V2Footer';
 import { JsonLd } from '@/components/JsonLd';
 import { breadcrumbJsonLd } from '@/lib/seo';
-import { eur, ltPlural } from '@/lib/format';
+import { ltPlural } from '@/lib/format';
 import { S } from '@/lib/lt';
 
 export const revalidate = 300;
@@ -94,15 +94,7 @@ export default async function CollectionPage({
         {deals.length > 0 ? (
           <div className="v2-rows">
             {deals.map((t, i) => (
-              <Link key={t.id} href={`/deal/${t.id}`} className="v2-row">
-                <span className="no">Nr. {String(i + 1).padStart(2, '0')}</span>
-                <span className="v2-row-name">{t.destination}</span>
-                <span className={`v2-row-meta${t.goingFast ? ' v2-row-meta--flag' : ''}`}>
-                  {t.route} · {t.dates} · {t.catchChip}{t.goingFast ? ` · ${S.chipGoingFast}` : ''}
-                </span>
-                <span className="v2-row-price">{eur(t.price)}</span>
-                <span className="go" aria-hidden="true" />
-              </Link>
+              <DealRow key={t.id} t={t} no={`Nr. ${String(i + 1).padStart(2, '0')}`} />
             ))}
           </div>
         ) : (

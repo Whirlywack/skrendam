@@ -39,9 +39,17 @@ export function ltPlural(n: number, one: string, few: string, many: string): str
 /** „102 €" — symbol after, non-breaking space (LT convention). */
 export function eur(v: number): string { return `${Math.round(v)} €`; }
 
+/** DB timestamps are naive UTC strings ('2026-08-28 06:00:00', no zone) —
+ *  new Date() would read them as host-local, skewing ages on non-UTC hosts.
+ *  Force UTC; already-zoned ISO strings pass through untouched. */
+function utcMs(iso: string): number {
+  const hasZone = /Z$|[+-]\d\d:?\d\d$/.test(iso);
+  return new Date(hasZone ? iso : `${iso.replace(' ', 'T')}Z`).getTime();
+}
+
 export function timeAgo(iso: string | null): string {
   if (!iso) return '—';
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  const mins = Math.max(0, Math.round((Date.now() - utcMs(iso)) / 60000));
   if (mins < 1) return 'ką tik';
   if (mins < 60) return `prieš ${mins} min.`;
   const h = Math.round(mins / 60);
@@ -56,7 +64,7 @@ const FRESHNESS_CAP_DAYS = 3;
  *  positive claim or the stale-price caveat, without string-sniffing. */
 export function freshInfo(iso: string | null): { withinCap: boolean; label: string } {
   if (!iso) return { withinCap: false, label: 'Patikrinta neseniai' };
-  const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
+  const days = (Date.now() - utcMs(iso)) / 86_400_000;
   return days <= FRESHNESS_CAP_DAYS
     ? { withinCap: true, label: `Tikrinta ${timeAgo(iso)}` }
     : { withinCap: false, label: 'Kaina galėjo pasikeisti — patikrink' };

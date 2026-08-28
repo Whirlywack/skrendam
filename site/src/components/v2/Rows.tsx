@@ -3,6 +3,22 @@ import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur, ltPlural } from '@/lib/format';
 
+/** One live-deal index row — the single source for home, collection pages and
+ *  similar-deals lists (review 08-28: three drifting copies collapsed here). */
+export function DealRow({ t, no }: { t: TicketView; no: string }) {
+  return (
+    <Link href={`/deal/${t.id}`} className="v2-row">
+      <span className="no">{no}</span>
+      <span className="v2-row-name">{t.destination}</span>
+      <span className={`v2-row-meta${t.goingFast ? ' v2-row-meta--flag' : ''}`}>
+        {t.route} · {t.dates} · {t.catchChip}{t.goingFast ? ` · ${S.chipGoingFast}` : ''}
+      </span>
+      <span className="v2-row-price">{eur(t.price)}</span>
+      <span className="go" aria-hidden="true" />
+    </Link>
+  );
+}
+
 /** Live index — „Dar spėji": the design system's ink-inverting rows, from № 02.
  *  Deals past the free window render locked: destination + month, price in the letter. */
 export function LiveIndex({ deals, locked = [], startAt }: {
@@ -23,15 +39,7 @@ export function LiveIndex({ deals, locked = [], startAt }: {
       </div>
       <div className="v2-rows">
         {deals.map((t, i) => (
-          <Link key={t.id} href={`/deal/${t.id}`} className="v2-row">
-            <span className="no">Nr. {String(startAt + i).padStart(2, '0')}</span>
-            <span className="v2-row-name">{t.destination}</span>
-            <span className={`v2-row-meta${t.goingFast ? ' v2-row-meta--flag' : ''}`}>
-              {t.route} · {t.dates} · {t.catchChip}{t.goingFast ? ` · ${S.chipGoingFast}` : ''}
-            </span>
-            <span className="v2-row-price">{eur(t.price)}</span>
-            <span className="go" aria-hidden="true" />
-          </Link>
+          <DealRow key={t.id} t={t} no={`Nr. ${String(startAt + i).padStart(2, '0')}`} />
         ))}
         {locked.map((t, i) => (
           <a key={t.id} href="#kapote" className="v2-row v2-row--locked">

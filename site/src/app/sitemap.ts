@@ -10,8 +10,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const now = new Date();
 
-  // /past-deals leaves the sitemap until expired deals exist and links return
-  const staticRoutes = ['', '/collections', '/subscribe', '/early-alerts'].map(
+  // /past-deals is back: expired deals exist and the V2 footer links it
+  const staticRoutes = ['', '/collections', '/past-deals', '/subscribe', '/early-alerts'].map(
     (p) => ({
       url: base + (p || '/'),
       lastModified: now,

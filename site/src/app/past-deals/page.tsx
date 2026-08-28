@@ -74,7 +74,8 @@ export default async function PastDeals() {
         <div className="mono v2-footnote">{S.trophyFootnote}</div>
       </section>
 
-      <CaptureRow source="past-deals" />
+      {/* 'past' is the allow-listed source — anything else downgrades to 'site' */}
+      <CaptureRow source="past" />
 
       <InkBand />
       <V2Footer />

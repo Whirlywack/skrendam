@@ -61,7 +61,10 @@ export function Poster({
                 {eur(t.price)}
                 {showWas && <s>{eur(t.baseline!)}</s>}
               </div>
-              {save != null && (
+              {/* Prose saving claim follows the same depth gate as the
+                  strikethrough — a shallow deal makes no reference-price
+                  claim in any form (review 08-28). */}
+              {showWas && save != null && (
                 <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
               )}
             </div>

@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getDeal, getFreeWindowIds, getSimilarDeals } from '@/lib/queries';
 import { toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
-import { dealWhyAndCatch, ltDealHeadline, stopsChip } from '@/lib/dealDetail';
+import { dealWhyAndCatch, ltDealHeadline } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
 import { ltCity } from '@/lib/cities-lt';
 import { eur, freshnessLabel } from '@/lib/format';
@@ -17,6 +16,7 @@ import { Crumb } from '@/components/v2/Crumb';
 import { POSTER } from '@/components/v2/Poster';
 import { CaptureRow } from '@/components/v2/CaptureRow';
 import { LinkBand } from '@/components/v2/LinkBand';
+import { DealRow } from '@/components/v2/Rows';
 import { InkBand } from '@/components/v2/InkBand';
 import { V2Footer } from '@/components/v2/V2Footer';
 import { PriceSparkline } from '@/components/PriceSparkline';
@@ -151,7 +151,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                   {eur(t.price)}
                   {showWas && <s>{eur(t.baseline!)}</s>}
                 </div>
-                {save != null && (
+                {/* Same depth gate as the strikethrough (see Poster.tsx) */}
+                {showWas && save != null && (
                   <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
                 )}
               </div>
@@ -232,13 +233,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="v2-rows">
             {similarTickets.map((s, i) => (
-              <Link key={s.id} href={`/deal/${s.id}`} className="v2-row">
-                <span className="no">Nr. {String(i + 1).padStart(2, '0')}</span>
-                <span className="v2-row-name">{s.destination}</span>
-                <span className="v2-row-meta">{s.route} · {s.dates} · {s.catchChip}</span>
-                <span className="v2-row-price">{eur(s.price)}</span>
-                <span className="go" aria-hidden="true" />
-              </Link>
+              <DealRow key={s.id} t={s} no={`Nr. ${String(i + 1).padStart(2, '0')}`} />
             ))}
           </div>
         </section>
