@@ -53,15 +53,17 @@ export default function CollectionsIndex() {
           moments/zones keep growing — compact duotone stubs scale like a list */}
       <section className="wrap v2-sec" style={{ paddingTop: 26 }}>
         <div className="v2-kicker v2-kicker--dim" style={{ marginBottom: 14 }}>{S.collOrigins}</div>
+        {/* No Nr. sequence here — numbering means rank on the edition page;
+            collections are places, not a ranked list (IA decision 08-28). */}
         <div className="v2-tiles">
-          {origins.map((c, i) => (
+          {origins.map((c) => (
             <Link
               key={c.slug}
               href={`/${c.slug}`}
               className={`v2-tile ${POSTER[c.scene] ?? 'v2-poster--sun'}`}
               aria-label={c.label}
             >
-              <span className="no">Nr. {String(i + 1).padStart(2, '0')}</span>
+              <span className="no" aria-hidden="true" />
               <span className="nm">{shortLabel(c)}<span className="bead" aria-hidden="true" /></span>
             </Link>
           ))}
@@ -71,14 +73,13 @@ export default function CollectionsIndex() {
       <section className="wrap v2-sec" style={{ paddingTop: 40 }}>
         <div className="v2-kicker v2-kicker--dim" style={{ marginBottom: 14 }}>{S.collMoments}</div>
         <div className="v2-stubs">
-          {moments.map((c, i) => (
+          {moments.map((c) => (
             <Link
               key={c.slug}
               href={`/${c.slug}`}
               className={`v2-stub ${POSTER[c.scene] ?? 'v2-poster--sun'}`}
               aria-label={c.label}
             >
-              <span className="no">Nr. {String(origins.length + i + 1).padStart(2, '0')}</span>
               <span className="nm">{c.label}</span>
               <span className="go" aria-hidden="true" />
             </Link>

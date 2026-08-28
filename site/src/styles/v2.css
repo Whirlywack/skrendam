@@ -27,6 +27,10 @@
 }
 .v2-masthead .bar { display: flex; align-items: center; gap: 28px; height: 64px; }
 .v2-masthead .logo { font-size: 27px; line-height: 1; }
+.v2-masthead .navlinks { display: flex; gap: 20px; font-family: var(--font-mono);
+  font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.v2-masthead .navlinks a { color: var(--v2-ink); }
+.v2-masthead .navlinks a:hover { color: var(--v2-amber-deep); }
 .v2-masthead .mid { flex: 1; text-align: center; }
 .v2-masthead .pill {
   display: inline-flex; align-items: center; gap: 9px;
@@ -261,6 +265,7 @@
   }
   .v2-tile .nm { font-size: 19px; }
   .v2-tile .nm br { display: none; }
+  .v2-tile .no:empty { display: none; }
 }
 
 /* ---------- ink band ---------- */
@@ -303,6 +308,7 @@
   .v2 .wrap { padding-inline: 16px; }
   .v2-masthead .bar { height: 54px; gap: 12px; }
   .v2-masthead .mid { display: none; }
+  .v2-masthead .navlinks { gap: 12px; font-size: 11px; letter-spacing: .1em; flex: 1; }
   .v2-masthead .pill { font-size: 13px; padding: 8px 14px; }
   .v2 .v2-hero { padding: 26px 0 18px; }
   .v2-hero .sub-row { margin-top: 12px; gap: 10px; }
