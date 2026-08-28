@@ -23,7 +23,13 @@ export function toTicket(r: Row, now: Date): TicketView {
   const pd = r.pd;
   const { stops, airline } = legs(r.snapshot);
   const s = (r.snapshot ?? {}) as Record<string, unknown>;
-  const dur = s.duration ? `${Math.floor(Number(s.duration) / 60)} val.` : '';
+  // snapshot.duration is the WHOLE-itinerary total: on a round trip it sums
+  // both legs, so presenting it as the flight time overstates ~2× ("5 val."
+  // for a 2h50 hop — canvas review 08-28). Per-leg time can't be derived from
+  // the naive local timestamps without an airport TZ table, so round trips
+  // show no duration.
+  const legCount = Array.isArray(s.legs) ? (s.legs as unknown[]).length : 0;
+  const dur = s.duration && legCount <= 1 ? `${Math.round(Number(s.duration) / 60)} val.` : '';
   const drop = Math.round(Number(pd.discountPct ?? 0));
   // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);

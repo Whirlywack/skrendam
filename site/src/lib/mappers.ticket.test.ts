@@ -28,4 +28,13 @@ describe('toTicket', () => {
     const t = toTicket(row({ snapshot: { stops: 0, duration: 120, legs: [{ airline: { code: 'FR' } }] } }), new Date());
     expect(t.catchChip).toBe('Tiesioginis');
   });
+  it('round-trip duration (whole-itinerary total) is not shown as flight time', () => {
+    // 330 min = both legs summed — showing "5 val." would overstate the hop ~2×
+    const two = toTicket(row({ snapshot: { stops: 0, duration: 330, legs: [
+      { airline: { code: 'FR' } }, { airline: { code: 'FR' } },
+    ] } }), new Date());
+    expect(two.legs).toBe('Tiesioginis');
+    const one = toTicket(row({ snapshot: { stops: 0, duration: 170, legs: [{ airline: { code: 'FR' } }] } }), new Date());
+    expect(one.legs).toBe('Tiesioginis · 3 val.');
+  });
 });
