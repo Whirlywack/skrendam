@@ -17,7 +17,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/collections' },
 };
 
+// „Pigūs skrydžiai iš Vilniaus" → „Iš Vilniaus" — the SEO phrase stays in the
+// slug/label/metadata; the tile face reads like a poster, not a keyword.
+const shortLabel = (c: (typeof COLLECTIONS)[number]) =>
+  c.label.startsWith('Pigūs skrydžiai iš ') ? `Iš ${c.label.slice('Pigūs skrydžiai iš '.length)}` : c.label;
+
 export default function CollectionsIndex() {
+  const origins = COLLECTIONS.filter((c) => c.filter.kind === 'origin');
+  const moments = COLLECTIONS.filter((c) => c.filter.kind !== 'origin');
   return (
     <main className="v2">
       <Masthead />
@@ -42,10 +49,12 @@ export default function CollectionsIndex() {
         </div>
       </section>
 
-      {/* Collections as mini travel posters — the brand's duotone fields */}
+      {/* Two growth axes: origins are stable (3 poster tiles, stubs on mobile);
+          moments/zones keep growing — compact duotone stubs scale like a list */}
       <section className="wrap v2-sec" style={{ paddingTop: 26 }}>
+        <div className="v2-kicker v2-kicker--dim" style={{ marginBottom: 14 }}>{S.collOrigins}</div>
         <div className="v2-tiles">
-          {COLLECTIONS.map((c, i) => (
+          {origins.map((c, i) => (
             <Link
               key={c.slug}
               href={`/${c.slug}`}
@@ -53,7 +62,25 @@ export default function CollectionsIndex() {
               aria-label={c.label}
             >
               <span className="no">Nr. {String(i + 1).padStart(2, '0')}</span>
-              <span className="nm">{c.label}<span className="bead" aria-hidden="true" /></span>
+              <span className="nm">{shortLabel(c)}<span className="bead" aria-hidden="true" /></span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="wrap v2-sec" style={{ paddingTop: 40 }}>
+        <div className="v2-kicker v2-kicker--dim" style={{ marginBottom: 14 }}>{S.collMoments}</div>
+        <div className="v2-stubs">
+          {moments.map((c, i) => (
+            <Link
+              key={c.slug}
+              href={`/${c.slug}`}
+              className={`v2-stub ${POSTER[c.scene] ?? 'v2-poster--sun'}`}
+              aria-label={c.label}
+            >
+              <span className="no">Nr. {String(origins.length + i + 1).padStart(2, '0')}</span>
+              <span className="nm">{c.label}</span>
+              <span className="go" aria-hidden="true" />
             </Link>
           ))}
         </div>

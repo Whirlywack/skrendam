@@ -40,6 +40,8 @@ export const S = {
   priceContextMethod: 'Pagal paskutines maršruto patikras',
   pastEyebrow: 'Nebegalioja · bet įrodo',
   navPast: 'Buvę radiniai',
+  collOrigins: 'Iš kur skrendi',
+  collMoments: 'Kelionės momentai',
   emptyLive: 'Gyvų radinių šiuo metu nėra — medžiojam kitą.',
   foundToday: 'Šįryt radom', // kicker: "Šįryt radom 5 · čia rodom 3 · atnaujinta šįryt"
   shownHere: 'čia rodom',

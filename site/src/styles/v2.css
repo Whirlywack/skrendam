@@ -222,13 +222,45 @@
   text-shadow: 0 2px 18px rgba(0, 0, 0, .25); }
 .v2-tile .nm .bead { width: 8px; height: 8px; margin-left: 7px; }
 
+/* collection stubs — compact horizontal duotone bands; the scalable form
+   for the growing moments list, and the mobile form of the origin tiles */
+.v2-stubs { display: grid; gap: 12px; }
+.v2 a.v2-stub {
+  position: relative; display: flex; align-items: center; gap: 16px;
+  min-height: 76px; border-radius: 16px; overflow: hidden; padding: 0 20px;
+  color: #fff;
+  transition: transform .2s var(--bead-ease);
+}
+.v2 a.v2-stub::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to right, rgba(22, 18, 13, .38), transparent 65%);
+}
+.v2 a.v2-stub > * { position: relative; }
+.v2 a.v2-stub:hover { transform: translateX(4px); color: #fff; }
+.v2-stub .no { font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; color: rgba(255, 255, 255, .85); }
+.v2-stub .nm { font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(18px, 2vw, 22px); letter-spacing: -.02em; line-height: 1.05;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, .25); }
+.v2-stub .go { margin-left: auto; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--v2-amber); opacity: 0; transform: translateX(-6px);
+  transition: all .2s var(--ink-ease); }
+.v2 a.v2-stub:hover .go { opacity: 1; transform: none; }
+
 @media (max-width: 900px) {
   .v2-tiles { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
   .v2-cols { grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }
-  .v2-tiles { grid-template-columns: 1fr; }
-  .v2 a.v2-tile { min-height: 170px; }
+  /* origin tiles collapse into stubs on mobile — no empty acreage */
+  .v2-tiles { grid-template-columns: 1fr; gap: 12px; }
+  .v2 a.v2-tile { min-height: 76px; flex-direction: row; align-items: center;
+    justify-content: flex-start; gap: 16px; padding: 0 20px; }
+  .v2 a.v2-tile::before {
+    background: linear-gradient(to right, rgba(22, 18, 13, .38), transparent 65%);
+  }
+  .v2-tile .nm { font-size: 19px; }
+  .v2-tile .nm br { display: none; }
 }
 
 /* ---------- ink band ---------- */
