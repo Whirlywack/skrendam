@@ -25,15 +25,18 @@ export function InkBand() {
       <div className="wrap grid">
         {done ? (
           <div className="done" style={{ gridColumn: '1 / -1' }}>
-            <h2 className="disp">{S.successTitle}</h2>
+            <h2 className="v2-display">{S.successTitle}</h2>
             <p className="body">{S.successSub}</p>
           </div>
         ) : (
           <>
             <div>
-              <h2 className="disp">{S.bandH2}</h2>
+              <h2 className="v2-display">{S.bandH2}</h2>
               <p className="body">{S.bandBody}</p>
             </div>
+            {/* Field + button + fine print only — the early-alerts offer moved to
+                the post-confirmation upsell (conversion audit 08-28: no second
+                decision at the moment of the first). */}
             <form onSubmit={onSubmit}>
               <input type="hidden" name="source" value="home" />
               <input type="hidden" name="mode" value="inline" />
@@ -49,12 +52,8 @@ export function InkBand() {
                   {pending ? S.submitting : S.ctaSubmit}
                 </button>
               </div>
-              <label className="v2-early">
-                <input type="checkbox" name="early_alerts" />
-                <span><b>{S.earlyCheckbox}</b>{S.earlyCheckboxSub}</span>
-              </label>
               {error && <div role="alert">{error}</div>}
-              <div className="mono fine">{S.finePrint}</div>
+              <div className="fine">{S.finePrint}</div>
             </form>
           </>
         )}

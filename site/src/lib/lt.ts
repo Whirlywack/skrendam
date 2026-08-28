@@ -38,7 +38,7 @@ export const S = {
   bandBody:
     'Prenumeratoriai gauna kiekvieną radinį tą rytą, kai jį patvirtinam. ' +
     'Kol jis čia — pigiausių vietų dažnai nebelieka.',
-  finePrint: '3–5 radiniai per savaitę · be spamo · atsisakai kada nori',
+  finePrint: 'Nemokama · 3–5 radiniai per savaitę · be spamo · atsisakai kada nori',
 
   // Signup states
   successTitle: 'Liko vienas žingsnis — patvirtink el. paštą.',
@@ -154,7 +154,10 @@ export const S = {
 
   // V2 poster & bead surfaces
   mastheadKicker: 'Atrinkti skrydžiai — Vilnius · Kaunas · Ryga',
-  issueLabel: 'Nr. 1 — vėlyva vasara',
+  issueLabel: 'Laiškas Nr. 1 — vėlyva vasara', // issue numbering ties to the email
+  dealNoWord: 'Radinys', // poster kicker: "Radinys Nr. 01"
+  captureLine: 'Kasdien peržiūrim visus maršrutus iš VNO, KUN ir RIX. Skelbiam tik tai, kas atlaiko patikrą.',
+  captureOk: 'Liko vienas žingsnis — patvirtink el. paštą.',
   youSaveVs: 'nuo įprastos kainos', // "SUTAUPAI 72 € NUO ĮPRASTOS KAINOS"
   savedWord: 'sutaupė', // trophy meta: "RIX → OSL · SUTAUPĖ 90 €"
   saveWord: 'sutaupai',

@@ -3,7 +3,7 @@ import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur } from '@/lib/format';
 
-// Photo scenes map onto the four duotone poster fields (photo-free art direction).
+// Photo scenes map onto the design system's duotone poster fields.
 const POSTER: Record<string, string> = {
   'ph-sun': 'v2-poster--sun',
   'ph-coast': 'v2-poster--sun',
@@ -15,32 +15,34 @@ const POSTER: Record<string, string> = {
 export function Poster({
   t,
   count,
+  /** Real freshness label from the mapper (never hardcoded). */
   freshness,
+  /** LT verdict line — fills the blurb slot when the curator wrote no prose. */
+  hook,
 }: {
   t: TicketView;
-  /** Live deals this week — poster kicker links the hero to the breadth. */
   count: number;
-  /** Real freshness label from the mapper (never hardcoded). */
   freshness: string;
+  hook: string;
 }) {
   const [o, , d] = t.route.split(' ');
   const save = t.baseline != null && t.baseline > t.price ? Math.round(t.baseline - t.price) : null;
   // The price already dominates the poster — a price-shaped headline fallback
-  // would say it twice, so only curator prose earns the blurb slot.
-  const blurb = /\d+\s?€/.test(t.headline) ? null : t.headline;
+  // would say it twice, so those fall back to the verdict line instead.
+  const blurb = /\d+\s?€/.test(t.headline) ? hook : t.headline;
   return (
     <section className="wrap">
       <div className={`v2-poster ${POSTER[t.scene] ?? 'v2-poster--sun'}`}>
         <div className="top">
-          <span className="kicker">
-            Nr. 01 {count > 1 ? `iš ${String(count).padStart(2, '0')} ` : ''}{S.thisWeekOf} — {t.eyebrow}
+          <span className="v2-kicker">
+            {S.dealNoWord} Nr. 01{count > 1 ? ` iš ${String(count).padStart(2, '0')}` : ''} · {S.thisWeekOf}
           </span>
-          <span className="stamp stamp--light">
+          <span className="v2-stamp v2-stamp--light">
             {t.quality === 'rare' ? S.badgeRare : S.badgeGreat}
           </span>
         </div>
         <div>
-          <div className="disp name">{t.destination}</div>
+          <div className="v2-poster-name">{t.destination}</div>
           {blurb && <p className="blurb">{blurb}</p>}
         </div>
         <div className="foot">
@@ -50,7 +52,7 @@ export function Poster({
           </div>
           <div className="pricecell">
             <div>
-              <div className="disp price">
+              <div className="v2-price price">
                 {eur(t.price)}
                 {t.baseline != null && <s>{eur(t.baseline)}</s>}
               </div>

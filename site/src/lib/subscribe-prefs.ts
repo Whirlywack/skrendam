@@ -39,6 +39,7 @@ export const MOMENT_CODES = PREF_MOMENTS.map((m) => m.code);
 
 export const SUBSCRIBE_SOURCES = [
   'home',
+  'home-mid',
   'subscribe',
   'collection',
   'deal',
