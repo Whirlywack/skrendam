@@ -6,7 +6,7 @@ import { cookies, headers } from 'next/headers';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
-import { emailEnabled, sendConfirmEmail } from '@/lib/email';
+import { emailEnabled, sendConfirmEmail, sendEarlyConfirmEmail } from '@/lib/email';
 import { subscribeEmailLimiter, subscribeIpLimiter } from '@/lib/rate-limit';
 import {
   normalizeEmail,
@@ -134,15 +134,29 @@ export async function subscribeAction(
         .returning({ id: subscribers.id });
       touched = inserted.length > 0;
     }
-    // Confirmed rows are immutable to the upserts above, but the early-alerts
-    // flag alone is safe to OR on: no token change, no email, and the response
-    // stays uniform — so a confirmed subscriber re-entering their email on
-    // /early-alerts actually joins the waitlist instead of hitting a silent no-op.
-    if (earlyAlerts) {
-      await db
-        .update(subscribers)
-        .set({ earlyAlerts: true })
-        .where(and(eq(subscribers.email, email), eq(subscribers.confirmed, true)));
+    // A confirmed subscriber can join early alerts by re-entering their email,
+    // but ONLY via a click in a fresh confirmation email — a third party typing
+    // someone else's address must not flip the flag silently (review 08-28).
+    // Response stays uniform; the email goes to the address owner alone.
+    if (earlyAlerts && !touched) {
+      if (enabled) {
+        const upgraded = await db
+          .update(subscribers)
+          .set({ confirmToken: token })
+          .where(and(
+            eq(subscribers.email, email),
+            eq(subscribers.confirmed, true),
+            eq(subscribers.earlyAlerts, false),
+          ))
+          .returning({ id: subscribers.id });
+        if (upgraded.length > 0) await sendEarlyConfirmEmail(email, token);
+      } else {
+        // Single opt-in (dev / no Resend): no email channel exists — flip directly.
+        await db
+          .update(subscribers)
+          .set({ earlyAlerts: true })
+          .where(and(eq(subscribers.email, email), eq(subscribers.confirmed, true)));
+      }
     }
   } catch (err) {
     if (isRedirectError(err)) throw err;

@@ -31,6 +31,7 @@ export function eur(v: number): string { return `${Math.round(v)} €`; }
 export function timeAgo(iso: string | null): string {
   if (!iso) return '—';
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return 'ką tik';
   if (mins < 60) return `prieš ${mins} min.`;
   const h = Math.round(mins / 60);
   return h < 24 ? `prieš ${h} val.` : `prieš ${Math.round(h / 24)} d.`;
@@ -40,10 +41,16 @@ export function timeAgo(iso: string | null): string {
 // anti-ad ("tikrinta prieš 86 d.") — past the cap we tell the truth differently.
 const FRESHNESS_CAP_DAYS = 3;
 
-export function freshnessLabel(iso: string | null): string {
-  if (!iso) return 'Patikrinta neseniai';
+/** Structured freshness — `withinCap` tells callers whether the label is a
+ *  positive claim or the stale-price caveat, without string-sniffing. */
+export function freshInfo(iso: string | null): { withinCap: boolean; label: string } {
+  if (!iso) return { withinCap: false, label: 'Patikrinta neseniai' };
   const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
   return days <= FRESHNESS_CAP_DAYS
-    ? `Tikrinta ${timeAgo(iso)}`
-    : 'Kaina galėjo pasikeisti — patikrink';
+    ? { withinCap: true, label: `Tikrinta ${timeAgo(iso)}` }
+    : { withinCap: false, label: 'Kaina galėjo pasikeisti — patikrink' };
+}
+
+export function freshnessLabel(iso: string | null): string {
+  return freshInfo(iso).label;
 }

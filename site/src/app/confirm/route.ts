@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic'; // never cache a state-changing route
 
@@ -13,6 +13,17 @@ export async function GET(req: NextRequest) {
   const to = (path: string) => NextResponse.redirect(new URL(path, base));
 
   if (!token || token.length < 16) return to('/subscribe?state=invalid');
+
+  // Early-alerts upgrade confirmation (already-confirmed subscriber clicked
+  // the upgrade email). Single-use: the token is nulled with the flip.
+  if (req.nextUrl.searchParams.get('early') === '1') {
+    const upgraded = await db
+      .update(subscribers)
+      .set({ earlyAlerts: true, confirmToken: null })
+      .where(and(eq(subscribers.confirmToken, token), eq(subscribers.confirmed, true)))
+      .returning({ id: subscribers.id });
+    return to(upgraded.length > 0 ? '/subscribe?state=early-joined' : '/subscribe?state=invalid');
+  }
 
   // Confirm the subscriber. Keep confirmToken in the row — the cookie needs it
   // for the prefs / early-alerts steps (joinEarlyAlertsAction nulls it at end).

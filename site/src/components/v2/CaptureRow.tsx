@@ -28,7 +28,7 @@ export function CaptureRow() {
       <div className="inner">
         <p className="line">{S.captureLine}</p>
         {done ? (
-          <span className="ok">{S.captureOk}</span>
+          <span className="ok">{S.successTitle}</span>
         ) : (
           <form onSubmit={onSubmit}>
             <input type="hidden" name="source" value="home-mid" />

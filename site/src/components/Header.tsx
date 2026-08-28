@@ -7,9 +7,8 @@ export function Header() {
       <nav aria-label={S.navAria}>
         <a href="/">{S.navDeals}</a>
         <a href="/collections">{S.navCollections}</a>
-        {/* "Past fares" returns to the nav once real expired deals exist —
-            a proof page with zero proof converts worse than no link (audit 08-28) */}
-        <a href="/#how">{S.navHow}</a>
+        {/* "Kaip tai veikia" returns when the V2 how-it-works page exists (PR C) —
+            its old /#how anchor died with the V1 homepage (review 08-28) */}
       </nav>
       <span className="sp" />
       <span className="frompill">{S.fromPill}</span>

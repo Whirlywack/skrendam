@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur } from '@/lib/format';
+import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
 
 // Photo scenes map onto the design system's duotone poster fields.
 const POSTER: Record<string, string> = {
@@ -27,6 +28,8 @@ export function Poster({
 }) {
   const [o, , d] = t.route.split(' ');
   const save = t.baseline != null && t.baseline > t.price ? Math.round(t.baseline - t.price) : null;
+  // Same gate as DealTicket: a shallow discount earns no strikethrough (review 08-28).
+  const showWas = t.baseline != null && t.drop >= WAS_PRICE_MIN_DROP_PCT;
   // The price already dominates the poster — a price-shaped headline fallback
   // would say it twice, so those fall back to the verdict line instead.
   const blurb = /\d+\s?€/.test(t.headline) ? hook : t.headline;
@@ -54,7 +57,7 @@ export function Poster({
             <div>
               <div className="v2-price price">
                 {eur(t.price)}
-                {t.baseline != null && <s>{eur(t.baseline)}</s>}
+                {showWas && <s>{eur(t.baseline!)}</s>}
               </div>
               {save != null && (
                 <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>

@@ -1,6 +1,6 @@
 import { getLiveDeals, getInspirationDeals } from '@/lib/queries';
 import { toTicket, toPublicDeal } from '@/lib/mappers';
-import { freshnessLabel } from '@/lib/format';
+import { freshInfo } from '@/lib/format';
 import { S } from '@/lib/lt';
 import { Masthead } from '@/components/v2/Masthead';
 import { Poster } from '@/components/v2/Poster';
@@ -17,15 +17,19 @@ export default async function Home() {
   const live = rows.map((r) => toTicket(r, now));
   const past = (await getInspirationDeals(3)).map((r) => toTicket(r, now));
   const [featured = null, ...rest] = live;
-  // Real freshness + the LT verdict line of the featured deal (never hardcoded).
+  // Real freshness + the tier-honest LT verdict line of the featured deal.
   const featuredRow = rows[0];
   const fresh = featuredRow
-    ? freshnessLabel(String(featuredRow.pd.lastSeenAt ?? featuredRow.candLastSeen ?? '') || null)
+    ? freshInfo(String(featuredRow.pd.lastSeenAt ?? featuredRow.candLastSeen ?? '') || null)
     : null;
   const hook = featuredRow ? toPublicDeal(featuredRow, now).verdict : '';
-  // The stamp always leads with the human claim; a stale-price caveat lives
-  // once, in the poster catch-line — never as the page's trust badge.
-  const stampFresh = fresh && fresh.startsWith('Tikrinta') ? ` · ${fresh.toLowerCase()}` : '';
+  // The stamp always leads with the human claim; the stale-price caveat lives
+  // once, in the poster catch-line — never as the page's trust badge. A
+  // going-fast deal's catch-line leads with that instead of a freshness claim.
+  const stampFresh = fresh?.withinCap ? ` · ${fresh.label.toLowerCase()}` : '';
+  const catchFreshness = featured?.goingFast
+    ? S.chipGoingFast
+    : fresh?.label ?? '';
 
   return (
     <main className="v2">
@@ -47,7 +51,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {featured && <Poster t={featured} count={live.length} freshness={fresh ?? ''} hook={hook} />}
+      {featured && <Poster t={featured} count={live.length} freshness={catchFreshness} hook={hook} />}
 
       {/* The ask lives next to the desire — never a full viewport below it */}
       <CaptureRow />

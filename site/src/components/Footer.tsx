@@ -19,9 +19,9 @@ export function Footer() {
         {/* Deals column */}
         <div>
           <h4>{S.navDeals}</h4>
-          <Link href="/cheap-flights-from-vilnius">{S.fromVilnius}</Link>
-          <Link href="/cheap-flights-from-kaunas">{S.fromKaunas}</Link>
-          <Link href="/cheap-flights-from-riga">{S.fromRiga}</Link>
+          <Link href="/pigus-skrydziai-is-vilniaus">{S.fromVilnius}</Link>
+          <Link href="/pigus-skrydziai-is-kauno">{S.fromKaunas}</Link>
+          <Link href="/pigus-skrydziai-is-rygos">{S.fromRiga}</Link>
           <Link href="/christmas-market-flights">{S.footerXmas}</Link>
         </div>
 
@@ -29,7 +29,7 @@ export function Footer() {
         <div>
           <h4>Yip</h4>
           {/* "Past rare fares" returns once real expired deals exist (audit 08-28) */}
-          <Link href="/#how">{S.navHow}</Link>
+          {/* /#how anchor died with the V1 homepage; link returns with PR C's page */}
           <Link href="/early-alerts">{S.footerEarly}</Link>
           <a href="mailto:hello@yip.lt">{S.footerContact}</a>
         </div>
