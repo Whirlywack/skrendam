@@ -53,9 +53,9 @@ export default function CollectionsIndex() {
           moments/zones keep growing — compact duotone stubs scale like a list */}
       <section className="wrap v2-sec" style={{ paddingTop: 26 }}>
         <div className="v2-kicker v2-kicker--dim" style={{ marginBottom: 14 }}>{S.collOrigins}</div>
-        {/* No Nr. sequence here — numbering means rank on the edition page;
-            collections are places, not a ranked list (IA decision 08-28). */}
-        <div className="v2-tiles">
+        {/* Desktop: the three origin posters. Mobile: typographic index rows —
+            display name leads, the duotone shrinks to a stamp chip. */}
+        <div className="v2-tiles v2-origins-tiles">
           {origins.map((c) => (
             <Link
               key={c.slug}
@@ -63,8 +63,16 @@ export default function CollectionsIndex() {
               className={`v2-tile ${POSTER[c.scene] ?? 'v2-poster--sun'}`}
               aria-label={c.label}
             >
-              <span className="no" aria-hidden="true" />
+              <span aria-hidden="true" />
               <span className="nm">{shortLabel(c)}<span className="bead" aria-hidden="true" /></span>
+            </Link>
+          ))}
+        </div>
+        <div className="v2-cindex v2-origins-rows">
+          {origins.map((c) => (
+            <Link key={c.slug} href={`/${c.slug}`} className="v2-crow" aria-label={c.label}>
+              <span className="nm">{shortLabel(c)}</span>
+              <span className={`stamp ${POSTER[c.scene] ?? 'v2-poster--sun'}`} aria-hidden="true" />
             </Link>
           ))}
         </div>
@@ -72,16 +80,11 @@ export default function CollectionsIndex() {
 
       <section className="wrap v2-sec" style={{ paddingTop: 40 }}>
         <div className="v2-kicker v2-kicker--dim" style={{ marginBottom: 14 }}>{S.collMoments}</div>
-        <div className="v2-stubs">
+        <div className="v2-cindex">
           {moments.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/${c.slug}`}
-              className={`v2-stub ${POSTER[c.scene] ?? 'v2-poster--sun'}`}
-              aria-label={c.label}
-            >
+            <Link key={c.slug} href={`/${c.slug}`} className="v2-crow" aria-label={c.label}>
               <span className="nm">{c.label}</span>
-              <span className="go" aria-hidden="true" />
+              <span className={`stamp ${POSTER[c.scene] ?? 'v2-poster--sun'}`} aria-hidden="true" />
             </Link>
           ))}
         </div>
