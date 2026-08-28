@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { COLLECTIONS } from '@/lib/collections';
+import { POSTER } from '@/components/v2/Poster';
 import { Masthead } from '@/components/v2/Masthead';
 import { Crumb } from '@/components/v2/Crumb';
 import { InkBand } from '@/components/v2/InkBand';
@@ -41,18 +42,18 @@ export default function CollectionsIndex() {
         </div>
       </section>
 
-      {/* Collections as ink-inverting rows */}
+      {/* Collections as mini travel posters — the brand's duotone fields */}
       <section className="wrap v2-sec" style={{ paddingTop: 26 }}>
-        <div className="v2-rows">
+        <div className="v2-tiles">
           {COLLECTIONS.map((c, i) => (
-            <Link key={c.slug} href={`/${c.slug}`} className="v2-row">
+            <Link
+              key={c.slug}
+              href={`/${c.slug}`}
+              className={`v2-tile ${POSTER[c.scene] ?? 'v2-poster--sun'}`}
+              aria-label={c.label}
+            >
               <span className="no">Nr. {String(i + 1).padStart(2, '0')}</span>
-              <span className="v2-row-name">{c.label}</span>
-              {/* full-sentence promise — mono caps would shout, so normal case */}
-              <span className="v2-row-meta" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                {c.promise}
-              </span>
-              <span className="go" aria-hidden="true" />
+              <span className="nm">{c.label}<span className="bead" aria-hidden="true" /></span>
             </Link>
           ))}
         </div>

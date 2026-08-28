@@ -205,25 +205,22 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       )}
 
       {/* Price context — one plain-language claim + the real sparkline when history exists */}
-      {/* No section header here — PriceSparkline brings its own "Kodėl kaina
-          gera" when history exists, and the claim needs no label without it. */}
-      <section className="wrap v2-context">
-        {deal.baseline && deal.drop > 0 ? (
+      {/* One integrated price story: kicker → price-free claim → bars → method.
+          The € figure already dominates the poster — never repeated here. */}
+      {(stats.hasHistory || deal.drop > 0) && (
+        <section className="wrap v2-context">
+          <div className="v2-kicker v2-kicker--dim">{S.priceContextH}</div>
           <div className="big">
-            Šis radinys — {eur(deal.price)}. Įprasta šio maršruto kaina — apie {eur(deal.baseline)}.
+            {stats.hasHistory
+              ? `Pigiausi ${stats.percentile} % per 90 dienų šiame maršrute.`
+              : `${deal.drop} % pigiau nei įprastai šiame maršrute.`}
           </div>
-        ) : (
-          <div className="big">Šis radinys — {eur(deal.price)}.</div>
-        )}
-        <div className="v2-kicker v2-kicker--dim">
-          {S.priceContextMethod} · {S.updatedMorning}
-        </div>
-        {/* Sparkline styles live under .yip-site — scope just this block until
-            the chart gets its own V2 pass (renders null without history). */}
-        <div className="yip-site" style={{ background: 'transparent' }}>
           <PriceSparkline stats={stats} todayPrice={deal.price} />
-        </div>
-      </section>
+          <div className="v2-kicker v2-kicker--dim method">
+            {S.priceContextMethod} · {S.updatedMorning}
+          </div>
+        </section>
+      )}
 
       <CaptureRow source="deal" />
 

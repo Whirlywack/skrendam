@@ -174,6 +174,16 @@
 .v2-context { border-top: 1px solid var(--line); padding: 34px 0 6px; }
 .v2-context .big { font-family: var(--font-display); font-weight: 800;
   font-size: clamp(24px, 3vw, 36px); letter-spacing: -.02em; color: var(--v2-ink); margin: 6px 0 10px; }
+.v2-context .method { display: block; margin-top: 16px; }
+
+/* price-history bars — directly on the paper, today in amber */
+.v2-spark { margin-top: 22px; max-width: 720px; }
+.v2-spark .bars { display: flex; align-items: flex-end; gap: 6px; height: 92px; }
+.v2-spark .bars i { flex: 1; background: var(--sand-200, #EFE6D4); border-radius: 3px 3px 0 0; min-height: 4px; }
+.v2-spark .bars i.today { flex: 1.6; background: var(--v2-amber); }
+.v2-spark .lbls { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 12px;
+  font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--sand-500); }
+.v2-spark .lbls b { color: var(--v2-ink); }
 
 /* curator pull-quote — the design system's centered bead-mark pattern
    (screens/v2-home.html .quote), not a side-tab border */
@@ -189,8 +199,36 @@
 .v2-linkband a { color: var(--accent, #0F7C68); margin-right: 18px; text-decoration: none; }
 .v2-linkband a:hover { text-decoration: underline; }
 
+/* collection tiles — mini travel posters on the duotone fields */
+.v2-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.v2 a.v2-tile {
+  position: relative; display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 230px; border-radius: 20px; overflow: hidden; padding: 20px 22px;
+  color: #fff;
+  /* background comes from the v2-poster--* field modifier (kept lower
+     specificity here so the modifier wins) */
+  transition: transform .25s var(--bead-ease);
+}
+.v2 a.v2-tile::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top, rgba(22, 18, 13, .45), transparent 60%);
+}
+.v2 a.v2-tile > * { position: relative; }
+.v2 a.v2-tile:hover { transform: translateY(-4px); color: #fff; }
+.v2-tile .no { font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; color: rgba(255, 255, 255, .92); }
+.v2-tile .nm { font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.025em; line-height: 1.04;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, .25); }
+.v2-tile .nm .bead { width: 8px; height: 8px; margin-left: 7px; }
+
+@media (max-width: 900px) {
+  .v2-tiles { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 640px) {
   .v2-cols { grid-template-columns: 1fr; gap: 24px; padding-top: 28px; }
+  .v2-tiles { grid-template-columns: 1fr; }
+  .v2 a.v2-tile { min-height: 170px; }
 }
 
 /* ---------- ink band ---------- */

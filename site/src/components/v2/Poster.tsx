@@ -12,6 +12,7 @@ export const POSTER: Record<string, string> = {
   'ph-city': 'v2-poster--stone',
   'ph-snow': 'v2-poster--sea',
   'ph-dusk': 'v2-poster--dusk',
+  'ph-market': 'v2-poster--dusk',
 };
 
 export function Poster({
