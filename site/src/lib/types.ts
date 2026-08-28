@@ -7,6 +7,7 @@ export interface TicketView {
   destination: string; country: string; origin: string;
   route: string;          // "VNO → LCA"
   dates: string; legs: string;  // legs = "1 stop · 7h" summary
+  month: string;          // "gruodis" — all a locked row reveals of the dates
   price: number; baseline: number | null; drop: number;
   quality: import('./quality').QualityTag;
   headline: string;       // pd.headline or a generated hook

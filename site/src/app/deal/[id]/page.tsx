@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getDeal, getSimilarDeals } from '@/lib/queries';
+import { notFound, redirect } from 'next/navigation';
+import { getDeal, getFreeWindowIds, getSimilarDeals } from '@/lib/queries';
 import { toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
@@ -51,6 +51,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   const row = await getDeal(numId);
   if (!row) notFound();
+
+  // Locked deals (live but past the free window) exist only as homepage
+  // teasers — their detail lives in the letter. Expired deals keep rendering.
+  if (row.pd.status === 'live') {
+    const freeIds = await getFreeWindowIds();
+    if (!freeIds.has(row.pd.id)) redirect('/#kapote');
+  }
 
   const now = new Date();
   const pd = row.pd;

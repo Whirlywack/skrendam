@@ -3,7 +3,7 @@ import { qualityTag } from './quality';
 import { bookingCta } from './booking';
 import { ltCity } from './cities-lt';
 import { ltDealHeadline, stopsChip } from './dealDetail';
-import { formatDates, freshnessLabel } from './format';
+import { formatDates, freshnessLabel, ltMonthNom } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
 import { S } from './lt';
@@ -36,6 +36,7 @@ export function toTicket(r: Row, now: Date): TicketView {
     origin: pd.origin,
     route: `${pd.origin} → ${pd.destination}`,
     dates: formatDates(String(pd.travelDate), pd.returnDate ? String(pd.returnDate) : null),
+    month: ltMonthNom(String(pd.travelDate)),
     legs: `${stopsChip(stops)}${dur ? ` · ${dur}` : ''}`,
     price: Number(pd.price),
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),

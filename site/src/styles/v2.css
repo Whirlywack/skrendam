@@ -144,7 +144,16 @@
   color: var(--sand-500); margin-left: 8px;
 }
 .v2-row-meta--flag { color: #B53017; }
+/* locked rows: destination visible, price held for the letter (edition scarcity) */
+.v2-row--locked .v2-row-price {
+  font-family: var(--font-mono); font-weight: 700; font-size: 12px;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--brand, #E2820E);
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.v2-row--locked .v2-row-price .bead { width: 7px; height: 7px; }
+.v2-row--locked:hover .v2-row-price { color: var(--v2-amber, #F5A623); }
 .v2-footnote { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-500); padding: 14px 8px 0; }
+.v2-footnote a { color: var(--accent, #0F7C68); }
 
 /* ---------- ink band ---------- */
 .v2-ink-band { background: var(--v2-ink); color: var(--v2-paper); padding: 84px 0; position: relative; overflow: hidden; margin-top: 64px; }
