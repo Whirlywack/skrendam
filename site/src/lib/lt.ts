@@ -152,6 +152,15 @@ export const S = {
     'Žmogaus patikrinti radiniai iš Vilniaus, Kauno ir Rygos. Prie kiekvieno — ' +
     'kodėl verta ir koks kabliukas.',
 
+  // V2 poster & bead surfaces
+  mastheadKicker: 'Atrinkti skrydžiai — Vilnius · Kaunas · Ryga',
+  issueLabel: 'Nr. 1 — vėlyva vasara',
+  youSaveVs: 'nuo įprastos kainos', // "SUTAUPAI 72 € NUO ĮPRASTOS KAINOS"
+  savedWord: 'sutaupė', // trophy meta: "RIX → OSL · SUTAUPĖ 90 €"
+  saveWord: 'sutaupai',
+  updatedMorning: 'atnaujinta šįryt',
+  thisWeekOf: 'šią savaitę', // poster kicker: "Nr. 01 iš 04 šią savaitę"
+
   // Data layer (mappers / deal page / collections / metadata)
   foundByHand: 'Atrinkta žmogaus', // eyebrow fallback when the curator wrote no public label
   navHome: 'Pradžia',
