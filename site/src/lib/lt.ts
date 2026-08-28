@@ -69,14 +69,6 @@ export const S = {
   footerFollow: 'Sek mus',
   footerLegal: '© 2026 Yip. Bilietą perki pas aviakompaniją ar agentūrą — kainos keičiasi greitai.',
 
-  // Hero (V1 layout, pre-poster)
-  heroEyebrow: 'Rasta ir patikrinta žmogaus',
-  heroEyebrowFallback: 'šios savaitės atranka — tik tai, kas atlaikė patikrą',
-  heroTitleAmber: 'Pigūs skrydžiai',
-  heroTitleTail: 'iš Vilniaus, Kauno ir Rygos — atrinkti žmogaus.',
-  heroCaptionEyebrow: 'Šią savaitę · dar spėji',
-  microproofTail: 'Jokios paieškos sistemos — tik verti radiniai.',
-
   // Signup card / capture
   freeBadge: 'Nemokama',
   capTitle: 'Gauk kitą retą radinį el. paštu',
@@ -87,60 +79,13 @@ export const S = {
   trustUnsub: 'Atsisakai kada nori',
   trustHuman: 'Tikrinta žmogaus',
 
-  // Sticky CTA bar
-  stickyTail: 'žmogaus tikrinti radiniai iš VNO, KUN ir RIX.',
-  stickyAria: 'Prenumeratos kvietimas',
-  stickyBtnAria: 'Užsisakyti nemokamus savaitinius radinius',
-
-  // Live deals section
-  liveEyebrow: 'Šią savaitę · rečiausias radinys',
-  liveEmpty: 'Šiuo metu gyvų radinių nėra — užsuk netrukus.',
-
   // Deal ticket
   chipCheaper: 'pigiau',
   retRoundTrip: 'į abi puses',
 
-  // Past fares (trophy strip)
-  pastEyebrow: 'Švieži radiniai — jau dingę',
-  pastAll: 'Visi buvę radiniai',
-
   // Collections
   collEyebrow: 'Rinkis kryptį',
   collHeader: 'Kur nori skristi?',
-
-  // Process band („Kaip veikia Yip")
-  howEyebrow: 'Kaip veikia Yip',
-  howHeader: 'Ne paieškos sistema. Tik verti radiniai.',
-  howFindTitle: 'Randam',
-  howFindBody: 'Stebim kiekvieną kainą iš VNO/KUN/RIX — ieškom tikrų anomalijų.',
-  howCheckTitle: 'Tikrinam',
-  howCheckBody: 'Žmogus patikrina, kad kaina tikra ir bilietą dar gali nusipirkti.',
-  howCatchTitle: 'Pasakom kabliuką',
-  howCatchBody: 'Persėdimai, savarankiškos jungtys — viską sakom atvirai.',
-  howSendTitle: 'Siunčiam',
-  howSendBody: 'Tiesiai į tavo paštą — bilietą perki tiesiogiai.',
-
-  // Early alerts band
-  earlyBandTitle: 'Dalis radinių dingsta dar prieš savaitinį laišką.',
-  earlyBandBody: 'Skubios žinutės — rečiausi radiniai iškart, kai tik juos randam.',
-  earlyBandCta: 'Noriu skubių žinučių',
-
-  // FAQ
-  faqEyebrow: 'Verta žinoti',
-  faqHeader: 'Klausei — atsakom.',
-  faqFreeQ: 'Ar tai nemokama?',
-  faqFreeA:
-    'Taip — savaitinis laiškas nemokamas. „Skubios žinutės" (greičiausi radiniai) kol kas ' +
-    'irgi nemokamos: prisijungi nemokamai, o jei vėliau atsirastų mokamas planas — ' +
-    'sąraše esantys sužinos pirmi.',
-  faqHowQ: 'Kaip juos randat?',
-  faqHowA:
-    'Kasdien stebim kainas kiekviename maršrute, o kiekvieną radinį prieš siųsdami ' +
-    'patikrina žmogus. Esam vietinis kuratorius, ne paieškos sistema.',
-  faqBookQ: 'Ar bilietą perku per Yip?',
-  faqBookA:
-    'Ne — perki tiesiogiai iš aviakompanijos (arba per „Google Flights"). ' +
-    'Mes tik randam, patikrinam ir parodom gyvą kainą.',
 
   // Site metadata
   metaTitle: 'Pigūs skrydžiai iš Vilniaus, Kauno ir Rygos — atrinkti žmogaus | Yip',
@@ -157,7 +102,7 @@ export const S = {
   issueLabel: 'Laiškas Nr. 1 — vėlyva vasara', // issue numbering ties to the email
   dealNoWord: 'Radinys', // poster kicker: "Radinys Nr. 01"
   captureLine: 'Kasdien peržiūrim visus maršrutus iš VNO, KUN ir RIX. Skelbiam tik tai, kas atlaiko patikrą.',
-  captureOk: 'Liko vienas žingsnis — patvirtink el. paštą.',
+  trustDirect: 'Bilietą perki tiesiogiai iš aviakompanijos — mes tavo pinigų neliečiam.',
   youSaveVs: 'nuo įprastos kainos', // "SUTAUPAI 72 € NUO ĮPRASTOS KAINOS"
   savedWord: 'sutaupė', // trophy meta: "RIX → OSL · SUTAUPĖ 90 €"
   saveWord: 'sutaupai',

@@ -171,7 +171,7 @@ export default function EarlyAlertsPage() {
 
       {/* ── BACK TO FREE ─────────────────────────────────────────────── */}
       <section className="pad" style={{ paddingTop: 0 }}>
-        <Link href="/#capture" className="ea-back-link">
+        <Link href="/#kapote" className="ea-back-link">
           Užtenka savaitinio laiško? Gauk radinius el. paštu →
         </Link>
       </section>

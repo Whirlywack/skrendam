@@ -78,7 +78,11 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
     quality,
-    verdict: 'Verta imti — taip pigiai būna retai.',
+    // The rarity claim is earned, not decoration: only 'rare'-tier deals say it
+    // (review 08-28 — a 'great' deal beside a rarity line reads as fake urgency).
+    verdict: quality === 'rare'
+      ? 'Verta imti — taip pigiai būna retai.'
+      : 'Gera kaina šiam maršrutui — pigiau nei įprastai.',
     why: drop ? `${drop} % pigiau nei įprastai` : 'Pigiau nei įprastai',
     catchLine: stops >= 1 ? `Kabliukas: ${stopsChip(stops)}` : null,
     status,

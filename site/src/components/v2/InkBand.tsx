@@ -54,6 +54,9 @@ export function InkBand() {
               </div>
               {error && <div role="alert">{error}</div>}
               <div className="fine">{S.finePrint}</div>
+              {/* The site's strongest objection-killer, re-homed from the deleted
+                  FAQ (review 08-28): we never touch your money. */}
+              <div className="fine">{S.trustDirect}</div>
             </form>
           </>
         )}
