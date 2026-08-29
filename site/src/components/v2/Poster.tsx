@@ -5,12 +5,14 @@ import { eur } from '@/lib/format';
 import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
 
 // Photo scenes map onto the design system's duotone poster fields.
-const POSTER: Record<string, string> = {
+// Exported: the deal page's poster hero shares the mapping.
+export const POSTER: Record<string, string> = {
   'ph-sun': 'v2-poster--sun',
   'ph-coast': 'v2-poster--sun',
   'ph-city': 'v2-poster--stone',
   'ph-snow': 'v2-poster--sea',
   'ph-dusk': 'v2-poster--dusk',
+  'ph-market': 'v2-poster--dusk',
 };
 
 export function Poster({
@@ -59,7 +61,10 @@ export function Poster({
                 {eur(t.price)}
                 {showWas && <s>{eur(t.baseline!)}</s>}
               </div>
-              {save != null && (
+              {/* Prose saving claim follows the same depth gate as the
+                  strikethrough — a shallow deal makes no reference-price
+                  claim in any form (review 08-28). */}
+              {showWas && save != null && (
                 <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
               )}
             </div>

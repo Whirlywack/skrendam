@@ -54,6 +54,16 @@ export default async function Home() {
 
       {featured && <Poster t={featured} count={free.length + locked.length} freshness={catchFreshness} hook={hook} />}
 
+      {/* Zero-live state: the hero's promise needs an honest counterpart
+          (review 08-28 — the 0-deal case is a real data state too). */}
+      {!featured && (
+        <section className="wrap">
+          <div className="mono v2-footnote" style={{ padding: '4px 0 0' }}>
+            {S.emptyLive} <a href="#kapote">{S.ctaSubmit} →</a>
+          </div>
+        </section>
+      )}
+
       {/* The ask lives next to the desire — never a full viewport below it */}
       <CaptureRow />
 

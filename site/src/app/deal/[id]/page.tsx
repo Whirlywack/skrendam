@@ -1,48 +1,29 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getDeal, getFreeWindowIds, getSimilarDeals } from '@/lib/queries';
 import { toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
-import { dealWhyAndCatch, ltDealHeadline, stopsChip } from '@/lib/dealDetail';
+import { dealWhyAndCatch, ltDealHeadline } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
 import { ltCity } from '@/lib/cities-lt';
 import { eur, freshnessLabel } from '@/lib/format';
+import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
+import { originCollection, zoneCollection } from '@/lib/collections';
 import { S, curator } from '@/lib/lt';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { Photo } from '@/components/Photo';
+import { Masthead } from '@/components/v2/Masthead';
+import { Crumb } from '@/components/v2/Crumb';
+import { POSTER } from '@/components/v2/Poster';
+import { CaptureRow } from '@/components/v2/CaptureRow';
+import { LinkBand } from '@/components/v2/LinkBand';
+import { DealRow } from '@/components/v2/Rows';
+import { InkBand } from '@/components/v2/InkBand';
+import { V2Footer } from '@/components/v2/V2Footer';
 import { PriceSparkline } from '@/components/PriceSparkline';
-import { DealTicket } from '@/components/DealTicket';
-import { SignupCard } from '@/components/SignupCard';
 import { JsonLd } from '@/components/JsonLd';
 import { breadcrumbJsonLd, dealArticleJsonLd } from '@/lib/seo';
 
 export const revalidate = 300;
-
-// ── SVG icons ────────────────────────────────────────────────────────────────
-
-function IconCheck() {
-  return (
-    <svg className="ic" width="17" height="17" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
-}
-
-function IconClock() {
-  return (
-    <svg className="ic" width="17" height="17" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
-
-// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,15 +35,17 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   // Locked deals (live but past the free window) exist only as homepage
   // teasers — their detail lives in the letter. Expired deals keep rendering.
-  if (row.pd.status === 'live') {
-    const freeIds = await getFreeWindowIds();
-    if (!freeIds.has(row.pd.id)) redirect('/#kapote');
-  }
+  const freeIds = await getFreeWindowIds();
+  if (row.pd.status === 'live' && !freeIds.has(row.pd.id)) redirect('/#kapote');
 
   const now = new Date();
   const pd = row.pd;
   const deal = toPublicDeal(row, now);
+  const t = toTicket(row, now);
   const headline = ltDealHeadline(pd.headline, Number(pd.price), pd.destination);
+
+  // Free-window rank — the poster kicker's honest "Nr. 0X" (Set keeps order).
+  const rank = pd.status === 'live' ? [...freeIds].indexOf(pd.id) + 1 : 0;
 
   // Price context (real data — no fake sparklines)
   const stats = await priceContext(pd.origin, pd.destination, pd.tripType, deal.price, now);
@@ -80,7 +63,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     dates: deal.dates,
   });
 
-  // Similar deals (zone → origin fallback, up to 3)
+  // Similar deals (zone → origin fallback, free-window only)
   const similarRows = await getSimilarDeals(
     { excludeId: numId, zone: pd.zone, origin: pd.origin },
     3,
@@ -99,12 +82,20 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   // Quality chip (words only — score stays internal)
   const qualityLabel = deal.quality === 'rare' ? S.badgeRare : S.badgeGreat;
 
-  // Trip-type label — LT convention, price symbol after („96 € į abi puses")
-  const tripLabel = pd.tripType === 'roundtrip' ? S.retRoundTrip : S.retOneWay;
-
-  // Hero photo scene
-  const scene = sceneClass(pd.destination);
   const dest = ltCity(pd.destination);
+  const [o, , d] = t.route.split(' ');
+  const save = t.baseline != null && t.baseline > t.price ? Math.round(t.baseline - t.price) : null;
+  const showWas = t.baseline != null && t.drop >= WAS_PRICE_MIN_DROP_PCT;
+  const posterField = POSTER[sceneClass(pd.destination)] ?? 'v2-poster--sun';
+
+  // Interlinks: the collections this deal belongs to (visible twin of JSON-LD)
+  const origColl = originCollection(pd.origin);
+  const zoneColl = zoneCollection(pd.zone);
+  const bandLinks = [
+    ...(origColl ? [{ label: origColl.label, href: `/${origColl.slug}` }] : []),
+    ...(zoneColl ? [{ label: zoneColl.label, href: `/${zoneColl.slug}` }] : []),
+    { label: S.navAllDeals, href: '/collections' },
+  ];
 
   // Article description (price-free: drop%, route, dates — no € figure)
   const articleDescription = deal.drop > 0
@@ -112,10 +103,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     : `${deal.route}. ${deal.dates}. ${S.checkedByHand}`;
 
   return (
-    <div className="yip-site">
+    <main className="v2">
       <JsonLd data={breadcrumbJsonLd([
-        { name: S.navHome, path: '/' },
         { name: S.navDeals, path: '/' },
+        ...(origColl ? [{ name: origColl.label, path: `/${origColl.slug}` }] : []),
         { name: deal.destination, path: `/deal/${pd.id}` },
       ])} />
       <JsonLd data={dealArticleJsonLd({
@@ -124,154 +115,135 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         description: articleDescription,
         datePublished: pd.publishedAt,
       })} />
-      <Header />
+      <Masthead />
 
-      {/* ── Back link ─────────────────────────────────────────────────────── */}
-      <div style={{ padding: '14px 26px 0' }}>
-        <Link className="back" href="/">&larr; {S.navAllDeals}</Link>
-      </div>
+      <Crumb items={[
+        { label: S.navDeals, href: '/' },
+        ...(origColl ? [{ label: origColl.label, href: `/${origColl.slug}` }] : []),
+        { label: deal.destination },
+      ]} />
 
-      {/* ── Boarding-pass hero ────────────────────────────────────────────── */}
-      {/* .himg is the positioned container; Photo fills it; caption overlays on top */}
-      <div className="himg" style={{ margin: '12px 26px 0', position: 'relative' }}>
-        {/* Photo fills the full .himg height — borderRadius 0 so the parent clips */}
-        <Photo scene={scene} className="himg-fill" />
-        {/* Gradient overlay */}
-        <div className="ov" />
-        {/* Caption overlaid on the photo */}
-        <div className="himg-cap">
-          <span className="eyebrow himg-eyebrow">
-            {pd.publicLabel ?? S.foundByHand} &middot; {freshLabel}
-          </span>
-          <h1 className="himg-h1">
-            {dest.nom}{dest.country ? `, ${dest.country}` : ''}
-          </h1>
-        </div>
-      </div>
-
-      {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div className="deal-body" style={{ padding: '22px 26px 8px' }}>
-
-        {/* Meta row */}
-        <div className="dmeta">
-          <span>{deal.route} &middot; {deal.dates} &middot; {stopsChip(deal.stops)} &middot; {deal.airline}</span>
-          <span className={`chip ${deal.quality === 'rare' ? 'chip-rare' : 'chip-great'}`}>{qualityLabel}</span>
-          <span className="chip chip-fresh">&#x25CF; {freshLabel}</span>
-        </div>
-
-        {/* Headline */}
-        <div className="dh">{headline}</div>
-
-        {/* ── Book row ──────────────────────────────────────────────────── */}
-        <div className="dbook">
-          <div className="price">
-            {eur(deal.price)}
-            {deal.baseline ? <s>{eur(deal.baseline)}</s> : null}
-            <span className="ret">{tripLabel} &middot; asmeniui</span>
-          </div>
-          <div className="dbook-cta">
-            <a className="bookbtn" href={booking.url} target="_blank" rel="noopener noreferrer">
-              {booking.button} &rarr;
-            </a>
-            <div className="booksub">{booking.sub}</div>
-          </div>
-        </div>
-
-        {/* ── Kodėl verta | Kabliukas ───────────────────────────────────── */}
-        <div className="dcols">
-          <div>
-            <h5 className="good">Kodėl verta</h5>
-            <div className="dlist">
-              {whyAndCatch.why.map((line, i) => (
-                <div key={i} className="li good">
-                  <IconCheck />
-                  <span>{line}</span>
-                </div>
-              ))}
-            </div>
+      {/* Poster hero — the home poster atom; the CTA becomes the booking action */}
+      <section className="wrap" style={{ paddingTop: 14 }}>
+        <div className={`v2-poster ${posterField}`}>
+          <div className="top">
+            <span className="v2-kicker">
+              {rank > 0
+                ? `${S.dealNoWord} Nr. ${String(rank).padStart(2, '0')} · ${S.thisWeekOf}`
+                : pd.publicLabel ?? S.foundByHand}
+            </span>
+            <span className="v2-stamp v2-stamp--light">{qualityLabel}</span>
           </div>
           <div>
-            <h5 className="cav">Kabliukas</h5>
-            <div className="dlist">
-              {whyAndCatch.catch.map((line, i) => (
-                <div key={i} className="li cav">
-                  <IconClock />
-                  <span>{line}</span>
+            <h1 className="v2-poster-name" style={{ margin: 0 }}>
+              {dest.nom}
+            </h1>
+            <p className="blurb">{headline}</p>
+          </div>
+          <div className="foot">
+            <div className="routebox" aria-hidden="true">
+              <div className="mono ends"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
+              <div className="bead-route"><span className="track" /><span className="bead" /></div>
+            </div>
+            <div className="pricecell">
+              <div>
+                <div className="v2-price price">
+                  {eur(t.price)}
+                  {showWas && <s>{eur(t.baseline!)}</s>}
                 </div>
-              ))}
-              {whyAndCatch.catch.length === 0 && (
-                <div className="li good">
-                  <IconCheck />
-                  <span>Kabliukų nėra — švarus radinys.</span>
-                </div>
-              )}
+                {/* Same depth gate as the strikethrough (see Poster.tsx) */}
+                {showWas && save != null && (
+                  <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
+                )}
+              </div>
+              <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">
+                {booking.button} <span className="bead" aria-hidden="true" />
+              </a>
             </div>
           </div>
         </div>
-
-        {/* ── Curator's note ────────────────────────────────────────────── */}
-        {pd.body && (
-          <div className="curator">
-            <div className="av" />
-            <div>
-              <div className="txt">{pd.body}</div>
-              <div className="sig">— {curator().sig}</div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Price context ─────────────────────────────────────────────── */}
-        {/* PriceSparkline renders null when hasHistory=false — no fake chart */}
-        <PriceSparkline stats={stats} todayPrice={deal.price} />
-
-        {/* Price context fallback — point stats when no sparkline history */}
-        {!stats.hasHistory && deal.baseline && deal.drop > 0 && (
-          <div className="sec">
-            <h3>Kodėl kaina gera</h3>
-            <div className="bignote">{deal.drop} % pigiau nei įprastai šiame maršrute.</div>
-            <div className="rangelbl">
-              <span>šis radinys <b>{eur(deal.price)}</b></span>
-              <span>įprasta <b>{eur(deal.baseline)}</b></span>
-            </div>
-          </div>
-        )}
-
-        {/* ── Similar deals ─────────────────────────────────────────────── */}
-        {similarTickets.length > 0 && (
-          <div style={{ marginTop: 24 }}>
-            <div className="sec-h">Daugiau tokių radinių</div>
-            <div className="grid3">
-              {similarTickets.map((t) => (
-                <DealTicket key={t.id} t={t} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Email nudge ───────────────────────────────────────────────── */}
-        {/* SignupCard is a client component; source="deal" tags the signup origin */}
-        <div style={{ marginTop: 24 }}>
-          <SignupCard source="deal" />
+        <div className="mono v2-catchline">
+          <span>{t.catchChip}</span>
+          <span>{t.dates}</span>
+          <span>{t.airline} · {freshLabel.toLowerCase()}</span>
         </div>
+      </section>
 
-        {/* ── Booking CTA (repeat at bottom) ────────────────────────────── */}
-        <div className="dbook" style={{ marginTop: 16 }}>
-          <div className="price">
-            {eur(deal.price)}
-            <span className="ret">{tripLabel} &middot; asmeniui</span>
-          </div>
-          <div className="dbook-cta">
-            <a className="bookbtn" href={booking.url} target="_blank" rel="noopener noreferrer">
-              {booking.button} &rarr;
-            </a>
-            <div className="booksub">{booking.sub}</div>
-          </div>
+      {/* Why / catch — bead-bullet editorial columns */}
+      <section className="wrap v2-cols">
+        <div>
+          <h3 className="good">Kodėl verta</h3>
+          {whyAndCatch.why.map((line, i) => (
+            <div key={i} className="v2-li">
+              <span className="bead" aria-hidden="true" /><span>{line}</span>
+            </div>
+          ))}
         </div>
+        <div>
+          <h3 className="cav">Kabliukas</h3>
+          {whyAndCatch.catch.map((line, i) => (
+            <div key={i} className="v2-li cav">
+              <span className="bead" aria-hidden="true" /><span>{line}</span>
+            </div>
+          ))}
+          {whyAndCatch.catch.length === 0 && (
+            <div className="v2-li">
+              <span className="bead" aria-hidden="true" /><span>Kabliukų nėra — švarus radinys.</span>
+            </div>
+          )}
+        </div>
+      </section>
 
-      </div>
+      {/* Curator's note */}
+      {pd.body && (
+        <section className="wrap">
+          <div className="v2-curator">
+            <div className="mark" aria-hidden="true" />
+            <div className="txt">„{pd.body}“</div>
+            <div className="sig">— {curator().sig}</div>
+          </div>
+        </section>
+      )}
 
-      <Footer />
-    </div>
+      {/* Price context — one plain-language claim + the real sparkline when history exists */}
+      {/* One integrated price story: kicker → price-free claim → bars → method.
+          The € figure already dominates the poster — never repeated here. */}
+      {(stats.hasHistory || deal.drop > 0) && (
+        <section className="wrap v2-context">
+          <div className="v2-kicker v2-kicker--dim">{S.priceContextH}</div>
+          <div className="big">
+            {stats.hasHistory
+              ? `Pigiausi ${stats.percentile} % per 90 dienų šiame maršrute.`
+              : `${deal.drop} % pigiau nei įprastai šiame maršrute.`}
+          </div>
+          <PriceSparkline stats={stats} todayPrice={deal.price} />
+          <div className="v2-kicker v2-kicker--dim method">
+            {S.priceContextMethod} · {S.updatedMorning}
+          </div>
+        </section>
+      )}
+
+      <CaptureRow source="deal" />
+
+      {/* Similar deals — the home page's ink-inverting rows */}
+      {similarTickets.length > 0 && (
+        <section className="wrap v2-sec">
+          <div className="head">
+            <h2 className="v2-display">{S.similarHeader}<span className="bead bead--live" aria-hidden="true" /></h2>
+          </div>
+          <div className="v2-rows">
+            {similarTickets.map((s, i) => (
+              <DealRow key={s.id} t={s} no={`Nr. ${String(i + 1).padStart(2, '0')}`} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <LinkBand links={bandLinks} />
+
+      <InkBand />
+      <V2Footer />
+    </main>
   );
 }
 

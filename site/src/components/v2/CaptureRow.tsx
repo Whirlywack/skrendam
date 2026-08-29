@@ -8,7 +8,7 @@ import { S } from '@/lib/lt';
  * and the form are never a full viewport apart (conversion audit 08-28).
  * The line states the selection base honestly: many routes watched, few pass.
  */
-export function CaptureRow() {
+export function CaptureRow({ source = 'home-mid' }: { source?: string }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -31,7 +31,7 @@ export function CaptureRow() {
           <span className="ok">{S.successTitle}</span>
         ) : (
           <form onSubmit={onSubmit}>
-            <input type="hidden" name="source" value="home-mid" />
+            <input type="hidden" name="source" value={source} />
             <input type="hidden" name="mode" value="inline" />
             <input
               type="email"

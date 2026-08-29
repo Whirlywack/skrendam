@@ -11,6 +11,7 @@ export function V2Footer() {
           <Link href="/pigus-skrydziai-is-vilniaus">{S.fromVilnius}</Link>
           <Link href="/pigus-skrydziai-is-kauno">{S.fromKaunas}</Link>
           <Link href="/pigus-skrydziai-is-rygos">{S.fromRiga}</Link>
+          <Link href="/past-deals">{S.navPast}</Link>
         </nav>
         <span className="legal">© 2026 · {S.footerMade}</span>
       </div>
