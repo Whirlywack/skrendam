@@ -26,10 +26,21 @@ def itinerary_ok(fare: FareItinerary, tpl) -> bool:
     return True
 
 
+_DOW = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+
+
 def in_template_scope(tpl, route, point, today) -> bool:
     """Destination + date-window scope check (re-homed from orchestrator)."""
     from skrendam.scanning.resolver import _destinations_ok, _window
     if not _destinations_ok(tpl, route):
+        return False
+    # Despite the "preferred" name this is a hard gate: last-minute-weekends
+    # promises "Leave this weekend", so a Wednesday fare must not match it.
+    # (Audit 2026-08-29: the field was seeded but never consumed - 33/51 live
+    # matches departed Sun-Thu.)
+    if tpl.preferred_departure_days and _DOW[point.travel_date.weekday()] not in [
+        d.upper() for d in tpl.preferred_departure_days
+    ]:
         return False
     start, end = _window(tpl, today)
     return start <= point.travel_date <= end

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const TABS = [
   { label: 'Scan health', href: '/machine/scan-health' },
+  { label: 'Coverage', href: '/machine/coverage' },
   { label: 'Templates', href: '/machine/templates' },
   { label: 'Routes', href: '/machine/routes' },
   { label: 'Zones', href: '/machine/zones' },
