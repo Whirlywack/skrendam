@@ -7,6 +7,7 @@ import { CaptureRow } from '@/components/v2/CaptureRow';
 import { InkBand } from '@/components/v2/InkBand';
 import { V2Footer } from '@/components/v2/V2Footer';
 import { eur } from '@/lib/format';
+import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
 import { S } from '@/lib/lt';
 
 export const revalidate = 300;
@@ -49,8 +50,11 @@ export default async function PastDeals() {
         {deals.length > 0 ? (
           <div className="v2-rows">
             {deals.map((t) => {
-              const saved = t.baseline != null && t.baseline > t.price
-                ? Math.round(t.baseline - t.price) : null;
+              // Depth gate: a shallow deal makes no reference-price claim in any
+              // form — same rule as Poster/DealTicket/deal page.
+              const was = t.baseline != null && t.baseline > t.price
+                && t.drop >= WAS_PRICE_MIN_DROP_PCT ? t.baseline : null;
+              const saved = was != null ? Math.round(was - t.price) : null;
               const month = t.dates.split(' ')[0]?.replace('.', '') ?? '';
               return (
                 <div key={t.id} className="v2-row v2-row--dead">
@@ -60,7 +64,7 @@ export default async function PastDeals() {
                     {t.route}{saved != null ? ` · ${S.savedWord} ${eur(saved)}` : ''} · {t.dates}
                   </span>
                   <span className="v2-row-price">
-                    {eur(t.price)}{t.baseline != null && <s>{eur(t.baseline)}</s>}
+                    {eur(t.price)}{was != null && <s>{eur(was)}</s>}
                   </span>
                 </div>
               );

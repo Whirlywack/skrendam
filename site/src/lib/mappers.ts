@@ -27,9 +27,10 @@ export function toTicket(r: Row, now: Date): TicketView {
   // both legs, so presenting it as the flight time overstates ~2× ("5 val."
   // for a 2h50 hop — canvas review 08-28). Per-leg time can't be derived from
   // the naive local timestamps without an airport TZ table, so round trips
-  // show no duration.
-  const legCount = Array.isArray(s.legs) ? (s.legs as unknown[]).length : 0;
-  const dur = s.duration && legCount <= 1 ? `${Math.round(Number(s.duration) / 60)} val.` : '';
+  // show no duration. Gate on tripType, not legs.length — legs flattens all
+  // segments, so a one-way with a connection also has 2+ entries.
+  const dur =
+    s.duration && pd.tripType !== 'roundtrip' ? `${Math.round(Number(s.duration) / 60)} val.` : '';
   const drop = Math.round(Number(pd.discountPct ?? 0));
   // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);

@@ -57,7 +57,7 @@ export default async function CollectionPage({
   return (
     <main className="v2">
       <JsonLd data={breadcrumbJsonLd([
-        { name: S.navHome, path: '/' },
+        { name: S.navDeals, path: '/' },
         { name: S.navCollections, path: '/collections' },
         { name: c.label, path: `/${c.slug}` },
       ])} />

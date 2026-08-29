@@ -30,11 +30,19 @@ describe('toTicket', () => {
   });
   it('round-trip duration (whole-itinerary total) is not shown as flight time', () => {
     // 330 min = both legs summed — showing "5 val." would overstate the hop ~2×
-    const two = toTicket(row({ snapshot: { stops: 0, duration: 330, legs: [
+    const rt = toTicket(row({ snapshot: { stops: 0, duration: 330, legs: [
       { airline: { code: 'FR' } }, { airline: { code: 'FR' } },
     ] } }), new Date());
-    expect(two.legs).toBe('Tiesioginis');
-    const one = toTicket(row({ snapshot: { stops: 0, duration: 170, legs: [{ airline: { code: 'FR' } }] } }), new Date());
-    expect(one.legs).toBe('Tiesioginis · 3 val.');
+    expect(rt.legs).toBe('Tiesioginis');
+    // ...even when the snapshot carries no legs array at all
+    const legless = toTicket(row({ snapshot: { stops: 0, duration: 330, airline: 'FR' } }), new Date());
+    expect(legless.legs).toBe('Tiesioginis');
+  });
+  it('one-way duration IS shown, even with a connection (legs holds 2 flattened segments)', () => {
+    const ow = toTicket(row({
+      pd: { tripType: 'oneway', returnDate: null },
+      snapshot: { stops: 1, duration: 170, legs: [{ airline: { code: 'FR' } }, { airline: { code: 'FR' } }] },
+    }), new Date());
+    expect(ow.legs).toBe('1 persėdimas · 3 val.');
   });
 });
