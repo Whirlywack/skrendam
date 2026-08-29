@@ -11,7 +11,7 @@ def test_seed_is_idempotent(session):
     assert session.query(models.Route).count() >= 10
     assert session.query(models.AudienceSegment).count() == 6
     assert session.query(models.TravelMoment).count() == 10
-    assert session.query(models.DealTemplate).count() == 10
+    assert session.query(models.DealTemplate).count() == 14
     # every template references a real audience + moment
     for t in session.query(models.DealTemplate):
         assert t.audience_segment_id and t.travel_moment_id
@@ -47,10 +47,59 @@ def test_new_templates_and_gate_values(session):
         "plan-ahead-summer",
         "vfr-watch",
     ]
-    exempt = ["last-minute-weekends", "last-warm-days", "long-haul-opportunist"]
+    exempt = [
+        "last-minute-weekends",
+        "last-warm-days",
+        "last-warm-days-november",
+        "long-haul-opportunist",
+        # fixed school-break windows are ~6 days wide; a 5-near-price-dates
+        # gate would starve them structurally
+        "family-autumn-sun",
+        "family-feb-sun",
+        "family-easter-sun",
+    ]
     assert all(by_slug[s].min_departure_dates == 5 for s in planable)
     assert all(by_slug[s].min_departure_dates is None for s in exempt)
     assert by_slug["christmas-markets"].min_discount_pct == 25  # 06-03 flood watch-item
+
+
+def test_moment_structure_audit_2026_08_29(session):
+    """Locks in the audit fixes: windows, warm sets, lead, weekend gate wiring."""
+    seed_all(session)
+    by_slug = {t.slug: t for t in session.query(models.DealTemplate).all()}
+
+    # plan-ahead-summer targets actual summer, with a 60-day booking lead
+    pas = by_slug["plan-ahead-summer"]
+    assert pas.date_window_type == "seasonal"
+    assert (pas.season_start_mmdd, pas.season_end_mmdd) == ("06-01", "08-31")
+    assert pas.rel_offset_start_days == 60
+
+    # last-warm-days: October broad, November restricted to the verified-warm set
+    assert by_slug["last-warm-days"].season_end_mmdd == "10-31"
+    nov = by_slug["last-warm-days-november"]
+    assert nov.included_zones is None and "BCN" not in nov.included_destinations
+    assert {"LCA", "TFS", "HRG"} <= set(nov.included_destinations)
+
+    # winter-sun cedes November to last-warm-days
+    assert by_slug["winter-sun-escape"].season_start_mmdd == "12-01"
+
+    # school holidays: autumn/Feb/Easter breaks exist with ŠMSM 2026-27 fixed dates
+    assert by_slug["family-autumn-sun"].fixed_start_date == date(2026, 10, 30)
+    assert by_slug["family-feb-sun"].fixed_start_date == date(2027, 2, 12)
+    assert by_slug["family-easter-sun"].fixed_end_date == date(2027, 3, 31)
+
+    # weekend promise is enforceable: the gate field is set on last-minute-weekends
+    lmw = by_slug["last-minute-weekends"]
+    assert lmw.preferred_departure_days == ["FRI", "SAT"]
+    assert lmw.rel_offset_end_days == 24
+
+    # no dead destinations: every included destination has a seeded route
+    from skrendam.seeds import ROUTES
+
+    seeded = {d for _, d, *_ in ROUTES}
+    for t in by_slug.values():
+        for d in t.included_destinations or []:
+            assert d in seeded, f"{t.slug}: {d} has no route"
 
 
 def test_route_list_size_and_validity():

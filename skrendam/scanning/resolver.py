@@ -38,6 +38,12 @@ def _window(tpl: "models.DealTemplate", today: date) -> tuple[date, date]:
                 start = date(start.year + 1, sm, sd)
                 end = date(end.year + 1, em, ed)
         start = max(start, today)  # never scan the past
+        if tpl.rel_offset_start_days:
+            # Seasonal + lead-time floor: rel_offset_start_days doubles as a
+            # minimum booking lead for seasonal templates. plan-ahead-summer =
+            # season Jun-Aug AND >=60 days out; inside the lead the window goes
+            # empty rather than degenerating into last-minute scanning.
+            start = max(start, today + timedelta(days=tpl.rel_offset_start_days))
     elif tpl.date_window_type == "fixed":
         fixed_start, fixed_end = tpl.fixed_start_date, tpl.fixed_end_date
         if fixed_start is None or fixed_end is None:

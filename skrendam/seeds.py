@@ -1,9 +1,31 @@
 """Idempotent seed of starter config (spec §12). Destinations are a starter set; expand in admin."""
 
+from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from skrendam.db import models
+
+# Verified-warm destination sets (moment-structure audit 2026-08-29).
+# November beach-warm: Canaries ~24C, Madeira ~22C, Red Sea ~27C (sea 25C),
+# Cyprus ~22C, Antalya ~21-23C, Malta ~21C borderline-in. Mainland Spain /
+# Barcelona / Adriatic are NOT (BCN high 18C, sea 18C) - they stay October-only.
+NOV_WARM = ["LCA", "PFO", "AYT", "MLA", "TFS", "LPA", "FNC", "RAK", "HRG", "SSH"]
+# Dec-Feb "real warmth": Canaries + Red Sea + DXB + Marrakech. Midwinter east
+# Med (LCA 17-18C, AYT 15-16C, MLA 16C) does not deliver the promise.
+WINTER_WARM = ["TFS", "LPA", "HRG", "SSH", "DXB", "RAK"]
+# Late March adds Madeira and shoulder-warm Cyprus back in.
+EASTER_WARM = ["TFS", "LPA", "FNC", "HRG", "SSH", "RAK", "DXB", "LCA", "PFO"]
+
+# Lithuanian school breaks 2026-2027 (ŠMSM, smsm.lrv.lt - fetched 2026-08-29).
+# Fixed-window templates below must be refreshed each school year; a template
+# whose fixed window has passed simply resolves to zero specs (harmless).
+# Windows are DEPARTURE dates: they open the Fri/Sat before the break and close
+# early enough that a trip_len_min-day trip returns before school restarts.
+LT_AUTUMN_BREAK = (date(2026, 10, 30), date(2026, 11, 4))  # break Nov 2-8
+LT_FEB_BREAK = (date(2027, 2, 12), date(2027, 2, 17))  # break Feb 15-21
+LT_EASTER_BREAK = (date(2027, 3, 19), date(2027, 3, 31))  # breaks Mar 22-29 / Mar 29-Apr 4
 
 ZONES = [
     ("WESTERN_EUROPE", "short", 50, 25, 25),
@@ -290,12 +312,85 @@ def seed_all(session: Session) -> None:
             allow_overnight_layover=False,
             allow_airport_change=False,
             family_friendly_times_only=True,
-            max_price_eur=400,
-            min_discount_pct=20,
+            # 300/30 matches the live-DB desk tuning (audit 2026-08-29); the
+            # earlier 400/20 seed values would silently loosen the gate on a rebuild.
+            max_price_eur=300,
+            min_discount_pct=30,
             min_departure_dates=5,
             public_label="Family sun",
             newsletter_tag="family_sun",
             content_angle="School-holiday sun without package prices",
+        ),
+        # School holidays are five discrete breaks, not one summer window
+        # (audit 2026-08-29). Autumn / February / Easter get fixed-window
+        # family templates; the Christmas break is deliberately skipped -
+        # winter-sun-escape already scans those dates and Xmas-peak family
+        # fares almost never clear a deal gate.
+        dict(
+            slug="family-autumn-sun",
+            name="Family autumn-break sun",
+            audience="families",
+            moment="school_holidays",
+            trip_type="roundtrip",
+            date_window_type="fixed",
+            fixed_start_date=LT_AUTUMN_BREAK[0],
+            fixed_end_date=LT_AUTUMN_BREAK[1],
+            included_destinations=NOV_WARM,
+            trip_len_min_days=4,
+            trip_len_max_days=9,
+            max_stops=1,
+            allow_overnight_layover=False,
+            allow_airport_change=False,
+            family_friendly_times_only=True,
+            max_price_eur=300,
+            min_discount_pct=25,
+            public_label="Family sun",
+            newsletter_tag="family_sun",
+            content_angle="Autumn-break sun (Nov 2-8) without package prices",
+        ),
+        dict(
+            slug="family-feb-sun",
+            name="Family February-break sun",
+            audience="families",
+            moment="school_holidays",
+            trip_type="roundtrip",
+            date_window_type="fixed",
+            fixed_start_date=LT_FEB_BREAK[0],
+            fixed_end_date=LT_FEB_BREAK[1],
+            included_destinations=WINTER_WARM,
+            trip_len_min_days=4,
+            trip_len_max_days=9,
+            max_stops=1,
+            allow_overnight_layover=False,
+            allow_airport_change=False,
+            family_friendly_times_only=True,
+            max_price_eur=350,  # winter Canaries/Red Sea price higher than summer Med
+            min_discount_pct=25,
+            public_label="Family sun",
+            newsletter_tag="family_sun",
+            content_angle="February-break warmth (Feb 15-21) - real sun only",
+        ),
+        dict(
+            slug="family-easter-sun",
+            name="Family Easter-break sun",
+            audience="families",
+            moment="school_holidays",
+            trip_type="roundtrip",
+            date_window_type="fixed",
+            fixed_start_date=LT_EASTER_BREAK[0],
+            fixed_end_date=LT_EASTER_BREAK[1],
+            included_destinations=EASTER_WARM,
+            trip_len_min_days=4,
+            trip_len_max_days=9,
+            max_stops=1,
+            allow_overnight_layover=False,
+            allow_airport_change=False,
+            family_friendly_times_only=True,
+            max_price_eur=350,
+            min_discount_pct=25,
+            public_label="Family sun",
+            newsletter_tag="family_sun",
+            content_angle="Easter-break sun (Mar 22 - Apr 4)",
         ),
         dict(
             slug="september-sun",
@@ -316,15 +411,18 @@ def seed_all(session: Session) -> None:
             newsletter_tag="sept_sun",
             content_angle="Still warm, fewer families, cheaper",
         ),
+        # Split by month (audit 2026-08-29): October is shoulder-warm across the
+        # whole Med, but by November only the NOV_WARM set still delivers - the
+        # old single Oct-Nov window made Barcelona (18C) the top November find.
         dict(
             slug="last-warm-days",
-            name="Last warm days",
+            name="Last warm days (October)",
             audience="flexible_adults",
             moment="last_warm_days",
             trip_type="roundtrip",
             date_window_type="seasonal",
             season_start_mmdd="10-01",
-            season_end_mmdd="11-30",
+            season_end_mmdd="10-31",
             included_zones=["MEDITERRANEAN", "CANARIES"],
             trip_len_min_days=3,
             trip_len_max_days=10,
@@ -336,13 +434,34 @@ def seed_all(session: Session) -> None:
             content_angle="One last sun trip before winter",
         ),
         dict(
+            slug="last-warm-days-november",
+            name="Last warm days (November, verified-warm set)",
+            audience="flexible_adults",
+            moment="last_warm_days",
+            trip_type="roundtrip",
+            date_window_type="seasonal",
+            season_start_mmdd="11-01",
+            season_end_mmdd="11-30",
+            included_destinations=NOV_WARM,
+            trip_len_min_days=3,
+            trip_len_max_days=10,
+            max_stops=1,
+            max_price_eur=150,
+            min_discount_pct=25,
+            public_label="Last warm days",
+            newsletter_tag="last_warm",
+            content_angle="One last sun trip before winter - where it is actually still warm",
+        ),
+        dict(
             slug="christmas-markets",
             name="Christmas markets",
             audience="city_break",
             moment="xmas_markets",
             trip_type="roundtrip",
             date_window_type="seasonal",
-            season_start_mmdd="12-01",
+            # Markets open ~Nov 20-25 (Advent 1 falls Nov 29 in 2026); a Dec 1
+            # start missed the cheapest pre-Advent weekends. Dec 23 close is right.
+            season_start_mmdd="11-20",
             season_end_mmdd="12-23",
             included_zones=["CITY_BREAKS", "WESTERN_EUROPE"],
             trip_len_min_days=2,
@@ -363,8 +482,9 @@ def seed_all(session: Session) -> None:
             trip_type="oneway",
             date_window_type="relative",
             rel_offset_start_days=3,
-            rel_offset_end_days=21,
+            rel_offset_end_days=24,  # 24 covers three full weekends whatever day the scan runs
             included_zones=["CITY_BREAKS", "WESTERN_EUROPE"],
+            # Hard-gated in eligibility.in_template_scope since 2026-08-29.
             preferred_departure_days=["FRI", "SAT"],
             psychological_price_threshold_eur=40,
             allow_smaller_discount_if_under_price=True,
@@ -373,15 +493,20 @@ def seed_all(session: Session) -> None:
             newsletter_tag="last_minute",
             content_angle="Leave this weekend",
         ),
+        # Seasonal + lead, NOT plain relative (audit 2026-08-29): a bare 60-180d
+        # window encodes lead time but not season - scanned in autumn it pointed
+        # at Oct-Feb dates and produced 733 mislabeled "summer" candidates.
+        # rel_offset_start_days on a seasonal template = minimum booking lead.
         dict(
             slug="plan-ahead-summer",
             name="Plan-ahead summer",
             audience="families",
             moment="plan_ahead_summer",
             trip_type="roundtrip",
-            date_window_type="relative",
+            date_window_type="seasonal",
+            season_start_mmdd="06-01",
+            season_end_mmdd="08-31",
             rel_offset_start_days=60,
-            rel_offset_end_days=180,
             included_zones=["MEDITERRANEAN", "CANARIES"],
             trip_len_min_days=7,
             trip_len_max_days=14,
@@ -441,7 +566,12 @@ def seed_all(session: Session) -> None:
             moment="winter_sun",
             trip_type="roundtrip",
             date_window_type="seasonal",
-            season_start_mmdd="11-01",
+            # Dec 1 start (was Nov 1): November belongs to last-warm-days; the
+            # old overlap double-filed every November Med fare under two moments.
+            # Zones stay broad for now - restrict to WINTER_WARM at the ~Dec 1
+            # winter-history revisit if midwinter east-Med finds break the
+            # "real warmth" promise (LCA 17-18C in January).
+            season_start_mmdd="12-01",
             season_end_mmdd="03-31",
             included_zones=["MEDITERRANEAN", "CANARIES", "MIDDLE_EAST"],
             trip_len_min_days=4,
@@ -465,7 +595,9 @@ def seed_all(session: Session) -> None:
             date_window_type="seasonal",
             season_start_mmdd="12-01",
             season_end_mmdd="03-31",
-            included_destinations=["GVA", "GNB", "TRN", "SZG", "ZRH", "MUC"],
+            # SZG dropped 2026-08-29: no VNO/KUN/RIX route to Salzburg is seeded,
+            # so it was a dead entry. Re-add together with a route if one appears.
+            included_destinations=["GVA", "GNB", "TRN", "ZRH", "MUC"],
             trip_len_min_days=3,
             trip_len_max_days=8,
             max_stops=1,

@@ -20,25 +20,32 @@ from skrendam.verification import recheck_candidate
 TODAY = date(2026, 6, 15)
 
 # ─── Expected exact pipeline counts for TODAY=2026-06-15 with NewFakeBackend ─────────
-# Re-derived 2026-08-22 for the Phase A seed (159 routes, 29 core) + the two
-# templates merged from main (winter-sun-escape, ski-alps): 10 templates over
-# due_routes(rotation_days=10) resolve to 129 specs; the fake is single-month so
-# Wave-1 month-local scoring is neutral here (month stats == window stats).
+# Re-derived 2026-08-29 for the moment-structure audit seed (159 routes, 14
+# templates: last-warm-days split Oct/Nov, three fixed-window school-break
+# templates, plan-ahead-summer seasonal+60d lead, weekend gate live): the
+# templates over due_routes(rotation_days=10) resolve to 151 specs; the fake is
+# single-month so Wave-1 month-local scoring is neutral (month == window stats).
 #
-# 7 calendar points per spec → 129 * 7 = 903 price_log rows.
+# 7 calendar points per spec → 151 * 7 = 1057 price_log rows.
 # Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only 30.0 is flagged
 # (single-month fake: month decile == window decile).
 # near_dates = prices ≤ 30.0*1.10=33.0 → 5 points → satisfies min_departure_dates=5.
-# Weighted fires wherever the EUR30 fare passes a price gate: family-school-holiday-sun
-# (under max_price 400) 30 specs, last-warm-days (under max_price 150) 30,
-# last-minute-weekends (psych 40) 20, vfr-watch (psych 80) 10 → 90 candidates.
-# winter-sun-escape and ski-alps stay quiet: discount-only gates (25%) vs the fake's
-# 6% below-median fare. Outlier scorer quiet too (z=-1.35 at month MAD 1.0).
-# Each candidate gets exactly one template match → 90 matches and 90 drafts.
-E2E_PRICE_LOG_ROWS = 903
-E2E_CANDIDATES = 90
-E2E_MATCHES = 90
-E2E_DRAFTS = 90
+# Weighted fires wherever the EUR30 fare passes a price-cap/psych gate; matches
+# per template (a fare can attach to EVERY in-scope template, so the Oct 30 -
+# Nov 4 school-break fares also file under the last-warm-days windows):
+#   family-school-holiday-sun 30, last-warm-days 22, family-autumn-sun 21,
+#   last-warm-days-november 14, vfr-watch 10, family-easter-sun 5,
+#   family-feb-sun 3 → 105 matches over 84 distinct candidates.
+# last-minute-weekends is now ZERO by design: its flagged point (today+3 =
+# Thu Jun 18) fails the FRI/SAT hard gate added 2026-08-29.
+# september-sun, christmas-markets, plan-ahead-summer, winter-sun-escape and
+# ski-alps stay quiet: discount-only gates (25-30%) vs the fake's 6%
+# below-median fare. Outlier scorer quiet too (z=-1.35 at month MAD 1.0).
+# Drafts are per match → 105.
+E2E_PRICE_LOG_ROWS = 1057
+E2E_CANDIDATES = 84
+E2E_MATCHES = 105
+E2E_DRAFTS = 105
 
 
 # ─── FakeBackend ─────────────────────────────────────────────────────────────────────
@@ -103,8 +110,8 @@ def test_full_pipeline_offline(session):
 
     summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
-    # ── 1. summary: all 10 templates scanned ─────────────────────────────────────────
-    assert summary.templates_scanned == 10
+    # ── 1. summary: all 14 templates scanned ─────────────────────────────────────────
+    assert summary.templates_scanned == 14
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()

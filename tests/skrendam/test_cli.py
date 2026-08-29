@@ -30,15 +30,19 @@ class FakeBackend:
         ]
 
 
-def test_run_scan_command_seeds_and_scans(session, monkeypatch):
-    # Zero the token-bucket pacing: at the Phase A seed (159 routes, 10 templates)
+def test_run_scan_command_seeds_and_scans(session, monkeypatch, tmp_path):
+    # Zero the token-bucket pacing: at the Phase A seed (159 routes, 14 templates)
     # real 1.5s inter-call sleeps would make this offline test take ~10 minutes.
     monkeypatch.setenv("SKRENDAM_MIN_CALL_INTERVAL_SECONDS", "0")
     monkeypatch.setenv("SKRENDAM_PACING_JITTER_SECONDS", "0")
+    # Isolate the daily checkpoint: without this the test CLOBBERS the real
+    # ~/Library/Logs/skrendam/scan-checkpoint.json and, run twice on one day,
+    # skips every spec on the second run (found 2026-08-29).
+    monkeypatch.setenv("SKRENDAM_SCAN_CHECKPOINT", str(tmp_path / "ckpt.json"))
     summary = run_scan_command(
         session_factory=lambda: session, backend=FakeBackend(), today=date(2026, 6, 2), seed=True
     )
-    assert summary.templates_scanned == 10
+    assert summary.templates_scanned == 14
     assert session.query(models.Candidate).count() >= 1
 
 
