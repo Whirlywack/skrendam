@@ -7,10 +7,11 @@
  * nepraleisk progos!, anglo-slang, exclamation stacking.
  */
 export const S = {
-  // Hero
-  heroH1: 'Randam perliukus.',
+  // Hero — the H1 alone must pass the blink test: what, how, why-you
+  // (branding pass 2026-09-01; „perliukas" retired — one product noun: radinys).
+  heroH1: 'Randam pigius skrydžius, kad tau nereikėtų.',
   heroSub:
-    'Pigūs skrydžiai iš Vilniaus, Kauno ir Rygos, atrinkti žmogaus — 3–5 per savaitę. ' +
+    'Iš Vilniaus, Kauno ir Rygos — 3–5 atrinkti radiniai per savaitę. ' +
     'Prie kiekvieno: kodėl verta ir koks kabliukas. Bilietą perki tiesiogiai.',
   humanStamp: 'patikrino žmogus',
 
@@ -54,7 +55,7 @@ export const S = {
   ctaSubmit: 'Noriu radinių',
 
   // Ink band / capture
-  bandH2: 'Kitas perliukas dings per porą dienų.',
+  bandH2: 'Kitas radinys dings per porą dienų.',
   bandBody:
     'Prenumeratoriai gauna kiekvieną radinį tą rytą, kai jį patvirtinam. ' +
     'Kol jis čia — pigiausių vietų dažnai nebelieka.',
@@ -82,7 +83,8 @@ export const S = {
   fromRiga: 'Iš Rygos',
   fromPill: 'Iš VNO · KUN · RIX',
   footerLead:
-    'Atrinkti pigūs skrydžiai iš Vilniaus, Kauno ir Rygos. Randam perliukus, kad tau nereikėtų.',
+    'Atrinkti pigūs skrydžiai iš Vilniaus, Kauno ir Rygos. ' +
+    'Randam, patikrinam ir pasakom, koks kabliukas.',
   footerXmas: 'Kalėdų mugės',
   footerEarly: 'Skubios žinutės',
   footerContact: 'Rašyk mums',
@@ -97,7 +99,7 @@ export const S = {
   emailAria: 'El. pašto adresas',
   trustNoSpam: 'Be spamo',
   trustUnsub: 'Atsisakai kada nori',
-  trustHuman: 'Tikrinta žmogaus',
+  trustHuman: 'Patikrino žmogus', // identical to humanStamp — the stamp reads as a seal
 
   // Deal ticket
   chipCheaper: 'pigiau',
