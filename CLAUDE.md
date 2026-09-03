@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## READ FIRST — this repo is a product, not just a library
+
+**`docs/PROJECT.md` is the canonical project context** — what Yip/Skrendam is
+(curated Baltic flight deals at yip.lt), the business plan (TikTok → mailing
+list → subscription), the scan→desk→site pipeline, and the hard-won
+operational truths (laptop sleep, VPN-vs-BotGuard, insert-only seeds, process
+rules). Read it before doing product work. The sections below document only
+the vendored `fli` library layer.
+
 ## Project Overview
 
 Fli is a Python library that provides programmatic access to Google Flights data through direct API interaction (reverse engineering). The project consists of:
