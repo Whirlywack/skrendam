@@ -18,11 +18,10 @@ each with *why it's good* and *what the catch is* (LT: „kodėl verta ir koks
 kabliukas"). Yip is **not a search engine**: users don't search, they subscribe.
 The internal codename for the venture is **Skrendam** (the repo name).
 
-**Brand:** warm Baltic-amber identity, "smart local travel club" feel, Lithuanian
-copy (voice: tu-form, honest, numbers-first; product noun **radinys** — never
-„pasiūlymas"; no hype words). Design direction **V2 "Poster & Bead"** — travel-poster
-duotones, amber bead atom. Full system in `.claude/skills/yip-design-system/`.
-Site H1 (since 2026-09-01): *"Randam pigius skrydžius, kad tau nereikėtų."*
+**Brand, voice, and design:** everything lives in the design-system skill —
+`.claude/skills/yip-design-system/` (use it for ALL UI, asset, and brand-copy
+work; current direction is V2 "Poster & Bead"). The LT copy deck is
+`site/src/lib/lt.ts`; its header carries the voice rules.
 
 ## 2. The business plan (founder's words, 2026-09-03)
 
@@ -40,13 +39,12 @@ Stage 1, in order:
 4. **SEO-friendly frontend** (already live) so organic search compounds:
    origin pages own the head terms ("pigūs skrydžiai iš Vilniaus"), collection
    pages target seasonal mid-tail terms.
-5. **DataForSEO API** is available (as an MCP tool) to mine (a) long-tail
-   keywords for the site and (b) travel topics with traction for TikTok
-   content ideas. Verified LT volumes (2026-08-29): "paskutinės minutės
-   kelionės" 4,400/mo, "savaitgalio kelionės" 2,900/mo (both package-intent,
-   HIGH competition), "pigūs skrydžiai" 2,400/mo, "žiemos atostogos" 390
-   (peak 1,300 Jan), "slidinėjimo kelionės" 210 (peak Jan), "kur keliauti
-   lapkritį" 40 (peaks Sep–Oct). The literal "kur šilta X" phrases are ~zero.
+5. **DataForSEO API** (wired in as an MCP tool) is the ongoing research
+   instrument, not a one-off: mine long-tail keywords for site pages AND
+   travel topics with traction for TikTok content ideas, continuously — the
+   keyword space is open-ended, don't anchor on any fixed list. A first
+   sample survey (with takeaways) is archived in
+   `docs/research/2026-08-29-lt-keyword-volumes.md`.
 6. **fli is stage 1 of data.** Flight data comes from the vendored `fli`
    library (reverse-engineered Google Flights API — direct RPC, not scraping).
    Something better may replace it later; everything upstream is built to keep
@@ -63,7 +61,7 @@ fli (Google Flights RPC)
         └─ writes: price_log, candidates, matches, drafts → Neon Postgres
               └─ Deal Desk (web/, Next.js, port 3000): Review → publish
                     └─ published_deals → public site (site/, Next.js, yip.lt)
-                    └─ newsletter (Resend; NOT yet live — see §6)
+                    └─ newsletter (Resend; NOT yet live — see §7)
 ```
 
 - **Database:** Neon Postgres, project `yip` (`still-mode-83548775`). ⚠️ The
@@ -85,7 +83,53 @@ fli (Google Flights RPC)
   pages, collections (3 origin + 3 moment), /past-deals trophy case, gated
   double-opt-in signup. Copy deck: `site/src/lib/lt.ts` (single source).
 
-## 4. Repo map
+## 4. How deals are classified (the taxonomy)
+
+Every fare that becomes a deal passes through this classification stack —
+it's the heart of the product:
+
+- **Zones** (8): `WESTERN_EUROPE, MEDITERRANEAN, SCANDINAVIA, CANARIES,
+  CITY_BREAKS, LONG_HAUL, MIDDLE_EAST, CAUCASUS`. Every route belongs to one
+  zone; zones carry the default price gates (threshold €, min abs savings,
+  min discount %) that templates fall back to.
+- **Routes** (159): origin×destination pairs seeded in `skrendam/seeds.py`.
+  ~29 are **core** (scanned daily); the tail rotates in cohorts
+  (`id % N == day-ordinal % N`, default width 10) to fit the Google budget.
+- **Audiences** (6): families, couples, flexible_adults, budget, city_break,
+  vfr — each with an itinerary-strictness default.
+- **Travel moments** (10): the marketing concepts — school_holidays,
+  sept_shoulder, last_warm_days, xmas_markets, last_minute,
+  plan_ahead_summer, vfr_visit, long_haul_chance, winter_sun, ski_season.
+- **Deal templates** (14): the operational unit = audience × moment × date
+  window (relative / seasonal / seasonal+lead / fixed) × destination scope
+  (zones or an explicit list) × price gates × itinerary rules. A moment can
+  have several templates (last_warm_days has Oct-broad + Nov-warm-only;
+  school_holidays has summer + three fixed-date break templates). A fare
+  attaches to EVERY template whose scope+window+gates it satisfies — that's
+  by design; the desk shows supersede/route-context chips for duplicates.
+  **The live map of all of this is the desk's Machine → Coverage tab.**
+- **Scoring & tiers:** two scorers run per fare (weighted gates blend + a
+  MAD-based outlier z-score), both against month-local baselines from
+  `price_log`. Score is normalized 0–100: **great ≥ 88**, **rare ≥ 94**
+  (site shows „Geras radinys" / „Retas radinys"); z ≤ −5 with ≥30% discount
+  flags a possible error fare.
+- **Candidate lifecycle:** `new` (in Review) → curator action: publish (→
+  `published_deals`, status live), reject, or save; `expired` when the travel
+  date passes or the fare disappears (expiry sweep). Published deals carry
+  freshness ("going fast" chip) and are re-checked before being trusted.
+- **Desk filtering (web/):** Today = top-20 shortlist; Review = all `new`
+  candidates filtered by origin-city chips (Vilnius/Kaunas/Riga) × moment
+  chips × best-first sort; Live = published board; Machine = config
+  (templates, routes, zones, audiences, moments, scan health, coverage).
+- **Site collections (site/):** public landing pages over published deals via
+  three filter kinds — **origin** (`publishedDeals.origin`), **zone**
+  (`publishedDeals.zone`), **moment** (moment → its templates → deals).
+  Currently 6 pages (3 origin + Sept-sun, Xmas-markets, Cyprus). ⚠ the Cyprus
+  page filters the whole MEDITERRANEAN zone — fix when collections are next
+  touched. Moment collections automatically aggregate all of a moment's
+  templates, so the school-break and last-warm splits need no site changes.
+
+## 5. Repo map
 
 | Path | What |
 |---|---|
@@ -98,7 +142,7 @@ fli (Google Flights RPC)
 | `docs/plans/` | Approved specs (V2 site spec: `2026-08-28-v2-lt-site-spec.md`) |
 | `.claude/skills/yip-design-system/` | Brand + design system (use for ALL UI/copy work) |
 
-## 5. Hard-won operational truths (do not relearn these)
+## 6. Hard-won operational truths (do not relearn these)
 
 - **The scan runs on the founder's MacBook; macOS sleep is enemy #1.**
   Scheduled 05:58 wake full-wakes only on AC; clamshell needs AC + external
@@ -126,7 +170,7 @@ fli (Google Flights RPC)
   design approval; `gh run watch --exit-status` (not `pr checks --watch`) to
   gate merges.
 
-## 6. Current state (2026-09-03) and next missions
+## 7. Current state (2026-09-03) and next missions
 
 **Working:** daily scan healthy (2026-09-03: 912 calls, 0×429, 152 candidates,
 first full harvest on the new template structure — weekend gate 7/7 Fri/Sat,
