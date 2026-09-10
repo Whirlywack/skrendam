@@ -140,6 +140,14 @@ export async function getCollectionDeals(filter: CollectionFilter) {
     ));
   }
 
+  if (filter.kind === 'destinations') {
+    return split(dedupeById(
+      await dealBase()
+        .where(and(eq(publishedDeals.status, 'live'), inArray(publishedDeals.destination, filter.iatas)))
+        .orderBy(...LIVE_ORDER),
+    ));
+  }
+
   // kind === 'moment': resolve travel moment → template ids → deals
   const tms = await db
     .select({ id: travelMoments.id })
