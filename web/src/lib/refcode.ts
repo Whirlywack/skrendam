@@ -9,18 +9,22 @@
  * would let `'abl'` and `'bal'` (or any anagram) validate under the same
  * checksum digit.
  *
- * A code is at most 12 characters (an 11-char base36 body + 1 checksum
- * digit), so `refCode` only accepts `0 <= id < 36 ** 11` and throws
- * `RangeError` outside that range. Note `refCode(0)` is `'00'`, which
- * decodes back to id `0` — callers must check `parseRefCode(...) !== null`,
- * not truthy-check the returned id.
+ * The ceiling is `Number.MAX_SAFE_INTEGER`, not `36 ** 11`: past 2**53 the
+ * base36 round-trip runs on rounded floats and stops meaning anything. That
+ * caps the body at 11 base36 characters (10 for any id below 36**10, which
+ * is every subscriber id this list will ever have) and the whole code at 12,
+ * matching the accepted-shape regex below. `refCode` throws `RangeError`
+ * outside the range; `parseRefCode` catches it and returns null, because its
+ * input is a public URL parameter. Note `refCode(0)` is `'00'`, which decodes
+ * back to id `0` — callers must check `parseRefCode(...) !== null`, not
+ * truthy-check the returned id.
  */
 const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
-const MAX_ID = 36 ** 11;
+const MAX_ID = Number.MAX_SAFE_INTEGER;
 
 export function refCode(id: number): string {
-  if (!Number.isInteger(id) || id < 0 || id >= MAX_ID) {
-    throw new RangeError(`refCode: id ${id} out of range (0 <= id < 36 ** 11)`);
+  if (!Number.isInteger(id) || id < 0 || id > MAX_ID) {
+    throw new RangeError(`refCode: id ${id} out of range (0 <= id <= Number.MAX_SAFE_INTEGER)`);
   }
   const body = id.toString(36);
   const sum = [...body].reduce((a, ch, i) => a + (i + 1) * ALPHABET.indexOf(ch), 0);
@@ -31,5 +35,10 @@ export function parseRefCode(code: string): number | null {
   if (!/^[0-9a-z]{2,12}$/.test(code)) return null;
   const body = code.slice(0, -1);
   const id = parseInt(body, 36);
-  return refCode(id) === code ? id : null;
+  try {
+    return refCode(id) === code ? id : null;
+  } catch {
+    // Out of range (a 12-char body decodes past 2**53) — not a valid code.
+    return null;
+  }
 }

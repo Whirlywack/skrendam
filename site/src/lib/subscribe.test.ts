@@ -13,6 +13,7 @@ import {
   ORIGIN_CODES,
   MOMENT_CODES,
 } from '@/lib/subscribe-prefs';
+import { refCode } from '@/lib/refcode';
 
 // ---------------------------------------------------------------------------
 // normalizeEmail
@@ -162,8 +163,20 @@ describe('cleanUtm', () => {
 // ---------------------------------------------------------------------------
 
 describe('cleanRef', () => {
-  test('accepts lowercase alphanumeric 2-12 chars', () => {
-    expect(cleanRef('ab3x')).toBe('ab3x');
+  const VALID = refCode(13359); // 'ab35'
+
+  test('accepts a real referral code', () => {
+    expect(cleanRef(VALID)).toBe(VALID);
+  });
+
+  test('accepts an uppercased code by lowercasing it', () => {
+    expect(cleanRef(VALID.toUpperCase())).toBe(VALID);
+  });
+
+  test('rejects a well-shaped code that fails its checksum', () => {
+    // The old shape-only check let any [a-z0-9]{2,12} through, so a typo or a
+    // made-up code was stored as an attribution that decodes to nobody.
+    expect(cleanRef('ab3x')).toBeNull();
   });
 
   test('rejects disallowed characters', () => {
@@ -179,13 +192,15 @@ describe('cleanRef', () => {
     expect(cleanRef('a'.repeat(13))).toBeNull();
   });
 
-  test('rejects uppercase', () => {
-    expect(cleanRef('AB3x')).toBeNull();
-  });
-
   test('rejects non-string input', () => {
     expect(cleanRef(123)).toBeNull();
     expect(cleanRef(null)).toBeNull();
+  });
+
+  test('round-trips every code refCode mints', () => {
+    for (const id of [0, 1, 42, 13359, 999999]) {
+      expect(cleanRef(refCode(id))).toBe(refCode(id));
+    }
   });
 });
 

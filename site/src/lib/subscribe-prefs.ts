@@ -1,3 +1,5 @@
+import { parseRefCode } from './refcode';
+
 // ---------------------------------------------------------------------------
 // Pure validation / normalisation helpers
 // No DB or network deps — safe to import in tests.
@@ -91,7 +93,6 @@ export type TrackingKey = (typeof TRACKING_KEYS)[number];
 
 const UTM_KEYS = TRACKING_KEYS.filter((key) => key !== 'ref');
 const UTM_MAX_LENGTH = 80;
-const REF_RE = /^[a-z0-9]{2,12}$/;
 
 const CONTROL_CHARS_RE = /[\x00-\x1f\x7f]/g;
 
@@ -112,10 +113,16 @@ export function cleanUtm(input: Record<string, unknown>): Record<string, string>
   return out;
 }
 
-/** Validates a referral code: lowercase alphanumeric, 2-12 chars. */
+/**
+ * Validates a referral code by actually decoding it (`parseRefCode`), not by
+ * shape: a code that fails its checksum names no subscriber, so storing it as
+ * `referred_by` would be a broken attribution. Input is uppercased case-safe
+ * — links get typed and shared — but nothing else is accepted.
+ */
 export function cleanRef(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
-  return REF_RE.test(raw) ? raw : null;
+  const code = raw.trim().toLowerCase();
+  return parseRefCode(code) !== null ? code : null;
 }
 
 /**

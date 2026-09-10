@@ -9,7 +9,7 @@ import { sceneClass } from '@/lib/photos';
 import { ltCity } from '@/lib/cities-lt';
 import { eur, freshnessLabel } from '@/lib/format';
 import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
-import { originCollection, zoneCollection } from '@/lib/collections';
+import { destinationsCollection, originCollection, zoneCollection } from '@/lib/collections';
 import { S, curator } from '@/lib/lt';
 import { Masthead } from '@/components/v2/Masthead';
 import { Crumb } from '@/components/v2/Crumb';
@@ -90,9 +90,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   // Interlinks: the collections this deal belongs to (visible twin of JSON-LD)
   const origColl = originCollection(pd.origin);
+  const destColl = destinationsCollection(pd.destination);
   const zoneColl = zoneCollection(pd.zone);
   const bandLinks = [
     ...(origColl ? [{ label: origColl.label, href: `/${origColl.slug}` }] : []),
+    ...(destColl ? [{ label: destColl.label, href: `/${destColl.slug}` }] : []),
     ...(zoneColl ? [{ label: zoneColl.label, href: `/${zoneColl.slug}` }] : []),
     { label: S.navAllDeals, href: '/collections' },
   ];

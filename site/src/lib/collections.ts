@@ -74,5 +74,13 @@ export const collectionBySlug = (slug: string): Collection | undefined =>
 export const originCollection = (iata: string): Collection | undefined =>
   COLLECTIONS.find((c) => c.filter.kind === 'origin' && c.filter.iata === iata);
 
+/** The destination-list collection an arriving airport belongs to (Cyprus:
+ *  LCA + PFO). Deal pages interlink it beside their origin collection — a
+ *  Larnaka deal is the strongest internal link a Cyprus landing page can get. */
+export const destinationsCollection = (iata: string | null | undefined): Collection | undefined =>
+  iata
+    ? COLLECTIONS.find((c) => c.filter.kind === 'destinations' && c.filter.iatas.includes(iata))
+    : undefined;
+
 export const zoneCollection = (zone: string | null | undefined): Collection | undefined =>
   zone ? COLLECTIONS.find((c) => c.filter.kind === 'zone' && c.filter.zone === zone) : undefined;
