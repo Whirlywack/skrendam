@@ -4,6 +4,9 @@ import {
   isValidEmail,
   cleanSource,
   cleanPrefs,
+  cleanUtm,
+  cleanRef,
+  SUBSCRIBE_SOURCES,
   ORIGIN_CODES,
   MOMENT_CODES,
 } from '@/lib/subscribe-prefs';
@@ -94,6 +97,84 @@ describe('cleanSource', () => {
   test('falls back to "site" for null/undefined', () => {
     expect(cleanSource(null)).toBe('site');
     expect(cleanSource(undefined)).toBe('site');
+  });
+
+  test('tiktok is an allowed source', () => {
+    expect(SUBSCRIBE_SOURCES).toContain('tiktok');
+    expect(cleanSource('tiktok')).toBe('tiktok');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cleanUtm
+// ---------------------------------------------------------------------------
+
+describe('cleanUtm', () => {
+  test('keeps known utm_* keys, strips prefix, trims, drops junk keys', () => {
+    expect(cleanUtm({ utm_source: ' tiktok ', utm_content: 'v123', junk: 'x' })).toEqual({
+      source: 'tiktok',
+      content: 'v123',
+    });
+  });
+
+  test('maps all five utm keys', () => {
+    expect(
+      cleanUtm({
+        utm_source: 'a',
+        utm_medium: 'b',
+        utm_campaign: 'c',
+        utm_content: 'd',
+        utm_term: 'e',
+      }),
+    ).toEqual({ source: 'a', medium: 'b', campaign: 'c', content: 'd', term: 'e' });
+  });
+
+  test('drops empty strings and non-string values', () => {
+    expect(
+      cleanUtm({ utm_source: '', utm_medium: '   ', utm_campaign: 42, utm_term: null }),
+    ).toEqual({});
+  });
+
+  test('caps values at 80 chars', () => {
+    const long = 'a'.repeat(100);
+    const result = cleanUtm({ utm_campaign: long });
+    expect(result.campaign).toBe('a'.repeat(80));
+  });
+
+  test('empty input returns empty object', () => {
+    expect(cleanUtm({})).toEqual({});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cleanRef
+// ---------------------------------------------------------------------------
+
+describe('cleanRef', () => {
+  test('accepts lowercase alphanumeric 2-12 chars', () => {
+    expect(cleanRef('ab3x')).toBe('ab3x');
+  });
+
+  test('rejects disallowed characters', () => {
+    expect(cleanRef('<script>')).toBeNull();
+  });
+
+  test('rejects undefined', () => {
+    expect(cleanRef(undefined)).toBeNull();
+  });
+
+  test('rejects too short or too long', () => {
+    expect(cleanRef('a')).toBeNull();
+    expect(cleanRef('a'.repeat(13))).toBeNull();
+  });
+
+  test('rejects uppercase', () => {
+    expect(cleanRef('AB3x')).toBeNull();
+  });
+
+  test('rejects non-string input', () => {
+    expect(cleanRef(123)).toBeNull();
+    expect(cleanRef(null)).toBeNull();
   });
 });
 

@@ -1,7 +1,10 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { subscribeAction, type SubscribeResult } from '@/app/subscribe-action';
 import { S } from '@/lib/lt';
+
+const TRACKING_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'];
 
 interface SignupCardProps {
   /** Where the signup originates — stored in the DB; defaults to 'home'. */
@@ -12,6 +15,7 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
   const [result, setResult] = useState<SubscribeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const searchParams = useSearchParams();
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -67,6 +71,10 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
           <form id={`signup-card-${source}`} className="cap-row" onSubmit={onSubmit}>
             <input type="hidden" name="source" value={source} />
             <input type="hidden" name="mode" value="inline" />
+            {TRACKING_PARAMS.map((key) => {
+              const value = searchParams.get(key);
+              return value ? <input key={key} type="hidden" name={key} value={value} /> : null;
+            })}
             <input
               type="email"
               name="email"
@@ -89,24 +97,6 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
             <span>✓ {S.trustUnsub}</span>
             <span>✓ {S.trustHuman}</span>
           </div>
-
-          <div className="cap-div" />
-          <label className="cap-early" style={{ cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <input
-              type="checkbox"
-              name="early_alerts"
-              form={`signup-card-${source}`}
-              style={{ marginTop: 3, accentColor: 'var(--sea-ink)' }}
-            />
-            <span>
-              <span style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>
-                {S.earlyCheckbox}
-              </span>
-              <span className="cap-sub" style={{ marginTop: 1, display: 'block' }}>
-                {S.earlyCheckboxSub}
-              </span>
-            </span>
-          </label>
         </>
       )}
     </div>

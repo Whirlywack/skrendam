@@ -12,9 +12,27 @@ import { S } from '@/lib/lt';
 // Types
 // ---------------------------------------------------------------------------
 
-type PageProps = {
-  searchParams: Promise<{ state?: string }>;
+type TrackingParams = {
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  ref?: string;
 };
+
+type PageProps = {
+  searchParams: Promise<{ state?: string } & TrackingParams>;
+};
+
+const TRACKING_KEYS: (keyof TrackingParams)[] = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'ref',
+];
 
 // ---------------------------------------------------------------------------
 // Sub-components (server, no 'use client' needed)
@@ -41,7 +59,7 @@ function EnvelopeIcon() {
 // State: idle — standalone capture card (entry B)
 // ---------------------------------------------------------------------------
 
-function IdleState() {
+function IdleState({ tracking }: { tracking: TrackingParams }) {
   return (
     <div className="sub-card" style={{ textAlign: 'center' }}>
       <div className="sub-wm">yıp</div>
@@ -54,6 +72,11 @@ function IdleState() {
       <form action={subscribePageAction}>
         <input type="hidden" name="source" value="subscribe" />
         <input type="hidden" name="mode" value="page" />
+        {TRACKING_KEYS.map((key) =>
+          tracking[key] ? (
+            <input key={key} type="hidden" name={key} value={tracking[key]} />
+          ) : null,
+        )}
 
         <div className="sub-row">
           <input
@@ -66,11 +89,6 @@ function IdleState() {
           <button type="submit" className="sub-btn">
             {S.ctaSubmit}
           </button>
-        </div>
-
-        <div className="sub-ea-row">
-          <input type="checkbox" name="early_alerts" id="ea-idle" value="on" />
-          <label htmlFor="ea-idle">{S.earlyCheckbox}</label>
         </div>
       </form>
 
@@ -286,7 +304,11 @@ export const metadata = {
 };
 
 export default async function SubscribePage({ searchParams }: PageProps) {
-  const { state } = await searchParams;
+  const params = await searchParams;
+  const { state } = params;
+  const tracking: TrackingParams = Object.fromEntries(
+    TRACKING_KEYS.filter((key) => params[key]).map((key) => [key, params[key]]),
+  );
 
   let content: React.ReactNode;
 
@@ -322,7 +344,7 @@ export default async function SubscribePage({ searchParams }: PageProps) {
       break;
 
     default:
-      content = <IdleState />;
+      content = <IdleState tracking={tracking} />;
   }
 
   return (

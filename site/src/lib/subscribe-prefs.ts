@@ -46,6 +46,7 @@ export const SUBSCRIBE_SOURCES = [
   'past',
   'early',
   'site',
+  'tiktok',
 ] as const;
 
 export type SubscribeSource = (typeof SUBSCRIBE_SOURCES)[number];
@@ -65,4 +66,35 @@ export function cleanPrefs(
     origins: origins.filter((c) => (ORIGIN_CODES as readonly string[]).includes(c)),
     moments: moments.filter((c) => (MOMENT_CODES as readonly string[]).includes(c)),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Attribution — utm_* + ref, captured on signup for TikTok-driven traffic
+// ---------------------------------------------------------------------------
+
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
+const UTM_MAX_LENGTH = 80;
+const REF_RE = /^[a-z0-9]{2,12}$/;
+
+/**
+ * Keeps only known `utm_*` keys from an arbitrary input bag (e.g. FormData
+ * entries), strips the `utm_` prefix, trims and caps values, and drops
+ * empty/non-string values. Unknown keys are ignored.
+ */
+export function cleanUtm(input: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const key of UTM_KEYS) {
+    const value = input[key];
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    out[key.slice(4)] = trimmed.slice(0, UTM_MAX_LENGTH);
+  }
+  return out;
+}
+
+/** Validates a referral code: lowercase alphanumeric, 2-12 chars. */
+export function cleanRef(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  return REF_RE.test(raw) ? raw : null;
 }

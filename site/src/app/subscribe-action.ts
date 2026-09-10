@@ -13,6 +13,8 @@ import {
   isValidEmail,
   cleanSource,
   cleanPrefs,
+  cleanUtm,
+  cleanRef,
 } from '@/lib/subscribe-prefs';
 import { S } from '@/lib/lt';
 
@@ -53,9 +55,29 @@ export async function subscribeAction(
   const raw = (formData.get('email') ?? '').toString();
   const email = normalizeEmail(raw);
   const source = cleanSource(formData.get('source')?.toString());
+  // The free forms no longer offer an early-alerts opt-in (it's becoming a
+  // paid feature) — only the dedicated /early-alerts page's hidden field
+  // (source === 'early') may still set this.
   const earlyAlerts =
-    formData.get('early_alerts') === 'on' || formData.get('early_alerts') === '1';
+    source === 'early' &&
+    (formData.get('early_alerts') === 'on' || formData.get('early_alerts') === '1');
   const mode = formData.get('mode') === 'page' ? 'page' : 'inline';
+
+  // Attribution captured on signup (TikTok launch): utm_* + ref, stored on
+  // prefs. Never overwritten on conflict — see onConflictDoUpdate below.
+  const utm = cleanUtm({
+    utm_source: formData.get('utm_source'),
+    utm_medium: formData.get('utm_medium'),
+    utm_campaign: formData.get('utm_campaign'),
+    utm_content: formData.get('utm_content'),
+    utm_term: formData.get('utm_term'),
+  });
+  const ref = cleanRef(formData.get('ref'));
+  const attribution: Record<string, unknown> = {
+    ...(Object.keys(utm).length ? { utm } : {}),
+    ...(ref ? { referred_by: ref } : {}),
+  };
+  const prefs = Object.keys(attribution).length ? attribution : null;
 
   if (!isValidEmail(email)) {
     if (mode === 'page') {
@@ -96,6 +118,7 @@ export async function subscribeAction(
           earlyAlerts,
           confirmToken: token,
           confirmed: false,
+          prefs,
         })
         .onConflictDoUpdate({
           target: subscribers.email,
@@ -120,6 +143,7 @@ export async function subscribeAction(
           confirmToken: token,
           confirmed: true,
           confirmedAt: nowIso,
+          prefs,
         })
         .onConflictDoUpdate({
           target: subscribers.email,
