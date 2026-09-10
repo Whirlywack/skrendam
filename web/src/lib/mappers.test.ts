@@ -15,10 +15,15 @@ function makeRow(overrides: Partial<{
   headline: string | null;
   hook: string | null;
   news: string | null;
+  body: string | null;
   publishedId: number | null;
   score100: number | null;
   scoreV2: number | null;
   qualityTier: string | null;
+  archetype: string | null;
+  demandSignals: Record<string, unknown> | null;
+  newsletterTag: string | null;
+  templatePriority: number | null;
   cOverrides: Record<string, unknown>;
 }>): QueueRow {
   const {
@@ -31,10 +36,15 @@ function makeRow(overrides: Partial<{
     headline = null,
     hook = null,
     news = null,
+    body = null,
     publishedId = null,
     score100 = null,
     scoreV2 = null,
     qualityTier = null,
+    archetype = null,
+    demandSignals = null,
+    newsletterTag = null,
+    templatePriority = null,
     cOverrides = {},
   } = overrides ?? {};
 
@@ -54,7 +64,11 @@ function makeRow(overrides: Partial<{
     ...cOverrides,
   };
 
-  return { matchId, score, score100, scoreV2, qualityTier, reason, templateId, templateLabel, templateName, headline, hook, news, publishedId, c } as unknown as QueueRow;
+  return {
+    matchId, score, score100, scoreV2, qualityTier, archetype, demandSignals,
+    newsletterTag, templatePriority, reason, templateId, templateLabel, templateName,
+    headline, hook, news, body, publishedId, c,
+  } as unknown as QueueRow;
 }
 
 describe('toCandidateView', () => {
@@ -139,6 +153,52 @@ describe('toCandidateView', () => {
     const v = toCandidateView(row);
     expect(v.tier).toBe('maybe');
     expect(v.score).toBe(92); // the displayed headline score is unchanged
+  });
+
+  it('demand fields present — scoreV2, archetype, demand signals, personas and priority surface', () => {
+    const row = makeRow({
+      scoreV2: 91,
+      archetype: 'date',
+      demandSignals: { commodity_share: 0.35, saving_family: 240, window_slug: 'kaledos-2026' },
+      newsletterTag: 'family_sun',
+      templatePriority: 100,
+    });
+    const v = toCandidateView(row);
+    expect(v.scoreV2).toBe(91);
+    expect(v.archetype).toBe('date');
+    expect(v.commodityShare).toBe(0.35);
+    expect(v.savingFamily).toBe(240);
+    expect(v.windowSlug).toBe('kaledos-2026');
+    expect(v.personas).toEqual(['family']);
+    expect(v.priority).toBe(100);
+  });
+
+  it('demand fields absent — all null/absent defaults', () => {
+    const row = makeRow({});
+    const v = toCandidateView(row);
+    expect(v.scoreV2).toBeNull();
+    expect(v.archetype).toBeNull();
+    expect(v.commodityShare).toBeNull();
+    expect(v.savingFamily).toBeNull();
+    expect(v.windowSlug).toBeNull();
+    expect(v.personas).toEqual([]);
+    expect(v.priority).toBe(0);
+  });
+
+  it('unknown newsletterTag yields empty personas; an archetype outside the union maps to null', () => {
+    const row = makeRow({
+      newsletterTag: 'nonexistent_tag',
+      archetype: 'not_a_real_archetype',
+    });
+    const v = toCandidateView(row);
+    expect(v.personas).toEqual([]);
+    expect(v.archetype).toBeNull();
+  });
+
+  it('copy.body carries the draft body text; null maps to an empty string', () => {
+    const text = 'Kalėdų atostogos — €190 į Maljorką iš Vilniaus. Bagažas nekainuoja, bet grįžti reikia sekmadienį.';
+    expect(toCandidateView(makeRow({ body: text })).copy.body).toBe(text);
+    expect(toCandidateView(makeRow({ body: null })).copy.body).toBe('');
   });
 });
 

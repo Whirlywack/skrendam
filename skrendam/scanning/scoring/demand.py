@@ -43,6 +43,7 @@ class Window:
     pref_codes: tuple[str, ...]
     return_start: date | None = None
     return_end: date | None = None
+    name: str = ""  # curator-facing label (PeakWindow.name), used by content drafts
 
     def holds(self, travel_date: date, return_date: date | None) -> bool:
         if not (self.start <= travel_date <= self.end):
@@ -71,6 +72,7 @@ def windows_from_rows(rows) -> list[Window]:
             tuple(r.pref_codes or ()),
             r.return_start_date,
             r.return_end_date,
+            name=getattr(r, "name", "") or "",
         )
         for r in rows
     ]

@@ -57,6 +57,7 @@ export async function saveContentDraft(input: {
   headline: string;
   hook: string;
   news: string;
+  body: string;
 }): Promise<void> {
   await requireAdmin();
   const now = new Date().toISOString();
@@ -67,6 +68,7 @@ export async function saveContentDraft(input: {
       headline: input.headline,
       tiktokHook: input.hook,
       newsletterSnippet: input.news,
+      body: input.body,
       status: 'edited',
       updatedAt: now,
     })
@@ -86,6 +88,7 @@ export async function saveContentDraft(input: {
       headline: input.headline,
       tiktokHook: input.hook,
       newsletterSnippet: input.news,
+      body: input.body,
       status: 'edited',
       createdBy: 'curator',
       createdAt: now,

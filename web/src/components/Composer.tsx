@@ -27,6 +27,8 @@ export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerPr
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<string | null>(null);
   const [recheckQueued, setRecheckQueued] = useState(false);
+  // Lifted from CopyDrafter so publish sends the edited text, not c.copy.
+  const [copy, setCopy] = useState(c.copy);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -61,8 +63,9 @@ export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerPr
         await publishDeal({
           candidateId: c.candidateId,
           templateId: c.templateId,
-          headline: c.copy.headline,
-          tiktokHook: c.copy.hook,
+          headline: copy.headline,
+          body: copy.body,
+          tiktokHook: copy.hook,
         });
         showToast(`${c.place}, ${c.country} is live`);
         setTimeout(() => onClose(), 1200);
@@ -183,7 +186,7 @@ export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerPr
         )}
 
         {/* Copy drafter */}
-        <CopyDrafter c={c} />
+        <CopyDrafter c={c} copy={copy} onChange={setCopy} />
       </div>
 
       {/* Publish bar */}
