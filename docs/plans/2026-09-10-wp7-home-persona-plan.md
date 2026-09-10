@@ -14,7 +14,7 @@
 
 - Branch `feat/wp7-home-persona` from `main` after WP6 merges (or from the WP6 branch head if the founder wants it sooner — it touches disjoint files). Worktree `.claude/worktrees/wp7-home`.
 - **Never probe Google Flights / fli interactively.** All schedule facts come from the research report; do not "verify" by scanning.
-- Seeds are insert-only (`seeds._get_or_create`); the live DB gets the new rows on the next `seed_all` (the scan runs it — confirm in `skrendam/cli.py`/`orchestrator.py` before relying on it; otherwise `uv run skrendam seed`). Value changes on existing rows go in `scripts/YYYY-MM-DD_*.sql`.
+- Seeds are insert-only (`seeds._get_or_create`); the live DB gets the new rows ONLY when `uv run skrendam seed` is run by hand from the main checkout after merge (`scripts/daily-scan.sh` runs `skrendam run-scan` without `--seed`, so a scan never seeds). Value changes on existing rows go in `scripts/YYYY-MM-DD_*.sql`.
 - `scan_runs.api_calls` must stay inside the healthy envelope (~900/day, 0×429): ten routes × three windows ≈ +40–60 calls/day only if the routes match **no other template** — hence zone `HOME_VFR`, referenced by no zone-filtered template. Never add scan passes.
 - Routes to seed (all with a public source in the research; three spec candidates are NOT operating and are dropped: OSL→KUN, BGO→KUN, MAN→KUN): `STN→KUN, STN→VNO, LTN→KUN, LTN→VNO, DUB→KUN, DUB→VNO, OSL→VNO, CPH→KUN, BGO→VNO, LPL→KUN` — all `core=True`.
 - Copy: `prefHome = „Grįžtu namo iš užsienio"` (spec §7 verbatim); template names/labels in LT, honest; never „skenuoti".
@@ -74,7 +74,7 @@ Common fields: `audience="vfr"`, `moment="vfr_visit"`, `trip_type="roundtrip"`, 
 
 ### Task 4: Apply and verify (controller + founder)
 
-- [ ] Merge; confirm the next scan's `seed_all` inserted 1 zone, 10 routes, 3 templates (SQL count) and `scan_runs.api_calls` on the first full run ≤ ~970 with `0×429`; if over, disable `home-easter` until February (SQL) rather than adding passes.
+- [ ] Merge; run `SKRENDAM_DATABASE_URL=<Neon dev URL> uv run skrendam seed` from the main checkout; confirm it inserted 1 zone, 10 routes, 3 templates (SQL count) and `scan_runs.api_calls` on the first full run ≤ ~970 with `0×429`; if over, disable `home-xmas` (SQL) — easter and summer already ship disabled rather than adding passes.
 - [ ] Desk: Review page shows STN/LTN/DUB/OSL/CPH/BGO/LPL tabs with labels; Coverage tab lists the three templates with priority 100.
 
 ## Acceptance (spec §4 WP7)

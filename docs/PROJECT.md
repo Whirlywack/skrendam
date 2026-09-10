@@ -5,7 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-11 (WP6 email streams).
+> Last updated 2026-09-11 (WP7 home persona).
 
 ---
 
@@ -93,6 +93,9 @@ fli (Google Flights RPC)
   the same `LT_*_BREAK` constants and must move together (a peak window opens
   on the Friday before its break, matching the template's departure window).
   The desk Coverage tab flags stale template windows.
+  **After merging WP7 the new zone/routes/templates reach Neon only via
+  `uv run skrendam seed` run by hand from the main checkout — the daily scan
+  never seeds (`daily-scan.sh` runs `run-scan` without `--seed`).**
   **One-off chores — 2027-01-07: run
   `scripts/2027-01-07_enable_home_easter.sql`** to switch on `home-easter`
   (check the next run's `api_calls` stays under ~950); **2027-03-01: run

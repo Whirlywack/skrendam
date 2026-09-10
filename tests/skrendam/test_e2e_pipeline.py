@@ -22,7 +22,8 @@ TODAY = date(2026, 6, 15)
 # ─── Expected exact pipeline counts for TODAY=2026-06-15 with FakeBackend ────────────
 # Re-derived empirically 2026-09-10 (WP2 review wave) by running the pipeline and
 # reading the numbers off, not by arithmetic. 169 seeded routes (159 + ten WP7
-# HOME_VFR reverse routes, all core), 18 templates / 17 enabled (last-warm-days
+# HOME_VFR reverse routes, all core), 18 templates / 16 enabled (home-easter and
+# home-summer ship disabled; last-warm-days
 # split Oct/Nov, four fixed-window school-break templates autumn/feb/easter/xmas,
 # plan-ahead-summer seasonal + 60d lead, weekend gate live, WP7 home-xmas fixed
 # window; home-easter and home-summer are seeded disabled). The templates over

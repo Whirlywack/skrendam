@@ -74,7 +74,8 @@ ZONES = [
 # anchors + fare-war routes; everything non-core rotates in cohorts.
 # Researched from Wikipedia airport route tables (Task 7); seasonal scheduled routes count,
 # charter-only excluded. `core` routes scan every day and seed the deal templates; the rest
-# rotate. Pilot scope is VNO/KUN/RIX only (no TLL, founder decision). Zone assignment:
+# rotate. LT origins are VNO/KUN/RIX only (no TLL, founder decision); WP7 adds abroad
+# origins in zone HOME_VFR (reverse diaspora routes). Zone assignment:
 # MEDITERRANEAN = Med-coast/island/Red-Sea/Madeira leisure; CANARIES = Canary Islands;
 # SCANDINAVIA = Nordics; CITY_BREAKS = central/western city pairs; WESTERN_EUROPE = UK/IE/FR/
 # BE/NL/DE regional & low-cost (incl. VFR corridors); MIDDLE_EAST = DXB/TLV; CAUCASUS = Georgia/
@@ -714,7 +715,7 @@ def seed_all(session: Session) -> None:
             family_friendly_times_only=False,
             public_label="Kalėdoms namo",
             newsletter_tag="home",
-            content_angle="Kalėdoms namo iš Londono, Dublino ar Oslo — išskrendi gruodžio 18–23, grįžti po Naujųjų",
+            content_angle="Kalėdoms namo iš užsienio — išskrendi gruodžio 18–23, grįžti po Naujųjų",
         ),
         # Seeded disabled (headroom): scripts/2027-01-07_enable_home_easter.sql flips it
         # once the Christmas window has passed.
