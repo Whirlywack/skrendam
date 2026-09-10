@@ -5,34 +5,18 @@ import {
   savePreferencesAction,
   joinEarlyAlertsAction,
 } from '@/app/subscribe-action';
-import { PREF_ORIGINS, PREF_MOMENTS } from '@/lib/subscribe-prefs';
+import { PREF_ORIGINS, PREF_MOMENTS, TRACKING_KEYS } from '@/lib/subscribe-prefs';
 import { S } from '@/lib/lt';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type TrackingParams = {
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  utm_content?: string;
-  utm_term?: string;
-  ref?: string;
-};
+type TrackingParams = Partial<Record<(typeof TRACKING_KEYS)[number], string>>;
 
 type PageProps = {
   searchParams: Promise<{ state?: string } & TrackingParams>;
 };
-
-const TRACKING_KEYS: (keyof TrackingParams)[] = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_content',
-  'utm_term',
-  'ref',
-];
 
 // ---------------------------------------------------------------------------
 // Sub-components (server, no 'use client' needed)

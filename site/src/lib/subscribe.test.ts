@@ -6,7 +6,9 @@ import {
   cleanPrefs,
   cleanUtm,
   cleanRef,
+  mergePrefs,
   SUBSCRIBE_SOURCES,
+  TRACKING_KEYS,
   ORIGIN_CODES,
   MOMENT_CODES,
 } from '@/lib/subscribe-prefs';
@@ -175,6 +177,57 @@ describe('cleanRef', () => {
   test('rejects non-string input', () => {
     expect(cleanRef(123)).toBeNull();
     expect(cleanRef(null)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TRACKING_KEYS
+// ---------------------------------------------------------------------------
+
+describe('TRACKING_KEYS', () => {
+  test('lists the five utm keys plus ref', () => {
+    expect(TRACKING_KEYS).toEqual([
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_content',
+      'utm_term',
+      'ref',
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// mergePrefs
+// ---------------------------------------------------------------------------
+
+describe('mergePrefs', () => {
+  test('keeps existing attribution while overwriting the patched keys', () => {
+    const existing = { utm: { source: 'tiktok' }, referred_by: 'ab3x' };
+    const result = mergePrefs(existing, { origins: ['VNO'], moments: ['sun'] });
+    expect(result).toEqual({
+      utm: { source: 'tiktok' },
+      referred_by: 'ab3x',
+      origins: ['VNO'],
+      moments: ['sun'],
+    });
+  });
+
+  test('null existing prefs merges cleanly', () => {
+    expect(mergePrefs(null, { origins: [], moments: [] })).toEqual({ origins: [], moments: [] });
+  });
+
+  test('undefined existing prefs merges cleanly', () => {
+    expect(mergePrefs(undefined, { origins: ['RIX'], moments: [] })).toEqual({
+      origins: ['RIX'],
+      moments: [],
+    });
+  });
+
+  test('patch keys overwrite same-named existing keys', () => {
+    const existing = { origins: ['VNO'], moments: ['sun'] };
+    const result = mergePrefs(existing, { origins: ['WAW'], moments: [] });
+    expect(result).toEqual({ origins: ['WAW'], moments: [] });
   });
 });
 

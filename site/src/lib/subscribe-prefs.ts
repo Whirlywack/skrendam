@@ -72,7 +72,24 @@ export function cleanPrefs(
 // Attribution — utm_* + ref, captured on signup for TikTok-driven traffic
 // ---------------------------------------------------------------------------
 
-const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
+/**
+ * The single list of tracking field names — used to build hidden form inputs
+ * (TrackingFields, SignupCard, subscribe/page.tsx) and to read them back out
+ * of FormData in subscribeAction. Keep this the one source of truth instead
+ * of hand-maintaining parallel lists.
+ */
+export const TRACKING_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'ref',
+] as const;
+
+export type TrackingKey = (typeof TRACKING_KEYS)[number];
+
+const UTM_KEYS = TRACKING_KEYS.filter((key) => key !== 'ref');
 const UTM_MAX_LENGTH = 80;
 const REF_RE = /^[a-z0-9]{2,12}$/;
 
@@ -97,4 +114,17 @@ export function cleanUtm(input: Record<string, unknown>): Record<string, string>
 export function cleanRef(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   return REF_RE.test(raw) ? raw : null;
+}
+
+/**
+ * Merges a prefs patch onto an existing prefs object without dropping
+ * unrelated keys — e.g. `savePreferencesAction` writing `{origins, moments}`
+ * must not clobber `{utm, referred_by}` written at signup. `patch` keys win
+ * on conflict.
+ */
+export function mergePrefs(
+  existing: Record<string, unknown> | null | undefined,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...(existing ?? {}), ...patch };
 }

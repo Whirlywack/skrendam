@@ -15,6 +15,8 @@ import {
   cleanPrefs,
   cleanUtm,
   cleanRef,
+  mergePrefs,
+  TRACKING_KEYS,
 } from '@/lib/subscribe-prefs';
 import { S } from '@/lib/lt';
 
@@ -65,14 +67,10 @@ export async function subscribeAction(
 
   // Attribution captured on signup (TikTok launch): utm_* + ref, stored on
   // prefs. Never overwritten on conflict — see onConflictDoUpdate below.
-  const utm = cleanUtm({
-    utm_source: formData.get('utm_source'),
-    utm_medium: formData.get('utm_medium'),
-    utm_campaign: formData.get('utm_campaign'),
-    utm_content: formData.get('utm_content'),
-    utm_term: formData.get('utm_term'),
-  });
-  const ref = cleanRef(formData.get('ref'));
+  const trackingBag: Record<string, unknown> = {};
+  for (const key of TRACKING_KEYS) trackingBag[key] = formData.get(key);
+  const utm = cleanUtm(trackingBag);
+  const ref = cleanRef(trackingBag.ref);
   const attribution: Record<string, unknown> = {
     ...(Object.keys(utm).length ? { utm } : {}),
     ...(ref ? { referred_by: ref } : {}),
@@ -237,9 +235,17 @@ export async function savePreferencesAction(formData: FormData): Promise<void> {
   const { origins, moments } = cleanPrefs(rawOrigins, rawMoments);
 
   try {
+    // Merge, don't replace: prefs already carries {utm, referred_by} written
+    // at signup (see subscribeAction) and this step must not destroy it.
+    const [row] = await db
+      .select({ prefs: subscribers.prefs })
+      .from(subscribers)
+      .where(eq(subscribers.confirmToken, token))
+      .limit(1);
+    const existingPrefs = (row?.prefs ?? null) as Record<string, unknown> | null;
     await db
       .update(subscribers)
-      .set({ prefs: { origins, moments } })
+      .set({ prefs: mergePrefs(existingPrefs, { origins, moments }) })
       .where(eq(subscribers.confirmToken, token));
   } catch (err) {
     if (isRedirectError(err)) throw err;

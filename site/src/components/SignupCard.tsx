@@ -2,9 +2,8 @@
 import { useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { subscribeAction, type SubscribeResult } from '@/app/subscribe-action';
+import { TRACKING_KEYS } from '@/lib/subscribe-prefs';
 import { S } from '@/lib/lt';
-
-const TRACKING_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'ref'];
 
 interface SignupCardProps {
   /** Where the signup originates — stored in the DB; defaults to 'home'. */
@@ -71,7 +70,7 @@ export function SignupCard({ source = 'home' }: SignupCardProps) {
           <form id={`signup-card-${source}`} className="cap-row" onSubmit={onSubmit}>
             <input type="hidden" name="source" value={source} />
             <input type="hidden" name="mode" value="inline" />
-            {TRACKING_PARAMS.map((key) => {
+            {TRACKING_KEYS.map((key) => {
               const value = searchParams.get(key);
               return value ? <input key={key} type="hidden" name={key} value={value} /> : null;
             })}

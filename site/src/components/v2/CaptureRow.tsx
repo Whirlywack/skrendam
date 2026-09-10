@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { subscribeAction } from '@/app/subscribe-action';
+import { TrackingFields } from '@/components/TrackingFields';
 import { S } from '@/lib/lt';
 
 /**
@@ -33,6 +34,7 @@ export function CaptureRow({ source = 'home-mid' }: { source?: string }) {
           <form onSubmit={onSubmit}>
             <input type="hidden" name="source" value={source} />
             <input type="hidden" name="mode" value="inline" />
+            <TrackingFields />
             <input
               type="email"
               name="email"
