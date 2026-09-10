@@ -85,6 +85,7 @@ export default async function LettersPage({
         paid digest · {DIGEST_DAY} {DIGEST_TIME} · every live deal since the last digest
         &nbsp;&nbsp;|&nbsp;&nbsp; free nurture · every {FREE_LETTER_CADENCE_DAYS} days · {FREE_LETTER_FRESH}{' '}
         fresh + {FREE_LETTER_MISSED} missed
+        &nbsp;&nbsp;|&nbsp;&nbsp; <Link href="/letters/stats">Stats overview →</Link>
       </p>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -120,12 +121,13 @@ export default async function LettersPage({
               <th style={th}>Assembled</th>
               <th style={th}>Sent</th>
               <th style={th}>Result</th>
+              <th style={th}>Stats</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td style={{ ...td, color: 'var(--fg-3)' }} colSpan={7}>
+                <td style={{ ...td, color: 'var(--fg-3)' }} colSpan={8}>
                   No letters yet.
                 </td>
               </tr>
@@ -148,6 +150,9 @@ export default async function LettersPage({
                   <td style={mono}>{when(r.sentAt)}</td>
                   <td style={{ ...td, color: r.sentAt ? 'var(--fg-1)' : 'var(--fg-3)' }}>
                     {statsLine(r.stats, r.sentAt)}
+                  </td>
+                  <td style={{ ...mono, color: 'var(--fg-3)' }}>
+                    {r.sentAt ? <Link href={`/letters/${r.id}/stats`}>stats →</Link> : '—'}
                   </td>
                 </tr>
               );

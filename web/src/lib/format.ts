@@ -19,11 +19,20 @@ export function eur(v: number): string { return `${Math.round(v)} €`; }
 // Engine timestamps are naive UTC ("2026-08-22 05:42:11.910007"); new Date() would
 // read them as local time and shift every display by the TZ offset (B2 in the
 // 2026-08-22 redesign plan). Normalize to ISO-8601 UTC, trimming sub-ms digits.
+// Zoned strings pass through: `Z`, `+03:00`, `+0300`, and the 2-digit offset
+// Postgres prints for `timestamptz` text (`2026-09-10 20:15:00+00`), which
+// Date.parse rejects bare — it is widened to `+00:00` first.
 export function parseEngineTs(ts: string): Date {
-  const trimmed = ts.trim();
-  const hasTz = /(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed);
-  const iso = trimmed.replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1');
-  return new Date(hasTz ? iso : iso + 'Z');
+  let iso = ts.trim().replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1');
+  // An offset only counts when it follows the time of day (`:SS`, `:SS.fff`
+  // or `HH:MM`), so a date's own `-DD` is never read as one.
+  const offset = /(?<=:\d{2}(?:\.\d+)?)([+-]\d{2})(:?\d{2})?$/.exec(iso);
+  if (offset) {
+    if (!offset[2]) iso += ':00';
+  } else if (!/[zZ]$/.test(iso)) {
+    iso += 'Z';
+  }
+  return new Date(iso);
 }
 export function timeAgo(iso: string | null): string {
   if (!iso) return '—';
