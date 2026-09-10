@@ -125,56 +125,65 @@ export async function getCollectionDeals(filter: CollectionFilter) {
     lockedCount: rows.filter((r) => !freeIds.has(r.pd.id)).length,
   });
 
-  if (filter.kind === 'origin') {
-    return split(dedupeById(
-      await dealBase()
-        .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, filter.iata)))
-        .orderBy(...LIVE_ORDER),
-    ));
+  switch (filter.kind) {
+    case 'origin':
+      return split(dedupeById(
+        await dealBase()
+          .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, filter.iata)))
+          .orderBy(...LIVE_ORDER),
+      ));
+
+    case 'zone':
+      return split(dedupeById(
+        await dealBase()
+          .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, filter.zone)))
+          .orderBy(...LIVE_ORDER),
+      ));
+
+    case 'destinations':
+      return split(dedupeById(
+        await dealBase()
+          .where(and(eq(publishedDeals.status, 'live'), inArray(publishedDeals.destination, filter.iatas)))
+          .orderBy(...LIVE_ORDER),
+      ));
+
+    case 'moment': {
+      // Resolve travel moment → template ids → deals
+      const tms = await db
+        .select({ id: travelMoments.id })
+        .from(travelMoments)
+        .where(eq(travelMoments.slug, filter.slug));
+
+      if (tms.length === 0) return { deals: [], lockedCount: 0 };
+
+      const tpls = await db
+        .select({ id: dealTemplates.id })
+        .from(dealTemplates)
+        .where(inArray(dealTemplates.travelMomentId, tms.map((t) => t.id)));
+
+      if (tpls.length === 0) return { deals: [], lockedCount: 0 };
+
+      return split(dedupeById(
+        await dealBase()
+          .where(
+            and(
+              eq(publishedDeals.status, 'live'),
+              inArray(
+                publishedDeals.dealTemplateId,
+                tpls.map((t) => t.id),
+              ),
+            ),
+          )
+          .orderBy(...LIVE_ORDER),
+      ));
+    }
+
+    default: {
+      // Exhaustiveness guard — a new CollectionFilter kind must be handled
+      // above; without this a future kind would silently fall through to
+      // whichever case happened to be last (review finding, WP0).
+      const _exhaustive: never = filter;
+      throw new Error(`getCollectionDeals: unhandled filter kind: ${JSON.stringify(_exhaustive)}`);
+    }
   }
-
-  if (filter.kind === 'zone') {
-    return split(dedupeById(
-      await dealBase()
-        .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, filter.zone)))
-        .orderBy(...LIVE_ORDER),
-    ));
-  }
-
-  if (filter.kind === 'destinations') {
-    return split(dedupeById(
-      await dealBase()
-        .where(and(eq(publishedDeals.status, 'live'), inArray(publishedDeals.destination, filter.iatas)))
-        .orderBy(...LIVE_ORDER),
-    ));
-  }
-
-  // kind === 'moment': resolve travel moment → template ids → deals
-  const tms = await db
-    .select({ id: travelMoments.id })
-    .from(travelMoments)
-    .where(eq(travelMoments.slug, filter.slug));
-
-  if (tms.length === 0) return { deals: [], lockedCount: 0 };
-
-  const tpls = await db
-    .select({ id: dealTemplates.id })
-    .from(dealTemplates)
-    .where(inArray(dealTemplates.travelMomentId, tms.map((t) => t.id)));
-
-  if (tpls.length === 0) return { deals: [], lockedCount: 0 };
-
-  return split(dedupeById(
-    await dealBase()
-      .where(
-        and(
-          eq(publishedDeals.status, 'live'),
-          inArray(
-            publishedDeals.dealTemplateId,
-            tpls.map((t) => t.id),
-          ),
-        ),
-      )
-      .orderBy(...LIVE_ORDER),
-  ));
 }

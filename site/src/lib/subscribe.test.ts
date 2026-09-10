@@ -146,6 +146,14 @@ describe('cleanUtm', () => {
   test('empty input returns empty object', () => {
     expect(cleanUtm({})).toEqual({});
   });
+
+  test('strips control characters before trimming/capping', () => {
+    expect(cleanUtm({ utm_source: 'tik\x00tok\x1f\x7f' })).toEqual({ source: 'tiktok' });
+  });
+
+  test('drops a value that is nothing but control characters', () => {
+    expect(cleanUtm({ utm_source: '\x00\x01\x1f' })).toEqual({});
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -93,17 +93,19 @@ const UTM_KEYS = TRACKING_KEYS.filter((key) => key !== 'ref');
 const UTM_MAX_LENGTH = 80;
 const REF_RE = /^[a-z0-9]{2,12}$/;
 
+const CONTROL_CHARS_RE = /[\x00-\x1f\x7f]/g;
+
 /**
  * Keeps only known `utm_*` keys from an arbitrary input bag (e.g. FormData
- * entries), strips the `utm_` prefix, trims and caps values, and drops
- * empty/non-string values. Unknown keys are ignored.
+ * entries), strips control characters, the `utm_` prefix, trims and caps
+ * values, and drops empty/non-string values. Unknown keys are ignored.
  */
 export function cleanUtm(input: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const key of UTM_KEYS) {
     const value = input[key];
     if (typeof value !== 'string') continue;
-    const trimmed = value.trim();
+    const trimmed = value.replace(CONTROL_CHARS_RE, '').trim();
     if (!trimmed) continue;
     out[key.slice(4)] = trimmed.slice(0, UTM_MAX_LENGTH);
   }
