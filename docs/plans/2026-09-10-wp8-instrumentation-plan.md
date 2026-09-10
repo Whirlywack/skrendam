@@ -41,8 +41,8 @@ export function tiktokSignups(subs: SubFacts[]): Array<{ content: string; signup
 **Files:** Create `web/src/app/(app)/letters/[id]/stats/page.tsx`, `web/src/app/(app)/letters/stats/page.tsx`; Modify `web/src/app/(app)/letters/page.tsx` (link „Stats" per sent issue + top link „Overview") and `letters/[id]/page.tsx` (link to stats when sent).
 - Per-issue page: header (kind, sent_at, stats json), four tables (one per `Dim`) with clicks/claims columns, totals row, „—" for empty.
 - Overview: table of nurture issues (sent_at, recipients from `stats.sent`, `paidBetween`, `freeAtSend` (informational), rate = paidBetween / `issues.stats.sent` or „—" when sent is 0); TikTok table (content, signups, paid).
-- [ ] Manual check on the dev DB (`npm run dev`): both pages render with the existing draft/sent issues; empty states sane.
-- [ ] Commit `feat(desk): per-issue and overview stats pages`.
+- [x] Manual check on the dev DB (`npm run dev`): both pages render with the existing draft/sent issues; empty states sane.
+- [x] Commit `feat(desk): per-issue and overview stats pages`.
 
 ### Task 3: Docs
 - PROJECT.md: WP8 pages + the founder review rule (re-tune §6 constants after ~8 issues, by hand). Commit `docs: WP8 instrumentation`.

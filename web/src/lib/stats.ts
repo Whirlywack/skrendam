@@ -162,12 +162,11 @@ export function tiktokSignups(subs: SubFacts[]): TiktokRow[] {
 }
 
 /** Epoch ms of a Postgres text timestamp as drizzle's `mode: 'string'` hands
- *  it over. Two shapes reach us: naive UTC from `timestamp` columns
- *  (`"2026-09-10 12:00:00.123456"`) and `timestamptz` text with a 2-digit
- *  offset (`"2026-09-10 12:00:00+00"`). `format.ts#parseEngineTs` only
- *  recognises 4-digit offsets and turns the second shape into an Invalid
- *  Date, so this one normalises both to ISO-8601 first: space → `T`,
- *  fractional seconds trimmed to ms, `+HH` → `+HH:00`, no offset → `Z`. */
+ *  it over: naive UTC from `timestamp` columns (`"2026-09-10 12:00:00.123456"`)
+ *  or `timestamptz` text with a 2-digit offset (`"2026-09-10 12:00:00+00"`).
+ *  `format.ts#parseEngineTs` accepts 2-digit offsets since WP8 too; this one
+ *  additionally trims microseconds to ms (Date rejects 6 fractional digits)
+ *  and is kept local so the aggregation stays a pure, dependency-free unit. */
 export function tsMs(ts: string): number {
   let iso = ts.trim().replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1');
   const m = /([+-]\d{2})(:?\d{2})?$/.exec(iso);
