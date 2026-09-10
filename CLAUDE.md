@@ -187,8 +187,11 @@ server-side; the data is not displayed in the current release.
 This is a private product fork — it does **not** publish packages. The
 upstream fli release machinery (PyPI `flights`, npm `fli-js`, the
 `release*.yml` / `publish*.yml` workflows, and `scripts/bump_version.py`)
-was removed in the 2026-07 audit cleanup. Deploys happen from `main` via
-Railway; the version in `pyproject.toml` is informational only.
+was removed in the 2026-07 audit cleanup; the Railway/Nixpacks config went in
+the 2026-09-10 cleanup (nothing of Yip's was ever hosted there). Nothing in
+this repo deploys from `main` except `site/` (Vercel). The scan engine and the
+Deal Desk run on the founder's laptop — see `docs/PROJECT.md`. The version in
+`pyproject.toml` is informational only.
 
 ## Code Style and Standards
 

@@ -71,7 +71,6 @@ Python-only); they enqueue work for the Python worker via a `scan_requests` tabl
 | `.github/workflows/` | CI + independent PyPI / npm / Docker / docs pipelines |
 | `.claude/skills/yip-design-system/` | Yip brand/design-system skill (tokens, UI kits, copy rules) |
 | `Dockerfile`, `docker-compose.yml` | Container for the fli MCP HTTP server (port 8000) |
-| `railway.toml`, `nixpacks.toml` | Railway deployment of `fli-mcp-http` |
 | `Makefile`, `tox.ini`, `pytest.ini`, `pyproject.toml` | Python dev tooling |
 
 Console entry points (`pyproject.toml:67-72`): `fli`, `fli-mcp`, `fli-mcp-http`, `skrendam`,
@@ -399,7 +398,6 @@ Both funnel through `scripts/bump_version.py` (stdlib-only; `--pyproject` / `--p
 | **PyPI** | release.yml | Trusted Publishing (OIDC); publish steps inlined because attestations break in reusable workflows |
 | **npm** | publish-npm.yml | `--provenance --access public` |
 | **GHCR** | docker.yml | `ghcr.io/<repo>` multi-arch (amd64/arm64) image of the MCP HTTP server |
-| **Railway** | `railway.toml` + `nixpacks.toml` | Deploys `fli-mcp-http` (Python 3.12 via uv, sleep-enabled, port 8000); config smoke-tested in CI |
 | **GitHub Pages** | docs.yml | MkDocs Material site from `docs/` → `_docs_build/` |
 | **Google Fonts** | web, site | Bricolage Grotesque / Hanken Grotesk / Space Mono |
 
@@ -411,7 +409,7 @@ Both funnel through `scripts/bump_version.py` (stdlib-only; `--pyproject` / `--p
 
 | Workflow | Trigger | Does |
 |---|---|---|
-| `ci.yml` | push/PR to main, callable | Path-filtered jobs: ruff lint; fli-js Biome+oxlint+typecheck; fli-js tests + **generated-enum sync check**; Python test matrix 3.10–3.13 (`pytest --all --ignore=tests/search/` — live-API tests excluded); Railway/Nixpacks config smoke test; junit aggregation to PR |
+| `ci.yml` | push/PR to main, callable | Path-filtered jobs: ruff lint; fli-js Biome+oxlint+typecheck; fli-js tests + **generated-enum sync check**; Python test matrix 3.10–3.13 (`pytest --all --ignore=tests/search/` — live-API tests excluded); junit aggregation to PR |
 | `release.yml` | manual | bump → notes → commit+tag `vX.Y.Z` (4-attempt push retry) → GitHub Release → test → PyPI |
 | `publish.yml` | release published / manual | Fallback PyPI publisher; skips `fli-js-v*` tags |
 | `release-npm.yml` | manual | Same shape for `fli-js/package.json`, tag `fli-js-vX.Y.Z`, notes scoped to `fli-js/` + `data/` |
