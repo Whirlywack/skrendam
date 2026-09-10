@@ -76,6 +76,21 @@ def test_run_scan_cli_exits_2_on_breaker_abort(monkeypatch, capsys):
     assert "FAILED" in capsys.readouterr().out
 
 
+def test_analyze_labels_cli_prints_curator_label_table(monkeypatch, capsys, session, tmp_path):
+    import skrendam.cli as cli
+    from skrendam.seeds import seed_all
+
+    seed_all(session)
+    monkeypatch.setattr(cli, "make_sessionmaker", lambda *a, **k: (lambda: session))
+    out_path = tmp_path / "labels.md"
+    monkeypatch.setattr("sys.argv", ["skrendam", "analyze", "--labels", "--out", str(out_path)])
+    cli.main()
+    out = capsys.readouterr().out
+    header = "| zone | template | price band | commodity | approved | rejected | approval |"
+    assert header in out
+    assert out_path.read_text() == header + "\n" + "|---|---|---|---|---|---|---|"
+
+
 def test_run_scan_cli_exits_normally_when_healthy(monkeypatch, capsys):
     import skrendam.cli as cli
 

@@ -99,3 +99,41 @@ def test_format_report_is_nonempty_string(session):
     out = analyze.format_report(rep)
     assert "candidates" in out.lower() and "September sun" in out
     assert "MED" in out  # per-zone section renders the zone code
+
+
+def test_label_report_groups_approval_rate_by_zone_template_band_and_commodity(session):
+    from skrendam.analyze import label_report
+    from skrendam.seeds import seed_all
+
+    seed_all(session)
+    route = session.query(models.Route).filter_by(origin="VNO", destination="BCN").one()
+    tpl = session.query(models.DealTemplate).filter_by(slug="last-warm-days").one()
+    for i, (status, share) in enumerate(
+        [("approved", 0.1), ("rejected", 0.6), ("approved", None)]
+    ):
+        c = models.Candidate(
+            route_id=route.id,
+            origin="VNO",
+            destination="BCN",
+            zone="MEDITERRANEAN",
+            trip_type="roundtrip",
+            travel_date=date(2026, 10, 5),
+            price=120.0 + i,
+            status=status,
+            deal_group_key=f"k{i}",
+        )
+        session.add(c)
+        session.flush()
+        session.add(
+            models.CandidateTemplateMatch(
+                candidate_id=c.id,
+                deal_template_id=tpl.id,
+                match_score=0.9,
+                demand_signals={"commodity_share": share},
+            )
+        )
+    session.commit()
+    md = label_report(session)
+    assert "| MEDITERRANEAN | Last warm days (October) | 100–199 | <0.2 | 1 | 0 | 100% |" in md
+    assert "| MEDITERRANEAN | Last warm days (October) | 100–199 | ≥0.5 | 0 | 1 | 0% |" in md
+    assert "| unknown |" in md

@@ -87,6 +87,59 @@ def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
     )
 
 
+def _price_band(p: float) -> str:
+    return "<50" if p < 50 else "50–99" if p < 100 else "100–199" if p < 200 else "200+"
+
+
+def _commodity_bucket(share) -> str:
+    if share is None:
+        return "unknown"
+    return "<0.2" if share < 0.2 else "0.2–0.5" if share < 0.5 else "≥0.5"
+
+
+def label_report(session: Session) -> str:
+    """Curator labels (approved/rejected) as a proxy for "what counts as a deal".
+
+    Grouped by zone x template x price band x commodity bucket (spec WP2.11).
+    """
+    rows = session.execute(
+        select(
+            models.Candidate.zone,
+            models.DealTemplate.name,
+            models.Candidate.price,
+            models.Candidate.status,
+            models.CandidateTemplateMatch.demand_signals,
+        )
+        .join(
+            models.CandidateTemplateMatch,
+            models.CandidateTemplateMatch.candidate_id == models.Candidate.id,
+        )
+        .join(
+            models.DealTemplate,
+            models.DealTemplate.id == models.CandidateTemplateMatch.deal_template_id,
+        )
+        .where(models.Candidate.status.in_(("approved", "rejected")))
+    ).all()
+    agg: dict[tuple, list[int]] = {}
+    for zone, tname, price, status, signals in rows:
+        key = (
+            zone,
+            tname,
+            _price_band(price),
+            _commodity_bucket((signals or {}).get("commodity_share")),
+        )
+        a = agg.setdefault(key, [0, 0])
+        a[0 if status == "approved" else 1] += 1
+    lines = [
+        "| zone | template | price band | commodity | approved | rejected | approval |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for (zone, tname, band, bucket), (ok, no) in sorted(agg.items()):
+        rate = f"{round(100 * ok / (ok + no))}%"
+        lines.append(f"| {zone} | {tname} | {band} | {bucket} | {ok} | {no} | {rate} |")
+    return "\n".join(lines)
+
+
 def format_report(rep: AnalysisReport) -> str:
     lines = [
         "=== Skrendam tuning analysis ===",
