@@ -177,7 +177,7 @@ def test_assess_commodity_caps_score_and_no_archetype():
         return_date=None,
         series=series,
         local_median=120.0,
-        discount_pct=17.5,
+        discount_pct=65.0,
         departure_date_count=None,
         now=NOW,
         windows=[W],
@@ -185,7 +185,11 @@ def test_assess_commodity_caps_score_and_no_archetype():
         tiers=TIERS,
     )
     assert a.signals["is_commodity"] is True and a.signals["commodity_share"] == 1.0
-    assert a.score_v2 == demand.COMMODITY_CAP and a.archetype is None
+    assert a.score_v2 == demand.COMMODITY_CAP
+    # 65% off would normally earn the "rare" archetype — the signal is still
+    # recorded, but a fare sitting on its own floor every day promises nothing.
+    assert "rare" in a.signals["archetypes"]
+    assert a.archetype is None
 
 
 def test_assess_rare_skips_demand_weight_and_destination_needs_floor_and_tier():

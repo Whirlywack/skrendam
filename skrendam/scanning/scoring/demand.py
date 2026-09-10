@@ -14,8 +14,6 @@ from datetime import date, datetime, timedelta
 from importlib import resources
 from statistics import median
 
-from skrendam.scanning.scoring import tiering
-
 COMMODITY_FLOOR_SHARE = 0.20
 FLOOR_TOLERANCE = 1.05
 FLOOR_LOOKBACK_DAYS = 90  # within the 180-day prefetched series
@@ -31,6 +29,10 @@ DATE_DEAL_MAX_RATIO = 0.60  # fare <= 60% of window_typical
 WINDOW_TYPICAL_MIN_POINTS = 10
 RARE_DISCOUNT_PCT = 60  # aligns with outlier.DISC_ERROR
 FAMILY_SEATS = 4
+
+# Sentinel for assess(share=...): None is a legitimate value ("unknown share"),
+# so absence needs its own marker.
+_UNSET = object()
 
 
 @dataclass(frozen=True)
@@ -166,13 +168,31 @@ def assess(
     windows,
     personas: dict,
     tiers: dict,
+    share=_UNSET,
+    typical_cache: dict | None = None,
 ) -> DemandAssessment:
+    """Assess one (fare, template) pair. Pure.
+
+    ``share`` and ``typical_cache`` are optional precomputations for callers that
+    assess the same fare against several templates: ``share`` is this fare's
+    commodity share (``None`` means "unknown"), ``typical_cache`` a per-fare
+    ``{window_slug: window_typical}`` memo. Both are pure caches — passing them
+    cannot change the result, only skip repeated work.
+    """
     codes = persona_codes(template.newsletter_tag, personas)
-    share = commodity_share(series, fare.price, now)
+    if share is _UNSET:
+        share = commodity_share(series, fare.price, now)
     is_commodity = share is not None and share >= COMMODITY_FLOOR_SHARE
     fit, window = date_fit(travel_date, return_date, codes, windows)
     tier, weight = demand_weight(destination, codes, tiers)
-    typical = window_typical(series, window) if window else None
+    typical = None
+    if window is not None:
+        if typical_cache is None:
+            typical = window_typical(series, window)
+        else:
+            if window.slug not in typical_cache:
+                typical_cache[window.slug] = window_typical(series, window)
+            typical = typical_cache[window.slug]
     typical_basis = typical if typical is not None else local_median
     discount = discount_pct or 0.0
     saving_pp = round(max(0.0, local_median - fare.price), 2)
@@ -199,7 +219,13 @@ def assess(
     )
     if saving_pp >= floor and discount >= MIN_DISCOUNT_PCT and tier in ("A", "B") and enough_dates:
         archetypes.append("destination")
-    primary = next((a for a in ("date", "rare", "destination") if a in archetypes), None)
+    # A commodity fare gets no archetype: the archetypes still describe WHY it
+    # looked interesting (kept in signals), but "this is a date deal / rare fare"
+    # is a promise the price floor contradicts (review A4).
+    primary = (
+        None if is_commodity
+        else next((a for a in ("date", "rare", "destination") if a in archetypes), None)
+    )
 
     applied_weight = 1.0 if primary == "rare" else weight
     score_v2 = max(0, min(100, round(headline.score_0_100 * fit * applied_weight)))
@@ -219,6 +245,5 @@ def assess(
             "saving_pp": saving_pp,
             "saving_family": saving_family,
             "archetypes": archetypes,
-            "quality_tier_v2": tiering.quality_tier(score_v2),
         },
     )

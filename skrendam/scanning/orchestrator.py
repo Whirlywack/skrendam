@@ -20,7 +20,7 @@ from skrendam.scanning.history import DbPriceHistory
 from skrendam.scanning.resolver import resolve
 from skrendam.scanning.scoring import demand, tiering
 from skrendam.scanning.scoring.base import ScoringContext
-from skrendam.scanning.scoring.eligibility import in_template_scope
+from skrendam.scanning.scoring.eligibility import in_template_scope, itinerary_ok
 from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
@@ -330,7 +330,9 @@ def _persist_fare(
     demand_ctx,
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
-    hist_series = history.for_route(route.id, spec.trip_type)
+    # ONE series per fare, partitioned by trip duration: scoring and the demand
+    # layer must share the same notion of "this route's history" (review A3).
+    hist_series = history.for_route(route.id, spec.trip_type, spec.duration_days)
     prev_pt = hist_series.previous_point(point.travel_date, now)
     prev = prev_pt.price if prev_pt else None
     prev_age = (now - prev_pt.scanned_at).days if prev_pt else None
@@ -342,6 +344,8 @@ def _persist_fare(
             continue
         if tpl.min_departure_dates is not None and departure_date_count < tpl.min_departure_dates:
             continue  # marketability gate: not enough near-price dates to plan around
+        if not itinerary_ok(fare, tpl):
+            continue  # itinerary/time gate BEFORE scoring: ErrorFareScorer never calls it
         ctx = ScoringContext(
             fare=fare,
             baseline=base,
@@ -397,7 +401,11 @@ def _persist_fare(
     if created:
         summary.candidates_found += 1
 
-    demand_series = history.for_route(route.id, spec.trip_type, spec.duration_days)
+    # Per-fare work hoisted out of the per-template loop: commodity_share depends
+    # only on (series, price, now) and window_typical only on (series, window), so
+    # both are computed once and shared across this fare's templates (review A7).
+    share = demand.commodity_share(hist_series, fare.price, now)
+    typical_cache: dict[str, float | None] = {}
     for tpl, headline, scores in matched:
         dm = demand.assess(
             headline=headline,
@@ -408,7 +416,7 @@ def _persist_fare(
             fare=fare,
             travel_date=point.travel_date,
             return_date=point.return_date,
-            series=demand_series,
+            series=hist_series,
             local_median=local_median,
             discount_pct=discount,
             departure_date_count=departure_date_count,
@@ -416,6 +424,8 @@ def _persist_fare(
             windows=demand_ctx.windows,
             personas=demand_ctx.personas,
             tiers=demand_ctx.tiers,
+            share=share,
+            typical_cache=typical_cache,
         )
         _match, created = repo.upsert_match(
             session,

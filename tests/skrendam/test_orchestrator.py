@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
@@ -554,10 +554,71 @@ class EarlyBirdBackend(FakeBackend):
 
 
 def test_family_friendly_template_rejects_0550_departure(session):
+    """The gate runs BEFORE scoring, so no scorer can smuggle the fare through.
+
+    ErrorFareScorer is deliberately lenient on itinerary (an error fare is worth
+    surfacing even if ugly) and never calls itinerary_ok. The route therefore
+    carries >= ErrorFareScorer.MIN_HISTORY prior points whose floor (EUR100) the
+    EUR30 fare undercuts by 70%: error_fare WOULD fire if the orchestrator let
+    the fare reach the scorers at all.
+    """
     _seed(session)
     tpl = session.get(models.DealTemplate, 1)
     tpl.family_friendly_times_only = True
+    prior = models.ScanRun(scanner_version="t", status="completed", started_at=datetime(2026, 6, 1))
+    session.add(prior)
+    session.flush()
+    for i in range(8):
+        session.add(
+            models.PriceLog(
+                run_id=prior.id,
+                route_id=1,
+                trip_type="oneway",
+                travel_date=date(2026, 7, 29),
+                price=100.0 + i,
+                currency="EUR",
+                scanner_version="t",
+                scanned_at=datetime(2026, 6, 1),
+            )
+        )
     session.commit()
     adapter = FliAdapter(EarlyBirdBackend(), pace=lambda: None)
     summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
     assert summary.matches_created == 0
+    assert session.query(models.CandidateScore).filter_by(scorer="error_fare").count() == 0
+
+
+class RoundTripBackend(FakeBackend):
+    """FakeBackend with real return dates, so a roundtrip template resolves fares."""
+
+    def search_calendar(self, spec):
+        return [
+            (d, d + timedelta(days=spec.duration_days or 0), price)
+            for d, _, price in super().search_calendar(spec)
+        ]
+
+
+def test_scoring_and_demand_share_one_duration_partitioned_history(session, monkeypatch):
+    """One history fetch per fare, partitioned by trip duration (review A3).
+
+    Scoring used the unpartitioned series while the demand layer fetched a second,
+    duration-filtered one — two different notions of "this route's history" for the
+    same fare, and a second prefetch query per fare. Now there is exactly one.
+    """
+    from skrendam.scanning import orchestrator
+    from skrendam.scanning.history import DbPriceHistory
+
+    _seed(session)
+    session.query(models.DealTemplate).update({"trip_type": "roundtrip", "trip_len_min_days": 5})
+    session.commit()
+    calls = []
+
+    class SpyHistory(DbPriceHistory):
+        def for_route(self, route_id, trip_type, duration_days=None):
+            calls.append((route_id, trip_type, duration_days))
+            return super().for_route(route_id, trip_type, duration_days)
+
+    monkeypatch.setattr(orchestrator, "DbPriceHistory", SpyHistory)
+    adapter = FliAdapter(RoundTripBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    assert calls == [(1, "roundtrip", 5)]

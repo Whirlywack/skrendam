@@ -20,17 +20,20 @@ def _hour(leg, key: str) -> int | None:
         return None
 
 
-def leg_hours(fare: FareItinerary) -> tuple[int | None, int | None]:
-    """(first departure hour, last arrival hour) from the snapshot's ISO leg times.
+def leg_hour_bounds(fare: FareItinerary) -> tuple[int | None, int | None]:
+    """(earliest departure hour, latest arrival hour) across ALL legs.
 
-    Legs are flattened across directions (live_backend), so on a round trip the
-    last arrival is the return leg landing at home. None when the snapshot has
-    no times (older rows, test fixtures) — unknown must never fail a gate.
+    Every leg counts, not just the first departure and the last arrival. Legs are
+    flattened across directions (live_backend), so on a round trip this spans the
+    return leg too — and family templates are max 1 stop with no overnight
+    layover, which makes a 05:30 connecting or return departure exactly what the
+    persona rule forbids. None when the snapshot has no usable times (older rows,
+    test fixtures) — unknown must never fail a gate.
     """
     legs = fare.legs or []
-    if not legs:
-        return None, None
-    return _hour(legs[0], "departure_time"), _hour(legs[-1], "arrival_time")
+    deps = [h for leg in legs if (h := _hour(leg, "departure_time")) is not None]
+    arrs = [h for leg in legs if (h := _hour(leg, "arrival_time")) is not None]
+    return (min(deps) if deps else None), (max(arrs) if arrs else None)
 
 
 def times_ok(fare: FareItinerary, tpl) -> bool:
@@ -42,7 +45,7 @@ def times_ok(fare: FareItinerary, tpl) -> bool:
         latest = FAMILY_LATEST_ARR_HOUR if latest is None else latest
     if earliest is None and latest is None:
         return True
-    dep, arr = leg_hours(fare)
+    dep, arr = leg_hour_bounds(fare)
     if earliest is not None and dep is not None and dep < earliest:
         return False
     if latest is not None and arr is not None and arr >= latest:
