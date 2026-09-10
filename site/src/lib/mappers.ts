@@ -6,6 +6,7 @@ import { ltDealHeadline, stopsChip } from './dealDetail';
 import { formatDates, freshnessLabel, ltMonthNom } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
+import { groundHint } from './ground';
 import { S } from './lt';
 
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
@@ -95,5 +96,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     catchLine: stops >= 1 ? `Kabliukas: ${stopsChip(stops)}` : null,
     status,
     booking: bookingCta(pd.bookingUrl ?? null),
+    verifiedAt: r.verifiedAt ? String(r.verifiedAt) : null,
+    groundHint: groundHint(pd.origin),
   };
 }

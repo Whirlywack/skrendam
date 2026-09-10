@@ -1,5 +1,6 @@
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { TrackingFields } from '@/components/TrackingFields';
 import {
   subscribePageAction,
   savePreferencesAction,
@@ -54,6 +55,7 @@ function IdleState() {
       <form action={subscribePageAction}>
         <input type="hidden" name="source" value="subscribe" />
         <input type="hidden" name="mode" value="page" />
+        <TrackingFields />
 
         <div className="sub-row">
           <input
@@ -66,11 +68,6 @@ function IdleState() {
           <button type="submit" className="sub-btn">
             {S.ctaSubmit}
           </button>
-        </div>
-
-        <div className="sub-ea-row">
-          <input type="checkbox" name="early_alerts" id="ea-idle" value="on" />
-          <label htmlFor="ea-idle">{S.earlyCheckbox}</label>
         </div>
       </form>
 

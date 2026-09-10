@@ -32,6 +32,7 @@ export function Footer() {
           {/* /#how anchor died with the V1 homepage; link returns with PR C's page */}
           <Link href="/early-alerts">{S.footerEarly}</Link>
           <a href="mailto:hello@yip.lt">{S.footerContact}</a>
+          <Link href="/privatumas">{S.footerPrivacy}</Link>
         </div>
 
         {/* Follow column */}

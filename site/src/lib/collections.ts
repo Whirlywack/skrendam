@@ -1,7 +1,8 @@
 export type CollectionFilter =
   | { kind: 'origin'; iata: string }
   | { kind: 'zone'; zone: string }
-  | { kind: 'moment'; slug: string };
+  | { kind: 'moment'; slug: string }
+  | { kind: 'destinations'; iatas: string[] };
 
 export interface Collection {
   slug: string;
@@ -62,7 +63,7 @@ export const COLLECTIONS: Collection[] = [
     scene: 'ph-coast',
     h1: 'Pigūs skrydžiai į Kiprą iš Lietuvos',
     promise: 'Šiltos jūros Kipras iš Vilniaus ir Kauno.',
-    filter: { kind: 'zone', zone: 'MEDITERRANEAN' },
+    filter: { kind: 'destinations', iatas: ['LCA', 'PFO'] },
   },
 ];
 

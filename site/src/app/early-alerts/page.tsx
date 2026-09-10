@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { TrackingFields } from '@/components/TrackingFields';
 import { subscribePageAction } from '@/app/subscribe-action';
 import { S } from '@/lib/lt';
 
@@ -137,6 +138,7 @@ export default function EarlyAlertsPage() {
               <input type="hidden" name="mode" value="page" />
               <input type="hidden" name="early_alerts" value="on" />
               <input type="hidden" name="source" value="early" />
+              <TrackingFields />
               <div className="ea-form-row">
                 <input
                   type="email"

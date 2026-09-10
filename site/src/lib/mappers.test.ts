@@ -13,6 +13,7 @@ function row(over: Partial<Record<string, unknown>> = {}): Row {
     qualityTier: over.qualityTier ?? null,
     snapshot: over.snapshot ?? { stops: 1, legs: [{ airline: { code: 'BT' } }], duration: 440, self_transfer: false },
     candLastSeen: '2026-06-03T10:00:00',
+    verifiedAt: over.verifiedAt ?? null,
   } as unknown as Row;
 }
 
@@ -44,5 +45,21 @@ describe('toPublicDeal', () => {
     // raw score 0.50 → 50 → no tier; stored score_0_100 95 → "rare".
     const d = toPublicDeal(row({ score: 0.5, score100: 95 }), new Date('2026-06-03T12:00:00Z'));
     expect(d.quality).toBe('rare');
+  });
+  it('verifiedAt + KUN origin → verifiedAt passthrough and ground hint', () => {
+    const d = toPublicDeal(
+      row({ verifiedAt: '2026-09-10T05:00:00', pd: { origin: 'KUN' } }),
+      new Date('2026-06-03T12:00:00Z'),
+    );
+    expect(d.verifiedAt).toBe('2026-09-10T05:00:00');
+    expect(d.groundHint).toBe('Iš Vilniaus: 59 min traukiniu');
+  });
+  it('VNO origin → no ground hint', () => {
+    const d = toPublicDeal(row({ pd: { origin: 'VNO' } }), new Date('2026-06-03T12:00:00Z'));
+    expect(d.groundHint).toBeNull();
+  });
+  it('no verifiedAt on the row → null', () => {
+    const d = toPublicDeal(row(), new Date('2026-06-03T12:00:00Z'));
+    expect(d.verifiedAt).toBeNull();
   });
 });

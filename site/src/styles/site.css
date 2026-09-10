@@ -453,7 +453,7 @@
   cursor: pointer;
 }
 
-/* Primary amber CTA — used in hero SignupCard (.cap-row) */
+/* Primary amber CTA */
 .yip-site .btn-primary {
   background: var(--amber);
   color: var(--ink);

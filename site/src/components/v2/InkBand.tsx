@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { subscribeAction } from '@/app/subscribe-action';
+import { TrackingFields } from '@/components/TrackingFields';
 import { S } from '@/lib/lt';
 
 /** The ink signup band — the page's one conversion, fed directly by the trophy case above it. */
@@ -40,6 +41,7 @@ export function InkBand() {
             <form onSubmit={onSubmit}>
               <input type="hidden" name="source" value="home" />
               <input type="hidden" name="mode" value="inline" />
+              <TrackingFields />
               <div className="frow">
                 <input
                   type="email"

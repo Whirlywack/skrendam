@@ -47,10 +47,10 @@ describe('collectionBySlug', () => {
     });
   });
 
-  it('uses the real DB zone for cyprus-flight-deals-from-lithuania', () => {
+  it('filters cyprus-flight-deals-from-lithuania to LCA/PFO, not the whole Mediterranean zone', () => {
     expect(collectionBySlug('cyprus-flight-deals-from-lithuania')?.filter).toEqual({
-      kind: 'zone',
-      zone: 'MEDITERRANEAN',
+      kind: 'destinations',
+      iatas: ['LCA', 'PFO'],
     });
   });
 
@@ -72,7 +72,7 @@ describe('COLLECTIONS', () => {
   it('every collection has a filter', () => {
     for (const c of COLLECTIONS) {
       expect(c.filter).toBeDefined();
-      expect(['origin', 'zone', 'moment']).toContain(c.filter.kind);
+      expect(['origin', 'zone', 'moment', 'destinations']).toContain(c.filter.kind);
     }
   });
 });

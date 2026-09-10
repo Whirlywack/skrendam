@@ -11,7 +11,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // /past-deals is back: expired deals exist and the V2 footer links it
-  const staticRoutes = ['', '/collections', '/past-deals', '/subscribe', '/early-alerts'].map(
+  const staticRoutes = [
+    '',
+    '/collections',
+    '/past-deals',
+    '/subscribe',
+    '/early-alerts',
+  ].map(
     (p) => ({
       url: base + (p || '/'),
       lastModified: now,
@@ -19,6 +25,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: p === '' ? 1 : 0.7,
     }),
   );
+
+  // Rarely changes and isn't a conversion target — lower priority/frequency
+  // than the funnel pages above.
+  const legalRoutes = [
+    {
+      url: `${base}/privatumas`,
+      lastModified: now,
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    },
+  ];
 
   const collectionRoutes = COLLECTIONS.map((c) => ({
     url: `${base}/${c.slug}`,
@@ -49,5 +66,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     dealRoutes = [];
   }
 
-  return [...staticRoutes, ...collectionRoutes, ...dealRoutes];
+  return [...staticRoutes, ...legalRoutes, ...collectionRoutes, ...dealRoutes];
 }
