@@ -115,7 +115,8 @@ export default async function LetterStatsPage({ params }: { params: Promise<{ id
       </p>
       <p style={hint}>
         {label} · assembled {when(issue.createdAt)} ·{' '}
-        {issue.sentAt ? `sent ${when(issue.sentAt)}` : 'not sent'} · {sendLine(issue.stats, issue.sentAt)}
+        {issue.sentAt ? `sent ${when(issue.sentAt)} · ` : ''}
+        {sendLine(issue.stats, issue.sentAt)}
       </p>
       {issue.stats != null && (
         <p style={{ ...hint, color: 'var(--fg-3)', wordBreak: 'break-all' }}>
