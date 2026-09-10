@@ -88,6 +88,7 @@ export const S = {
   footerXmas: 'Kalėdų mugės',
   footerEarly: 'Skubios žinutės',
   footerContact: 'Rašyk mums',
+  footerPrivacy: 'Privatumas',
   footerFollow: 'Sek mus',
   footerLegal: '© 2026 Yip. Bilietą perki pas aviakompaniją ar agentūrą — kainos keičiasi greitai.',
 

@@ -11,7 +11,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   // /past-deals is back: expired deals exist and the V2 footer links it
-  const staticRoutes = ['', '/collections', '/past-deals', '/subscribe', '/early-alerts'].map(
+  const staticRoutes = [
+    '',
+    '/collections',
+    '/past-deals',
+    '/subscribe',
+    '/early-alerts',
+    '/privatumas',
+  ].map(
     (p) => ({
       url: base + (p || '/'),
       lastModified: now,
