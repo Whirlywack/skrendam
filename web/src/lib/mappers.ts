@@ -5,8 +5,16 @@ import { formatDates, timeAgo } from './format';
 import { gradientForZone } from './gradients';
 import { toDisplayStatus } from './status';
 import { tierForScore } from './tiers';
+import personas from './personas.json';
 
 type QueueRow = Awaited<ReturnType<typeof import('./queries').getQueueRows>>[number];
+
+const ARCHETYPES = new Set(['date', 'rare', 'destination']);
+
+function num(v: unknown): number | null {
+  const n = Number(v);
+  return v == null || Number.isNaN(n) ? null : n;
+}
 
 function legsFrom(snapshot: unknown): { legs: string; airline: string; stops: number } {
   const s = (snapshot ?? {}) as Record<string, unknown>;
@@ -43,6 +51,10 @@ export function toCandidateView(r: QueueRow): CandidateView {
   const tier = r.qualityTier === 'rare' || r.qualityTier === 'great'
     ? ('great' as const)
     : tierForScore(tierScore);
+  const sig = (r.demandSignals ?? {}) as Record<string, unknown>;
+  const archetype = ARCHETYPES.has(String(r.archetype))
+    ? (r.archetype as CandidateView['archetype'])
+    : null;
   return {
     id: `m${r.matchId}`, candidateId: c.id, templateId: r.templateId, matchId: r.matchId,
     score,
@@ -59,6 +71,13 @@ export function toCandidateView(r: QueueRow): CandidateView {
     grad: gradientForZone(c.zone),
     verifiedAt: c.verifiedAt ? String(c.verifiedAt) : null,
     copy: { headline: r.headline ?? '', hook: r.hook ?? '', news: r.news ?? '' },
+    scoreV2: r.scoreV2 == null ? null : Number(r.scoreV2),
+    archetype,
+    commodityShare: num(sig.commodity_share),
+    savingFamily: num(sig.saving_family),
+    windowSlug: typeof sig.window_slug === 'string' ? sig.window_slug : null,
+    personas: (personas as Record<string, string[]>)[r.newsletterTag ?? ''] ?? [],
+    priority: r.templatePriority ?? 0,
   };
 }
 

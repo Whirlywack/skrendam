@@ -21,6 +21,13 @@ export interface CandidateView {
   verifiedAt: string | null;
   copy: { headline: string; hook: string; news: string };
   context?: import('./routeContext').RouteContext;
+  scoreV2: number | null;            // engine demand score, null on legacy rows
+  archetype: 'date' | 'rare' | 'destination' | null;
+  commodityShare: number | null;     // 0..1
+  savingFamily: number | null;       // € for 4 seats, families templates only
+  windowSlug: string | null;
+  personas: string[];                // pref codes from personas.json[newsletterTag]
+  priority: number;                  // dealTemplates.priority
 }
 
 export interface ScanView { fares: string; airports: number; ago: string; newToday: number; status: string; healthReasons: string[]; }
