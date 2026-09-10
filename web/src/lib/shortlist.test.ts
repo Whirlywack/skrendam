@@ -9,7 +9,7 @@ function cand(over: Partial<CandidateView>): CandidateView {
     origin: 'VNO', from: 'VNO', to: 'LCA', price: 92, usual: 228, drop: 60,
     dates: '9–16 Jan', travelDate: '2027-01-09', legs: 'nonstop',
     airline: 'Wizz Air', template: 'Winter sun', signals: [], flags: [],
-    grad: '', verifiedAt: null, copy: { headline: '', hook: '', news: '' },
+    grad: '', verifiedAt: null, copy: { headline: '', hook: '', news: '', body: '' },
     scoreV2: null, archetype: null, commodityShare: null, savingFamily: null,
     windowSlug: null, personas: [], priority: LAUNCH_PRIORITY,
     ...over,

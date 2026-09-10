@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  AlignLeft,
   Archive,
   Check,
   CheckCircle,
@@ -18,6 +19,7 @@ import type { ComponentType } from 'react';
 // `import * as icons` namespace + runtime lookup shipped the whole library.
 const ICONS = {
   AlertTriangle,
+  AlignLeft,
   Archive,
   Check,
   CheckCircle,

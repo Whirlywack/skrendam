@@ -19,7 +19,7 @@ export interface CandidateView {
   signals: string[]; flags: string[];
   grad: string;
   verifiedAt: string | null;
-  copy: { headline: string; hook: string; news: string };
+  copy: { headline: string; hook: string; news: string; body: string };
   context?: import('./routeContext').RouteContext;
   scoreV2: number | null;            // engine demand score, null on legacy rows
   archetype: 'date' | 'rare' | 'destination' | null;

@@ -29,6 +29,7 @@ function queueBase() {
       headline: contentDrafts.headline,
       hook: contentDrafts.tiktokHook,
       news: contentDrafts.newsletterSnippet,
+      body: contentDrafts.body,
       publishedId: publishedDeals.id,
       c: candidates,
     })

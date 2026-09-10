@@ -15,6 +15,7 @@ function makeRow(overrides: Partial<{
   headline: string | null;
   hook: string | null;
   news: string | null;
+  body: string | null;
   publishedId: number | null;
   score100: number | null;
   scoreV2: number | null;
@@ -35,6 +36,7 @@ function makeRow(overrides: Partial<{
     headline = null,
     hook = null,
     news = null,
+    body = null,
     publishedId = null,
     score100 = null,
     scoreV2 = null,
@@ -65,7 +67,7 @@ function makeRow(overrides: Partial<{
   return {
     matchId, score, score100, scoreV2, qualityTier, archetype, demandSignals,
     newsletterTag, templatePriority, reason, templateId, templateLabel, templateName,
-    headline, hook, news, publishedId, c,
+    headline, hook, news, body, publishedId, c,
   } as unknown as QueueRow;
 }
 
@@ -191,6 +193,12 @@ describe('toCandidateView', () => {
     const v = toCandidateView(row);
     expect(v.personas).toEqual([]);
     expect(v.archetype).toBeNull();
+  });
+
+  it('copy.body carries the draft body text; null maps to an empty string', () => {
+    const text = 'Kalėdų atostogos — €190 į Maljorką iš Vilniaus. Bagažas nekainuoja, bet grįžti reikia sekmadienį.';
+    expect(toCandidateView(makeRow({ body: text })).copy.body).toBe(text);
+    expect(toCandidateView(makeRow({ body: null })).copy.body).toBe('');
   });
 });
 

@@ -70,7 +70,7 @@ export function toCandidateView(r: QueueRow): CandidateView {
     signals, flags,
     grad: gradientForZone(c.zone),
     verifiedAt: c.verifiedAt ? String(c.verifiedAt) : null,
-    copy: { headline: r.headline ?? '', hook: r.hook ?? '', news: r.news ?? '' },
+    copy: { headline: r.headline ?? '', hook: r.hook ?? '', news: r.news ?? '', body: r.body ?? '' },
     scoreV2: r.scoreV2 == null ? null : Number(r.scoreV2),
     archetype,
     commodityShare: num(sig.commodity_share),

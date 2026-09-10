@@ -5,13 +5,31 @@ import type { CandidateView } from '@/lib/types';
 import { Icon } from '@/components/Icon';
 import { saveContentDraft } from '@/app/actions';
 
-type Tab = 'headline' | 'hook' | 'news';
+type Tab = 'headline' | 'hook' | 'news' | 'body';
+type Copy = CandidateView['copy'];
 
-export function CopyDrafter({ c }: { c: CandidateView }) {
+const TABS: { key: Tab; icon: string; label: string; rows?: number; tall?: boolean }[] = [
+  { key: 'headline', icon: 'Type', label: 'Headline', rows: 3 },
+  { key: 'hook', icon: 'Music', label: 'TikTok hook', rows: 4 },
+  { key: 'news', icon: 'Mail', label: 'Newsletter', tall: true },
+  { key: 'body', icon: 'AlignLeft', label: 'Body', tall: true },
+];
+
+/**
+ * Copy state is owned by the parent (Composer) so "Approve & publish" sends
+ * exactly what the curator sees in the textareas — not the server-loaded
+ * values. The drafter only edits and saves.
+ */
+export function CopyDrafter({
+  c,
+  copy,
+  onChange,
+}: {
+  c: CandidateView;
+  copy: Copy;
+  onChange: (copy: Copy) => void;
+}) {
   const [tab, setTab] = useState<Tab>('headline');
-  const [headline, setHeadline] = useState(c.copy.headline);
-  const [hook, setHook] = useState(c.copy.hook);
-  const [news, setNews] = useState(c.copy.news);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -22,9 +40,10 @@ export function CopyDrafter({ c }: { c: CandidateView }) {
         await saveContentDraft({
           candidateId: c.candidateId,
           templateId: c.templateId,
-          headline,
-          hook,
-          news,
+          headline: copy.headline,
+          hook: copy.hook,
+          news: copy.news,
+          body: copy.body,
         });
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
@@ -35,67 +54,37 @@ export function CopyDrafter({ c }: { c: CandidateView }) {
     });
   }
 
+  const active = TABS.find((t) => t.key === tab) ?? TABS[0];
+  const value = copy[active.key];
+
   return (
     <div className="sec">
       <h4>Draft copy · AI-assisted, you approve</h4>
       <div className="drafter">
         <div className="dtabs">
-          <button
-            className={'dtab' + (tab === 'headline' ? ' on' : '')}
-            onClick={() => setTab('headline')}
-          >
-            <Icon name="Type" size={15} /> Headline
-          </button>
-          <button
-            className={'dtab' + (tab === 'hook' ? ' on' : '')}
-            onClick={() => setTab('hook')}
-          >
-            <Icon name="Music" size={15} /> TikTok hook
-          </button>
-          <button
-            className={'dtab' + (tab === 'news' ? ' on' : '')}
-            onClick={() => setTab('news')}
-          >
-            <Icon name="Mail" size={15} /> Newsletter
-          </button>
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              className={'dtab' + (tab === t.key ? ' on' : '')}
+              onClick={() => setTab(t.key)}
+            >
+              <Icon name={t.icon} size={15} /> {t.label}
+            </button>
+          ))}
         </div>
 
         <div className="dcontent">
-          {tab === 'headline' && (
-            <div>
-              <textarea
-                className="draftbox"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
-                rows={3}
-              />
-              <span className="charcount">{headline.length} chars</span>
-            </div>
-          )}
-
-          {tab === 'hook' && (
-            <div>
-              <textarea
-                className="draftbox"
-                value={hook}
-                onChange={(e) => setHook(e.target.value)}
-                rows={4}
-              />
-              <span className="charcount">{hook.length} chars</span>
-            </div>
-          )}
-
-          {tab === 'news' && (
-            <div>
-              <textarea
-                className="draftbox"
-                style={{ minHeight: 132 }}
-                value={news}
-                onChange={(e) => setNews(e.target.value)}
-              />
-              <span className="charcount">{news.length} chars</span>
-            </div>
-          )}
+          <div>
+            <textarea
+              key={active.key}
+              className="draftbox"
+              style={active.tall ? { minHeight: 132 } : undefined}
+              rows={active.rows}
+              value={value}
+              onChange={(e) => onChange({ ...copy, [active.key]: e.target.value })}
+            />
+            <span className="charcount">{value.length} chars</span>
+          </div>
         </div>
 
         <div style={{ padding: '0 16px 14px', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
