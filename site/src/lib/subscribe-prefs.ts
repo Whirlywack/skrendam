@@ -147,15 +147,3 @@ export function signupPrefs(
   return Object.keys(prefs).length ? prefs : null;
 }
 
-/**
- * Merges a prefs patch onto an existing prefs object without dropping
- * unrelated keys — e.g. `savePreferencesAction` writing `{origins, moments}`
- * must not clobber `{utm, referred_by}` written at signup. `patch` keys win
- * on conflict.
- */
-export function mergePrefs(
-  existing: Record<string, unknown> | null | undefined,
-  patch: Record<string, unknown>,
-): Record<string, unknown> {
-  return { ...(existing ?? {}), ...patch };
-}

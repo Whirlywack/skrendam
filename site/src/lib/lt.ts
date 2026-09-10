@@ -66,7 +66,6 @@ export const S = {
   successSub: 'Išsiuntėm patvirtinimo nuorodą. Paspausk ją — ir kitas radinys tavo.',
   subscribedTitle: 'Viskas — lauk radinių.',
   subscribedSub: 'Pirmieji radiniai tavo pašte šią savaitę.',
-  earlyCheckbox: 'Noriu ir skubių žinučių — nemokamai',
   // The early-alerts list is a waitlist for a paid plan. Never call it free.
   earlyFounding: 'Pirmiesiems — kaina bus pranešta prieš pradžią',
   earlyCheckboxSub: 'Rečiausi radiniai iškart, kai tik juos randam — dar prieš savaitinį laišką.',
@@ -102,9 +101,6 @@ export const S = {
   footerLegal: '© 2026 Yip. Bilietą perki pas aviakompaniją ar agentūrą — kainos keičiasi greitai.',
 
   // Signup card / capture
-  freeBadge: 'Nemokama',
-  capTitle: 'Gauk kitą retą radinį el. paštu',
-  capSub: 'Geriausi radiniai viename ramiame savaitiniame laiške.',
   submitting: 'Siunčiam…',
   emailAria: 'El. pašto adresas',
   trustNoSpam: 'Be spamo',

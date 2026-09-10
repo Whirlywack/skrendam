@@ -6,7 +6,6 @@ import {
   cleanPrefs,
   cleanUtm,
   cleanRef,
-  mergePrefs,
   signupPrefs,
   SUBSCRIBE_SOURCES,
   TRACKING_KEYS,
@@ -220,44 +219,6 @@ describe('TRACKING_KEYS', () => {
     ]);
   });
 });
-
-// ---------------------------------------------------------------------------
-// mergePrefs
-// ---------------------------------------------------------------------------
-
-describe('mergePrefs', () => {
-  test('keeps existing attribution while overwriting the patched keys', () => {
-    const existing = { utm: { source: 'tiktok' }, referred_by: 'ab3x' };
-    const result = mergePrefs(existing, { origins: ['VNO'], moments: ['sun'] });
-    expect(result).toEqual({
-      utm: { source: 'tiktok' },
-      referred_by: 'ab3x',
-      origins: ['VNO'],
-      moments: ['sun'],
-    });
-  });
-
-  test('null existing prefs merges cleanly', () => {
-    expect(mergePrefs(null, { origins: [], moments: [] })).toEqual({ origins: [], moments: [] });
-  });
-
-  test('undefined existing prefs merges cleanly', () => {
-    expect(mergePrefs(undefined, { origins: ['RIX'], moments: [] })).toEqual({
-      origins: ['RIX'],
-      moments: [],
-    });
-  });
-
-  test('patch keys overwrite same-named existing keys', () => {
-    const existing = { origins: ['VNO'], moments: ['sun'] };
-    const result = mergePrefs(existing, { origins: ['WAW'], moments: [] });
-    expect(result).toEqual({ origins: ['WAW'], moments: [] });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// cleanPrefs — origins filtering
-// ---------------------------------------------------------------------------
 
 describe('cleanPrefs — origins', () => {
   test('accepts valid origin codes', () => {

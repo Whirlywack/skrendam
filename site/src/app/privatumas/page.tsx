@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Masthead } from '@/components/v2/Masthead';
+import { V2Footer } from '@/components/v2/V2Footer';
 import { S } from '@/lib/lt';
 
 export const metadata: Metadata = {
@@ -9,7 +11,9 @@ export const metadata: Metadata = {
 export default function Privatumas() {
   return (
     <main className="v2">
-      <section className="wrap">
+      <Masthead />
+
+      <section className="wrap prose">
         <h1>Privatumo politika</h1>
 
         <p>
@@ -57,6 +61,8 @@ export default function Privatumas() {
 
         <p>Atnaujinta 2026-09-10.</p>
       </section>
+
+      <V2Footer />
     </main>
   );
 }

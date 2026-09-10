@@ -16,7 +16,6 @@ import {
   cleanPrefs,
   cleanUtm,
   cleanRef,
-  mergePrefs,
   signupPrefs,
   TRACKING_KEYS,
 } from '@/lib/subscribe-prefs';
@@ -257,18 +256,18 @@ export async function savePreferencesAction(formData: FormData): Promise<void> {
   const { origins, moments } = cleanPrefs(rawOrigins, rawMoments);
 
   try {
-    // Merge, don't replace: prefs already carries {utm, referred_by} written
-    // at signup (see subscribeAction) and this step must not destroy it.
-    const [row] = await db
-      .select({ prefs: subscribers.prefs })
-      .from(subscribers)
-      .where(eq(subscribers.confirmToken, token))
-      .limit(1);
-    const existingPrefs = (row?.prefs ?? null) as Record<string, unknown> | null;
-    await db
+    // One atomic statement: merge, don't replace (prefs already carries
+    // {utm, referred_by, founding_interest} and this step must not destroy
+    // them), and no read-modify-write — the old SELECT-then-UPDATE lost a
+    // concurrent write landing between the two.
+    const updated = await db
       .update(subscribers)
-      .set({ prefs: mergePrefs(existingPrefs, { origins, moments }) })
-      .where(eq(subscribers.confirmToken, token));
+      .set({ prefs: mergePrefsSql({ origins, moments }) })
+      .where(eq(subscribers.confirmToken, token))
+      .returning({ id: subscribers.id });
+    // No row for this token (expired, already closed, forged) — say nothing,
+    // just put them back on the confirmed screen.
+    if (updated.length === 0) redirect('/subscribe?state=confirmed');
   } catch (err) {
     if (isRedirectError(err)) throw err;
     redirect('/subscribe?state=confirmed');
