@@ -6,10 +6,23 @@ def pytest_addoption(parser) -> None:
     parser.addoption("--fuzz", action="store_true", help="Run fuzz tests")
     parser.addoption("--mcp", action="store_true", help="Run MCP tests")
     parser.addoption("--all", action="store_true", help="Run all tests")
+    parser.addoption(
+        "--live",
+        action="store_true",
+        help="Run tests/search (hits Google Flights LIVE — heats BotGuard for the daily scan)",
+    )
 
 
 def pytest_runtest_setup(item) -> None:
-    """Skip fuzz tests unless --fuzz or --all is specified."""
+    """Skip fuzz tests unless --fuzz or --all; skip live tests unless --live or --all.
+
+    tests/search talks to Google Flights for real. Running it from the scan laptop
+    burns the daily scan's BotGuard budget (two DEGRADED runs on 2026-09-09/10 after
+    review agents ran whole-repo pytest), so it is opt-in.
+    """
+    if "tests/search/" in item.nodeid or item.nodeid.startswith("tests/search"):
+        if not item.config.getoption("--live") and not item.config.getoption("--all"):
+            pytest.skip("live Google Flights test — pass --live (never from the scan laptop)")
     fuzz_marker = item.get_closest_marker("fuzz")
     if fuzz_marker is not None:
         if not item.config.getoption("--fuzz") and not item.config.getoption("--all"):
