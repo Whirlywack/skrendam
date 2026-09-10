@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("deal_id", sa.Integer(), sa.ForeignKey("published_deals.id"), nullable=False),
         sa.Column("issue_id", sa.Integer(), sa.ForeignKey("issues.id"), nullable=True),
-        sa.Column("subscriber_id", sa.Integer(), sa.ForeignKey("subscribers.id"), nullable=True),
+        sa.Column("subscriber_id", sa.Integer(), sa.ForeignKey("subscribers.id", ondelete="SET NULL"), nullable=True),
         sa.Column("kind", sa.String(), nullable=False),
         sa.Column("source", sa.String(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),

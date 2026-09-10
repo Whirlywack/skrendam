@@ -322,7 +322,7 @@ class PublishedDeal(Base):
         Boolean, nullable=False, default=False, server_default="false"
     )
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
-    # When the deal left "live" (date sweep, curator, recheck). Emails and the
+    # When the deal left "live" (date sweep or curator; recheck never expires). Emails and the
     # site read it to tell subscribers a deal they saw is gone (WP6). 0014
     # backfilled it from valid_until/last_seen_at/published_at for old rows.
     expired_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -389,7 +389,7 @@ class DealEvent(Base):
         ForeignKey("issues.id"), nullable=True, index=True
     )
     subscriber_id: Mapped[int | None] = mapped_column(
-        ForeignKey("subscribers.id"), nullable=True, index=True
+        ForeignKey("subscribers.id", ondelete="SET NULL"), nullable=True, index=True
     )
     kind: Mapped[str] = mapped_column(String)  # 'click' | 'booked_claim'
     source: Mapped[str | None] = mapped_column(String, nullable=True)
