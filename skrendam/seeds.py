@@ -63,6 +63,9 @@ ZONES = [
     ("MIDDLE_EAST", "medium", 110, 50, 30),
     # new zone: conservative until calibrated (run `skrendam calibrate` after a week of history)
     ("CAUCASUS", "medium", 110, 50, 30),
+    # WP7 — reverse diaspora routes (origin abroad → home). Dedicated zone so no zone-filtered
+    # template picks these routes up; gates mirror WESTERN_EUROPE (same low-cost carriers).
+    ("HOME_VFR", "short", 50, 25, 25),
 ]
 
 # (origin, destination, zone, core) - 2026 VNO/KUN/RIX scheduled passenger network,
@@ -244,6 +247,19 @@ ROUTES = [
     ("VNO", "BKK", "LONG_HAUL", False),
     ("VNO", "JFK", "LONG_HAUL", False),
     ("VNO", "NRT", "LONG_HAUL", False),
+    # WP7 — reverse diaspora routes (origin abroad → home); zone HOME_VFR keeps them out of
+    # zone-filtered templates. Verified 2026-09-10, see
+    # docs/plans/2026-09-10-wp7-home-persona-plan.md
+    ("STN", "KUN", "HOME_VFR", True),  # Ryanair
+    ("STN", "VNO", "HOME_VFR", True),  # Ryanair
+    ("LTN", "KUN", "HOME_VFR", True),  # Wizz Air
+    ("LTN", "VNO", "HOME_VFR", True),  # Wizz Air
+    ("DUB", "KUN", "HOME_VFR", True),  # Ryanair
+    ("DUB", "VNO", "HOME_VFR", True),  # Ryanair
+    ("OSL", "VNO", "HOME_VFR", True),  # Norwegian / Wizz Air
+    ("CPH", "KUN", "HOME_VFR", True),  # Ryanair
+    ("BGO", "VNO", "HOME_VFR", True),  # Wizz Air
+    ("LPL", "KUN", "HOME_VFR", True),  # Ryanair
 ]
 
 AUDIENCES = [
