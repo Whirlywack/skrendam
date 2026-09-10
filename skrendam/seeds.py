@@ -687,6 +687,10 @@ def seed_all(session: Session) -> None:
         # 2026-09-10) × the three home-* PEAK_WINDOWS. Fixed windows span the peak
         # window's outbound AND return ranges; date_fit enforces the return range.
         # No suggested_headline_template: the brand-voice fallback owns the headline.
+        # Only home-xmas is enabled at seed time (+10 specs/day); home-easter and
+        # home-summer ship disabled and are switched on by one-off SQL
+        # (scripts/2027-01-07_enable_home_easter.sql, scripts/2027-03-01_enable_home_summer.sql)
+        # so the ~900-call/day envelope is not spent on windows months away.
         # See docs/plans/2026-09-10-wp7-home-persona-plan.md.
         dict(
             slug="home-xmas",
@@ -700,7 +704,10 @@ def seed_all(session: Session) -> None:
             fixed_end_date=date(2027, 1, 6),  # … its return_end (out Dec 18–23 · back Jan 2–6)
             included_zones=["HOME_VFR"],
             included_destinations=["VNO", "KUN"],
-            trip_len_min_days=7,
+            # The resolver searches ONE calendar duration (trip_len_min_days): 12 days
+            # puts Dec 21–23 departures back Jan 2–4, inside the window's return range;
+            # Dec 18–20 still peak via kaledos-2026.
+            trip_len_min_days=12,
             trip_len_max_days=19,
             max_stops=1,
             allow_overnight_layover=False,
@@ -709,9 +716,12 @@ def seed_all(session: Session) -> None:
             newsletter_tag="home",
             content_angle="Kalėdoms namo iš Londono, Dublino ar Oslo — išskrendi gruodžio 18–23, grįžti po Naujųjų",
         ),
+        # Seeded disabled (headroom): scripts/2027-01-07_enable_home_easter.sql flips it
+        # once the Christmas window has passed.
         dict(
             slug="home-easter",
             name="Velykoms namo",
+            enabled=False,
             audience="vfr",
             moment="vfr_visit",
             trip_type="roundtrip",

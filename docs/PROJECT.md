@@ -93,10 +93,13 @@ fli (Google Flights RPC)
   the same `LT_*_BREAK` constants and must move together (a peak window opens
   on the Friday before its break, matching the template's departure window).
   The desk Coverage tab flags stale template windows.
-  **Yearly chore (each March) — 2027-03-01: run
-  `scripts/2027-03-01_enable_home_summer.sql`** to switch on `home-summer`
-  (seeded `enabled=False` so its ~10 specs/day are not spent nine months
-  early); then roll the three `home-*` fixed windows and the `home-*`
+  **One-off chores — 2027-01-07: run
+  `scripts/2027-01-07_enable_home_easter.sql`** to switch on `home-easter`
+  (check the next run's `api_calls` stays under ~950); **2027-03-01: run
+  `scripts/2027-03-01_enable_home_summer.sql`** to switch on `home-summer`.
+  Both ship `enabled=False` so their ~10 specs/day each are not spent months
+  early — only `home-xmas` scans now. Then roll the three `home-*` fixed
+  windows and the `home-*`
   `peak_windows` rows forward a year, same as the June chore.
 - **Seeds are insert-only** (`skrendam/seeds.py`): value changes to existing
   rows need one-off SQL on the live DB (pattern: `scripts/2026-08-29_*.sql`).
@@ -194,8 +197,9 @@ it's the heart of the product:
   2027-03-25→04-05, `home-summer` „Vasarai namo" 2027-06-20→07-05; all
   `audience=vfr`, `newsletter_tag=home`, `included_zones=[HOME_VFR]`,
   `included_destinations=[VNO,KUN]`, priority 100, windows copied from the
-  `home-*` `peak_windows` rows; **`home-summer` is seeded disabled** until the
-  March chore flips it). A fare
+  `home-*` `peak_windows` rows; **`home-easter` (on 2027-01-07) and
+  `home-summer` (on 2027-03-01) ship disabled; only `home-xmas` scans now** —
+  the dated SQL chores flip them). A fare
   attaches to EVERY template whose scope+window+gates it satisfies — that's
   by design; the desk shows supersede/route-context chips for duplicates.
   **The live map of all of this is the desk's Machine → Coverage tab.**

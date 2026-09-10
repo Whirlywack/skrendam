@@ -191,8 +191,33 @@ def test_home_templates_fixed_windows_match_peak_windows(session):
         assert t.suggested_headline_template is None  # brand-voice fallback owns the headline
         assert t.trip_len_min_days is not None and t.trip_len_max_days is not None
         assert t.trip_len_min_days <= (end - start).days
-    assert by_slug["home-xmas"].enabled and by_slug["home-easter"].enabled
-    assert by_slug["home-summer"].enabled is False  # scripts/2027-03-01_enable_home_summer.sql
+    # Only home-xmas scans at launch (+10 specs/day). The other two ship disabled and
+    # are switched on by one-off SQL: scripts/2027-01-07_enable_home_easter.sql and
+    # scripts/2027-03-01_enable_home_summer.sql.
+    assert by_slug["home-xmas"].enabled
+    assert by_slug["home-easter"].enabled is False
+    assert by_slug["home-summer"].enabled is False
+
+
+def test_home_xmas_min_stay_lands_in_the_return_range(session):
+    # The resolver feeds ONE calendar duration (trip_len_min_days). At 12 days a
+    # Dec 21–23 departure returns Jan 2–4, inside home-xmas-2026's Jan 2–6 return
+    # range; Dec 18–20 departures still peak via kaledos-2026 (Dec 18 – Jan 3).
+    from datetime import timedelta
+
+    from skrendam.scanning.resolver import resolve
+
+    seed_all(session)
+    tpl = session.query(models.DealTemplate).filter_by(slug="home-xmas").one()
+    assert (tpl.trip_len_min_days, tpl.trip_len_max_days) == (12, 19)
+    w = session.query(models.PeakWindow).filter_by(slug="home-xmas-2026").one()
+    home_routes = session.query(models.Route).filter_by(zone="HOME_VFR", enabled=True).all()
+    specs = resolve(tpl, home_routes, date(2026, 9, 10))
+    assert specs and all(s.duration_days == 12 for s in specs)
+    spec = specs[0]
+    assert spec.window_start <= date(2026, 12, 23) <= spec.window_end
+    assert w.return_start_date <= date(2026, 12, 23) + timedelta(days=spec.duration_days)
+    assert date(2026, 12, 23) + timedelta(days=spec.duration_days) <= w.return_end_date
 
 
 def test_home_vfr_routes_feed_only_home_templates(session):
@@ -222,7 +247,7 @@ def test_core_composition_feeds_every_enabled_template(session):
     today = date(2026, 6, 15)
     enabled = session.query(models.DealTemplate).filter_by(enabled=True).all()
     slugs = {t.slug for t in enabled}
-    assert {"home-xmas", "home-easter"} <= slugs and "home-summer" not in slugs
+    assert "home-xmas" in slugs and not ({"home-easter", "home-summer"} & slugs)
     for tpl in enabled:
         specs = resolve(tpl, core, today)
         assert specs, f"template {tpl.slug} has no core route feeding it"
