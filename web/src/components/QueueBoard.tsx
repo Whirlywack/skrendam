@@ -383,7 +383,12 @@ export function QueueBoard({
           <input
             type="checkbox"
             checked={allTemplates}
-            onChange={(e) => setAllTemplates(e.target.checked)}
+            onChange={(e) => {
+              setAllTemplates(e.target.checked);
+              // Unticking while a reserve-template chip is focused would leave a
+              // blank board — that chip's group is hidden by the floor again.
+              setTypeFilter(null);
+            }}
             style={{ margin: 0 }}
           />
           all templates

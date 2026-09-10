@@ -23,7 +23,7 @@ function demandChips(c: CandidateView): string[] {
   if (c.commodityShare != null && c.commodityShare >= 0.2) {
     chips.push(`commodity ${Math.round(c.commodityShare * 100)}%`);
   }
-  if (c.savingFamily != null && c.savingFamily > 0) chips.push(`family saves €${c.savingFamily}`);
+  if (c.savingFamily != null && c.savingFamily > 0) chips.push(`family saves €${Math.round(c.savingFamily)}`);
   return chips;
 }
 
