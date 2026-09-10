@@ -1,6 +1,6 @@
 """Regression tests for the 2026-07 audit fixes — one focused test per finding."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -348,7 +348,10 @@ def test_build_date_filters_carries_cabin():
     from skrendam.fli_adapter.live_backend import LiveFliBackend
     from skrendam.scanning.types import SearchSpec
 
-    spec = SearchSpec("VNO", "BCN", "oneway", date(2026, 9, 1), date(2026, 9, 30), None, "BUSINESS")
+    # fli's FlightSegment rejects past travel dates — a fixed date here was a
+    # time bomb (went red on 2026-09-10); keep the window relative.
+    start = date.today() + timedelta(days=30)
+    spec = SearchSpec("VNO", "BCN", "oneway", start, start + timedelta(days=29), None, "BUSINESS")
     f = LiveFliBackend()._build_date_filters(spec)
     assert f.seat_type is SeatType.BUSINESS
 
