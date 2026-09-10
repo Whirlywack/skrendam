@@ -5,7 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-10 (WP2 demand layer).
+> Last updated 2026-09-11 (WP6 email streams).
 
 ---
 
@@ -62,7 +62,11 @@ fli (Google Flights RPC)
         └─ writes: price_log, candidates, matches, drafts → Neon Postgres
               └─ Deal Desk (web/, Next.js, port 3000): Review → publish
                     └─ published_deals → public site (site/, Next.js, yip.lt)
-                    └─ newsletter (Resend; NOT yet live — see §7)
+                    └─ email (Resend, sent FROM the desk — see "Email streams")
+                          ├─ instant: publish → every paid subscriber, same minute
+                          ├─ paid digest: Thursday, assembled + sent on /letters
+                          └─ free nurture: every ~10 days, assembled + sent on /letters
+                                └─ links → site /go, /uzsisakiau → deal_events
 ```
 
 - **Database:** Neon Postgres, project `yip` (`still-mode-83548775`). ⚠️ The
@@ -93,6 +97,42 @@ fli (Google Flights RPC)
   Vercel, auto-deploy: PR previews + prod on merge to main. Boarding-pass deal
   pages, collections (3 origin + 3 moment), /past-deals trophy case, gated
   double-opt-in signup. Copy deck: `site/src/lib/lt.ts` (single source).
+- **Email streams** (WP6, 2026-09-11, migration `0014_email_streams`). Sending
+  lives in the **desk** (`web/src/lib/email/`), not on Vercel — there is no
+  always-on host, so **there is no scheduler: Thursday is a calendar habit.**
+  Two streams, split by `subscribers.plan` (`'free'` | `'paid'`):
+  - **Instant (paid):** `publishDeal` fires `sendInstant` — every confirmed,
+    not-unsubscribed **paid** subscriber whose `prefs.origins` includes the
+    deal's origin gets „{price} € — {Miestas}" within the minute. A send
+    failure never fails the publish; the deal is live regardless.
+  - **Paid digest (Thursday 07:00, by hand):** desk **Letters** page
+    (`/letters`) → *Assemble* picks live deals published since the last
+    digest → preview (iframe) → *Send* to `plan = 'paid'`.
+  - **Free nurture (every ~10 days, by hand):** same page → 2 fresh live
+    deals under „Savaitės radinys" + 3 recently expired under „Ką praleidai"
+    with the real price, how long it lasted and „{n} prenumeratorių užsisakė"
+    (real `deal_events` counts only) + one upgrade link → `plan = 'free'`.
+  Every send is an `issues` row (`kind`, `sent_at`, `deal_ids`, `stats`);
+  without `RESEND_API_KEY` the row is still written with
+  `stats.skipped_no_key` so the e2e journey keeps publishing. Recipients only
+  ever come from `activeSubscribers(plan)`; every mail ends with the
+  `/atsisakyti` link and sets `List-Unsubscribe`. Renderers are LT
+  (`web/src/lib/email/render.ts`, copy in `copy.ts` — spec §7 verbatim,
+  banned words enforced by test; „įprastai" only when discount ≥ 30%).
+  **Tracking:** every deal link is `site/go/<deal>?i=<issue>&s=<refCode>`
+  (records a `click` deal_event, 302s to the booking URL) and every card
+  carries a „Užsisakiau" link to `/uzsisakiau/<deal>` (POST button records
+  one `booked_claim` per subscriber per deal). **Subscribers** page
+  (`/subscribers`): everyone newest first with their signup prefs, referral
+  counts, and the **manual plan flip** — the Payment Link phase has no
+  webhook, the curator flips a row to paid when the payment lands
+  (`paid_source = 'manual'`, early alerts on). **Env (`web/.env.local`):**
+  `RESEND_API_KEY` (unset = every send a no-op), `YIP_FROM_EMAIL` (default
+  `Yip <hello@yip.lt>`), `NEXT_PUBLIC_SITE_URL` (default `https://yip.lt` —
+  empty counts as unset), `PAYMENT_LINK_URL` (unset = no upgrade block).
+  One-off after 0014: `scripts/2026-09-12_founding_interest_backfill.sql`
+  flags pre-existing early opt-ins as founding interest. First-send
+  checklist: `docs/handoffs/2026-09-11-wp6-email-streams.md`.
 
 ## 4. How deals are classified (the taxonomy)
 
@@ -191,6 +231,11 @@ it's the heart of the product:
   mockups (with REAL data states) before any design build; copy approval ≠
   design approval; `gh run watch --exit-status` (not `pr checks --watch`) to
   gate merges.
+- **`tests/search` must NEVER run from the scan laptop.** It hits Google
+  Flights for real; whole-repo pytest during review waves cost two DEGRADED
+  daily scans (2026-09-09/10: 85% empties + 429s). PR #39 gates it behind
+  `--live` (`make test-live` runs it deliberately; `--all` also includes it).
+  `uv run pytest tests/skrendam` is the safe default.
 
 ## 7. Current state (2026-09-10) and next missions
 
@@ -201,15 +246,22 @@ Today/Review/Live/Machine + Coverage. DataForSEO + Neon MCP wired into sessions.
 **Shipped 2026-09-10:** WP0 (PR #35) and WP2 — the demand layer (PR #36):
 `peak_windows`, `score_v2`/`archetype`/`demand_signals` on every match,
 time-of-day gates enforced, `family-xmas-sun`, and `skrendam analyze
---labels`. **Next: WP3** (desk ranking and the read side move onto
-`score_v2`).
+--labels`; WP3 (PR #38, desk Today by `score_v2`). **WP6 (2026-09-11, branch
+`feat/wp6-email-streams`):** the two email streams, Letters + Subscribers
+pages, `/go` + `/uzsisakiau` tracking, `deal_events` — see §3 "Email
+streams". Code-complete; **not yet sending** until the founder works through
+the first-send checklist (`docs/handoffs/2026-09-11-wp6-email-streams.md`).
 
 **Not yet done (the queue):**
 1. **Wire the site to live deals** — publish steadily from Review (~1,400
    labeled candidates), expire dead ones. The site currently shows very few
    live deals; this blocks everything growth-shaped.
-2. **Email go-live:** Resend domain verify + first end-to-end signup test;
-   first newsletter issue should ship close behind the scarcity model.
+2. **Email go-live (founder, first-send checklist in the WP6 handoff):**
+   Resend domain + SPF/DKIM/DMARC for yip.lt, keys into `web/.env.local`,
+   Stripe Payment Link, test sends to Gmail/Apple Mail/Outlook, run the
+   founding-interest SQL, first end-to-end signup test; then the first
+   Thursday digest. RFC 8058 one-click (`List-Unsubscribe-Post`) is a later
+   item.
 3. **PR C leftovers** (privacy page, sample issue, curator quote, inner-page
    V2 polish, 3 unapproved conversion patches).
 4. **Collections, staged** (founder-agreed 2026-08-29): when live deals flow —
