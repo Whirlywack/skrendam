@@ -9,6 +9,24 @@ import { StatusPill } from './StatusPill';
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)' };
 const DASH = '—';
 
+const ARCHETYPE_LABEL: Record<NonNullable<CandidateView['archetype']>, string> = {
+  date: 'date deal',
+  rare: 'rare fare',
+  destination: 'destination deal',
+};
+
+/** Demand chips: archetype, persona codes, commodity share (≥20%), family saving. */
+function demandChips(c: CandidateView): string[] {
+  const chips: string[] = [];
+  if (c.archetype) chips.push(ARCHETYPE_LABEL[c.archetype]);
+  chips.push(...c.personas);
+  if (c.commodityShare != null && c.commodityShare >= 0.2) {
+    chips.push(`commodity ${Math.round(c.commodityShare * 100)}%`);
+  }
+  if (c.savingFamily != null && c.savingFamily > 0) chips.push(`family saves €${c.savingFamily}`);
+  return chips;
+}
+
 /**
  * Boarding-pass row: route always readable (mono, never truncated), price as
  * the hero, one "why it's good" line and one "the catch" line — the brand's
@@ -72,6 +90,7 @@ export function QueueRow({
 
   const why = c.signals[0] ?? `${c.drop}% below this route's usual price`;
   const catches = c.flags;
+  const chips = demandChips(c);
 
   return (
     <div
@@ -89,6 +108,12 @@ export function QueueRow({
           {c.place}
           {c.airline && c.airline !== '—' ? ` · ${c.airline}` : c.legs ? ` · ${c.legs}` : ''}
         </div>
+        {/* Demand chips from the engine (score_v2 inputs) — same voice as "also matches" */}
+        {chips.length > 0 && (
+          <div style={{ ...MONO, fontSize: 10, color: 'var(--fg-3)', marginTop: 3 }}>
+            {chips.join(' · ')}
+          </div>
+        )}
       </div>
 
       {/* why it's good + the catch */}

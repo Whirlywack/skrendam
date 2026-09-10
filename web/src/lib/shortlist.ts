@@ -1,20 +1,36 @@
 import type { CandidateView } from './types';
 
-// "New today" opens as the day's shortlist — the top N candidates by score —
-// so a 700-deep queue reads as a morning's work, not a wall (handoff 08-27).
-export const SHORTLIST = 20;
+// "New today" opens as the day's ten — the top N candidates by demand score —
+// so a 700-deep queue reads as a morning's work, not a wall (spec §6).
+export const TODAY_N = 10;
+
+// Templates below this priority are reserve inventory: they stay out of the
+// default view until the curator asks for "all templates".
+export const LAUNCH_PRIORITY = 100;
+
+/** Ranking score: the engine's demand score, falling back to the legacy score on old rows. */
+export function rankScore(c: CandidateView): number {
+  return c.scoreV2 ?? c.score;
+}
 
 /**
- * Candidate ids of the top `limit` fresh candidates by score.
+ * Candidate ids of the top `limit` fresh candidates by `rankScore`.
  *
  * A candidate matching several templates appears as several rows; membership
- * is decided by its best score, and one slot is one candidate, not one row.
+ * is decided by its best row, and one slot is one candidate, not one row.
+ * Rows on templates below `priorityFloor` don't compete at all (pass `null`
+ * to let every template in).
  */
-export function shortlistIds(rows: CandidateView[], limit = SHORTLIST): Set<number> {
+export function shortlistIds(
+  rows: CandidateView[],
+  limit = TODAY_N,
+  priorityFloor: number | null = LAUNCH_PRIORITY,
+): Set<number> {
   const best = new Map<number, number>();
   for (const c of rows) {
     if (c.status !== 'suggested') continue;
-    best.set(c.candidateId, Math.max(best.get(c.candidateId) ?? -Infinity, c.score));
+    if (priorityFloor != null && c.priority < priorityFloor) continue;
+    best.set(c.candidateId, Math.max(best.get(c.candidateId) ?? -Infinity, rankScore(c)));
   }
   return new Set(
     [...best.entries()]

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { CandidateView, ScanView, TemplateGroup } from '@/lib/types';
 import { rejectCandidates } from '@/app/actions';
 import { clusterByRoute } from '@/lib/cluster';
-import { SHORTLIST, shortlistIds } from '@/lib/shortlist';
+import { LAUNCH_PRIORITY, TODAY_N, rankScore, shortlistIds } from '@/lib/shortlist';
 import { Queue } from './Queue';
 import { Composer } from './Composer';
 
@@ -26,10 +26,11 @@ const SCOPE_FILTER: Record<Scope, (c: CandidateView) => boolean> = {
   History: () => true,
 };
 
-// "Best first" is the engine's own score — it already blends drop, rarity and
-// price; the other sorts are simple human questions.
+// "Best first" is the engine's demand score (score_v2, legacy score on old
+// rows) — it already blends drop, rarity, price and demand; the other sorts
+// are simple human questions.
 const SORTS = {
-  'Best first': (a: CandidateView, b: CandidateView) => b.score - a.score,
+  'Best first': (a: CandidateView, b: CandidateView) => rankScore(b) - rankScore(a),
   Cheapest: (a: CandidateView, b: CandidateView) => a.price - b.price,
   'Biggest drop': (a: CandidateView, b: CandidateView) => b.drop - a.drop,
   'Soonest travel': (a: CandidateView, b: CandidateView) =>
@@ -179,8 +180,17 @@ export function QueueBoard({
   const [typeFilter, setTypeFilter] = useState<number | null>(null);
   const [selected, setSelected] = useState<CandidateView | null>(null);
   const [showAllToday, setShowAllToday] = useState(false);
+  // Off by default: "New today" is launch templates only (priority ≥ 100);
+  // ticking it lets reserve templates into the view and the top-ten race.
+  const [allTemplates, setAllTemplates] = useState(false);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+
+  // The launch-priority floor applies to the fresh view only; Saved and History
+  // are explicit "show me what I touched" gestures and always show everything.
+  const passesFloor = (c: CandidateView) =>
+    scope !== 'New today' || allTemplates || c.priority >= LAUNCH_PRIORITY;
+  const visible = (c: CandidateView) => SCOPE_FILTER[scope](c) && passesFloor(c);
   const byId = (id: number) => flat.find((c) => c.matchId === id) ?? null;
 
   // candidateId -> template labels it appears under (for "also matches" on rows).
@@ -196,23 +206,34 @@ export function QueueBoard({
     return m;
   }, [groups]);
 
+  // "New today" counts what the view can actually show: launch templates only
+  // unless "all templates" is ticked — so the tab, the "show all N" button and
+  // the empty state never promise rows the floor hides.
   const counts: Record<Scope, number> = useMemo(
     () => ({
-      'New today': new Set(flat.filter(SCOPE_FILTER['New today']).map((c) => c.candidateId)).size,
+      'New today': new Set(
+        flat
+          .filter(SCOPE_FILTER['New today'])
+          .filter((c) => allTemplates || c.priority >= LAUNCH_PRIORITY)
+          .map((c) => c.candidateId),
+      ).size,
       Saved: new Set(flat.filter(SCOPE_FILTER.Saved).map((c) => c.candidateId)).size,
       History: new Set(flat.map((c) => c.candidateId)).size,
     }),
-    [flat],
+    [flat, allTemplates],
   );
 
-  // Membership is by best score per candidate; the sort dropdown only reorders
-  // the 20, it never changes who made the cut.
-  const shortlist = useMemo(() => shortlistIds(flat), [flat]);
+  // Membership is by best demand score per candidate; the sort dropdown only
+  // reorders the ten, it never changes who made the cut.
+  const shortlist = useMemo(
+    () => shortlistIds(flat, TODAY_N, allTemplates ? null : LAUNCH_PRIORITY),
+    [flat, allTemplates],
+  );
   // Only the default view is capped — focusing a type chip or another scope is
   // already an explicit "show me everything of this" gesture.
   const shortlisting =
     scope === 'New today' && typeFilter === null && !showAllToday &&
-    counts['New today'] > SHORTLIST;
+    counts['New today'] > TODAY_N;
 
   // Groups with the most fresh high-score deals first — June ghosts can't lead.
   const orderedGroups = useMemo(() => {
@@ -311,9 +332,7 @@ export function QueueBoard({
         }}
       >
         {orderedGroups.map((g) => {
-          const n = new Set(
-            g.items.filter(SCOPE_FILTER[scope]).map((c) => c.candidateId),
-          ).size;
+          const n = new Set(g.items.filter(visible).map((c) => c.candidateId)).size;
           if (n === 0) return null;
           const on = typeFilter === g.templateId;
           return (
@@ -354,12 +373,29 @@ export function QueueBoard({
             ))}
           </select>
         </label>
+        <label
+          title={`Include templates below priority ${LAUNCH_PRIORITY} (reserve inventory)`}
+          style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)',
+            display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={allTemplates}
+            onChange={(e) => setAllTemplates(e.target.checked)}
+            style={{ margin: 0 }}
+          />
+          all templates
+        </label>
       </div>
 
       {orderedGroups.map((g) => {
         if (typeFilter !== null && g.templateId !== typeFilter) return null;
+        // `visible` applies the launch-priority floor before the top-ten cut, so
+        // reserve templates never surface in "New today" unless asked for.
         const items = g.items
-          .filter(SCOPE_FILTER[scope])
+          .filter(visible)
           .filter((c) => !shortlisting || shortlist.has(c.candidateId))
           .sort(SORTS[sortKey]);
         if (!items.length) return null;
@@ -369,7 +405,7 @@ export function QueueBoard({
             g={g}
             items={items}
             alsoMatches={templatesByCandidate}
-            // The shortlist IS the cap — don't hide any of the 20 behind
+            // The shortlist IS the cap — don't hide any of the ten behind
             // per-group previews on top of it.
             preview={typeFilter === null && !shortlisting}
             onOpen={(id) => setSelected(byId(id))}
@@ -383,20 +419,22 @@ export function QueueBoard({
           onClick={() => setShowAllToday(true)}
           style={{ fontWeight: 600 }}
         >
-          Top {SHORTLIST} shown — show all {counts['New today']} deals ↓
+          Top {TODAY_N} shown — show all {counts['New today']} deals ↓
         </button>
       )}
       {scope === 'New today' && typeFilter === null && showAllToday &&
-        counts['New today'] > SHORTLIST && (
+        counts['New today'] > TODAY_N && (
           <button className="maybe-toggle" onClick={() => setShowAllToday(false)}>
-            Back to top {SHORTLIST} ↑
+            Back to top {TODAY_N} ↑
           </button>
         )}
 
-      {flat.filter(SCOPE_FILTER[scope]).length === 0 && (
+      {flat.filter(visible).length === 0 && (
         <p style={{ padding: '32px 28px', color: 'var(--fg-2)', fontSize: 14 }}>
           {scope === 'New today'
-            ? 'Queue is clear — nothing new to review. Next scan runs at 06:00.'
+            ? flat.some(SCOPE_FILTER['New today'])
+              ? 'Nothing new on launch templates — tick "all templates" to see reserve inventory.'
+              : 'Queue is clear — nothing new to review. Next scan runs at 06:00.'
             : scope === 'Saved'
               ? 'Nothing saved. Press "Hold" on a deal to park it here.'
               : 'No history yet.'}

@@ -108,6 +108,7 @@ export default async function CoveragePage() {
             <tr>
               <th style={th}>Moment</th>
               <th style={th}>Template</th>
+              <th style={th}>Priority</th>
               <th style={th}>When it scans</th>
               <th style={th}>Where</th>
               <th style={th}>Trip</th>
@@ -131,6 +132,16 @@ export default async function CoveragePage() {
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--fg-3)' }}>
                         {t.slug}
                       </div>
+                    </td>
+                    {/* ≥ 100 = launch template: bold, so the reserve list reads at a glance */}
+                    <td
+                      style={{
+                        ...td,
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: t.priority >= 100 ? 700 : 400,
+                      }}
+                    >
+                      {t.priority}
                     </td>
                     <td style={td}>{w.text}</td>
                     <td style={{ ...td, maxWidth: 260 }}>{where(t)}</td>
