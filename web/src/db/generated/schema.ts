@@ -244,33 +244,6 @@ export const candidateTemplateMatches = pgTable("candidate_template_matches", {
 		}),
 ]);
 
-export const contentDrafts = pgTable("content_drafts", {
-	id: serial().primaryKey().notNull(),
-	candidateId: integer("candidate_id").notNull(),
-	dealTemplateId: integer("deal_template_id").notNull(),
-	headline: text(),
-	body: text(),
-	tiktokHook: text("tiktok_hook"),
-	newsletterSnippet: text("newsletter_snippet"),
-	ctaText: text("cta_text"),
-	status: varchar().notNull(),
-	createdBy: varchar("created_by").notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
-}, (table) => [
-	index("ix_content_drafts_candidate_id").using("btree", table.candidateId.asc().nullsLast().op("int4_ops")),
-	foreignKey({
-			columns: [table.candidateId],
-			foreignColumns: [candidates.id],
-			name: "content_drafts_candidate_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.dealTemplateId],
-			foreignColumns: [dealTemplates.id],
-			name: "content_drafts_deal_template_id_fkey"
-		}),
-]);
-
 export const publishedDeals = pgTable("published_deals", {
 	id: serial().primaryKey().notNull(),
 	candidateId: integer("candidate_id").notNull(),
@@ -300,6 +273,7 @@ export const publishedDeals = pgTable("published_deals", {
 	unverifiedSince: timestamp("unverified_since", { mode: 'string' }),
 	postedTiktokAt: timestamp("posted_tiktok_at", { mode: 'string' }),
 	postedInstagramAt: timestamp("posted_instagram_at", { mode: 'string' }),
+	expiredAt: timestamp("expired_at", { mode: 'string' }),
 }, (table) => [
 	foreignKey({
 			columns: [table.candidateId],
@@ -315,6 +289,33 @@ export const publishedDeals = pgTable("published_deals", {
 			columns: [table.dealTemplateId],
 			foreignColumns: [dealTemplates.id],
 			name: "published_deals_deal_template_id_fkey"
+		}),
+]);
+
+export const contentDrafts = pgTable("content_drafts", {
+	id: serial().primaryKey().notNull(),
+	candidateId: integer("candidate_id").notNull(),
+	dealTemplateId: integer("deal_template_id").notNull(),
+	headline: text(),
+	body: text(),
+	tiktokHook: text("tiktok_hook"),
+	newsletterSnippet: text("newsletter_snippet"),
+	ctaText: text("cta_text"),
+	status: varchar().notNull(),
+	createdBy: varchar("created_by").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).notNull(),
+}, (table) => [
+	index("ix_content_drafts_candidate_id").using("btree", table.candidateId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+			columns: [table.candidateId],
+			foreignColumns: [candidates.id],
+			name: "content_drafts_candidate_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.dealTemplateId],
+			foreignColumns: [dealTemplates.id],
+			name: "content_drafts_deal_template_id_fkey"
 		}),
 ]);
 
@@ -403,6 +404,45 @@ export const peakWindows = pgTable("peak_windows", {
 	unique("peak_windows_slug_key").on(table.slug),
 ]);
 
+export const dealEvents = pgTable("deal_events", {
+	id: serial().primaryKey().notNull(),
+	dealId: integer("deal_id").notNull(),
+	issueId: integer("issue_id"),
+	subscriberId: integer("subscriber_id"),
+	kind: varchar().notNull(),
+	source: varchar(),
+	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
+}, (table) => [
+	index("ix_deal_events_deal_id").using("btree", table.dealId.asc().nullsLast().op("int4_ops")),
+	index("ix_deal_events_issue_id").using("btree", table.issueId.asc().nullsLast().op("int4_ops")),
+	index("ix_deal_events_subscriber_id").using("btree", table.subscriberId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+			columns: [table.dealId],
+			foreignColumns: [publishedDeals.id],
+			name: "deal_events_deal_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.issueId],
+			foreignColumns: [issues.id],
+			name: "deal_events_issue_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.subscriberId],
+			foreignColumns: [subscribers.id],
+			name: "deal_events_subscriber_id_fkey"
+		}).onDelete("set null"),
+]);
+
+export const issues = pgTable("issues", {
+	id: serial().primaryKey().notNull(),
+	kind: varchar().notNull(),
+	sentAt: timestamp("sent_at", { mode: 'string' }),
+	dealIds: json("deal_ids").notNull(),
+	expiredDealIds: json("expired_deal_ids").notNull(),
+	stats: json(),
+	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
+});
+
 export const subscribers = pgTable("subscribers", {
 	id: serial().primaryKey().notNull(),
 	email: varchar().notNull(),
@@ -415,7 +455,11 @@ export const subscribers = pgTable("subscribers", {
 	prefs: json(),
 	unsubscribeToken: varchar("unsubscribe_token"),
 	unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true, mode: 'string' }),
+	plan: varchar().default('free').notNull(),
+	paidSince: timestamp("paid_since", { withTimezone: true, mode: 'string' }),
+	paidSource: varchar("paid_source"),
 }, (table) => [
+	index("ix_subscribers_plan").using("btree", table.plan.asc().nullsLast().op("text_ops")),
 	uniqueIndex("ix_subscribers_unsubscribe_token").using("btree", table.unsubscribeToken.asc().nullsLast().op("text_ops")),
 	unique("subscribers_email_key").on(table.email),
 ]);
