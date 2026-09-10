@@ -131,6 +131,12 @@ def _lines(**over):
     return body_lines(**{**kw, **over})
 
 
+def _catches(**over) -> list[str]:
+    # Catch-only tests go to BCN (no climate.json row) so the sourced weather
+    # line, which keys on the destination, stays out of the way.
+    return _lines(**{"destination": "BCN", **over})[1]
+
+
 def test_why_date_deal_names_the_window_and_its_typical_price():
     why, _ = _lines(
         signals={"window_slug": "kaledos-2026", "window_typical": 420.0, "archetype": "date"},
@@ -163,9 +169,29 @@ def test_family_total_is_appended_as_a_second_sentence():
     assert "Šeimai iš keturių: €380" not in catches
 
 
+def test_family_total_only_when_the_family_saving_is_positive():
+    # assess() emits saving_family == 0.0 for any families audience at/above the
+    # median; the x4 total is a "why it's worth it" sentence, so it needs a saving.
+    why, _ = _lines(price=95, baseline=300, signals={"saving_family": 0.0})
+    assert why == "€95 vietoj įprastų €300"
+    why, _ = _lines(price=250, baseline=None, signals={"saving_family": -40})
+    assert why == "€250 — Larnaca, iš Vilniaus"
+
+
+def test_window_label_strips_year_and_parenthetical_for_copy():
+    assert content._window_label("Pavasario atostogos 2027 (1–10 kl.)") == "Pavasario atostogos"
+    assert content._window_label("Kalėdoms namo 2026") == "Kalėdoms namo"
+    assert content._window_label("Kalėdų atostogos") == "Kalėdų atostogos"
+    why, _ = _lines(
+        signals={"window_slug": "kaledoms-namo-2026", "window_typical": 420.0},
+        window_name="Kalėdoms namo 2026",
+    )
+    assert why == "Kalėdoms namo — €190, įprastai apie €420"
+
+
 def test_catch_stops_lithuanian_plural_forms():
-    assert _lines(fare=_fare(stops=1))[1] == ["1 persėdimas"]
-    assert _lines(fare=_fare(stops=2))[1] == ["2 persėdimai"]
+    assert _catches(fare=_fare(stops=1)) == ["1 persėdimas"]
+    assert _catches(fare=_fare(stops=2)) == ["2 persėdimai"]
     assert content._stops_lt(10) == "10 persėdimų"
 
 
@@ -173,39 +199,39 @@ def test_catch_early_departure_from_any_leg():
     fare = _fare(
         legs=[{"departure_time": "2026-12-18T05:40:00", "arrival_time": "2026-12-18T09:10:00"}]
     )
-    assert _lines(fare=fare)[1] == ["Išvyksta prieš 07:00"]
+    assert _catches(fare=fare) == ["Išvyksta prieš 07:00"]
     late = _fare(legs=[{"departure_time": "2026-12-18T07:00:00"}])
-    assert _lines(fare=late)[1] == []
+    assert _catches(fare=late) == []
 
 
 def test_catch_origin_transfer_lines_for_kaunas_and_riga():
-    assert _lines(origin="KUN")[1] == ["Iš Vilniaus: 59 min traukiniu"]
-    assert _lines(origin="RIX")[1] == ["Iš Vilniaus: traukinys nuo €9.60, ~4 val."]
-    assert _lines(origin="VNO")[1] == []
+    assert _catches(origin="KUN") == ["Iš Vilniaus: 59 min traukiniu"]
+    assert _catches(origin="RIX") == ["Iš Vilniaus: traukinys nuo €9.60, ~4 val."]
+    assert _catches(origin="VNO") == []
 
 
-def test_catch_weather_line_only_for_sun_templates_with_climate_data():
+def test_catch_weather_line_keys_on_the_destination_having_climate_data():
     # climate.json["LCA"][0] == 17: Larnaca Airport 1991–2020 mean daily maximum, January
     # (Wikipedia "Larnaca", climate table).
     assert content._CLIMATE["LCA"][0] == 17
     sun = _tpl(newsletter_tag="winter_sun")
     assert _lines(template=sun, travel_date=date(2027, 1, 12))[1] == ["Larnaca sausį: ~17 °C dieną"]
-    # not a sun persona -> no weather line even with climate data
-    assert _lines(template=_tpl(newsletter_tag="xmas"), travel_date=date(2027, 1, 12))[1] == []
-    # sun persona but destination without a sourced climate row -> no line
+    # climate.json is sized to the sun destinations, so the line keys on the
+    # destination alone: the family sun templates (persona "family") get it too.
+    fam = _tpl(newsletter_tag="family_sun")
+    assert _lines(template=fam, travel_date=date(2027, 1, 12))[1] == ["Larnaca sausį: ~17 °C dieną"]
+    # destination without a sourced climate row -> no line, whatever the persona
     assert _lines(template=sun, destination="BCN", travel_date=date(2027, 1, 12))[1] == []
 
 
 def test_catch_no_bag_line_without_bag_info_and_no_fare_catches_without_fare():
     fare = _fare(stops=1, raw={"price": 190.0, "legs": []})
-    _, catches = _lines(fare=fare)
-    assert content.CARD_BAG_ONLY_HAND not in catches
-    assert _lines(fare=None)[1] == []
+    assert content.CARD_BAG_ONLY_HAND not in _catches(fare=fare)
+    assert _catches(fare=None) == []
 
 
 def test_catch_bag_line_when_itinerary_says_hand_only():
-    _, catches = _lines(fare=_fare(raw={"bags": "hand_only"}))
-    assert catches == [content.CARD_BAG_ONLY_HAND]
+    assert _catches(fare=_fare(raw={"bags": "hand_only"})) == [content.CARD_BAG_ONLY_HAND]
 
 
 def test_draft_body_is_why_plus_catches_joined_with_middle_dots():
@@ -233,7 +259,12 @@ def test_draft_body_is_why_plus_catches_joined_with_middle_dots():
         fare,
         "Kalėdų atostogos",
     )
-    assert catches == ["1 persėdimas", "Išvyksta prieš 07:00", "Iš Vilniaus: 59 min traukiniu"]
+    assert catches == [
+        "1 persėdimas",
+        "Išvyksta prieš 07:00",
+        "Iš Vilniaus: 59 min traukiniu",
+        "Larnaca gruodį: ~19 °C dieną",
+    ]
     assert draft["body"] == why + "\n" + " · ".join(catches)
     assert draft["body"].startswith(
         "Kalėdų atostogos — €190, įprastai apie €420. Šeimai iš keturių: €760\n"
@@ -241,7 +272,7 @@ def test_draft_body_is_why_plus_catches_joined_with_middle_dots():
 
 
 def test_draft_body_without_catches_is_just_the_why_line():
-    draft = build_content_draft("VNO", "LCA", 120, 300, XMAS, _tpl())
+    draft = build_content_draft("VNO", "BCN", 120, 300, XMAS, _tpl())
     assert draft["body"] == "€120 vietoj įprastų €300"
     for banned in ("akcija", "superkaina", "nepraleisk", "sken", "scan", "Kodėl verta", "Kabliuk"):
         assert banned not in draft["body"].lower()

@@ -555,7 +555,8 @@ def test_family_draft_body_is_persisted_from_demand_signals(session):
     assert isinstance(draft.body, str) and draft.body
     assert draft.body.startswith("€30 vietoj įprastų €")
     assert "Šeimai iš keturių: €120" in draft.body
-    assert "\n" not in draft.body  # direct, VNO, no leg times, no sun persona -> no catches
+    # direct, VNO, no leg times, BCN has no climate.json row -> no catches
+    assert "\n" not in draft.body
 
 
 class TierCBackend(FakeBackend):
