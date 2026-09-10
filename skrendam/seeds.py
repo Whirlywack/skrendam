@@ -63,6 +63,9 @@ ZONES = [
     ("MIDDLE_EAST", "medium", 110, 50, 30),
     # new zone: conservative until calibrated (run `skrendam calibrate` after a week of history)
     ("CAUCASUS", "medium", 110, 50, 30),
+    # WP7 — reverse diaspora routes (origin abroad → home). Dedicated zone so no zone-filtered
+    # template picks these routes up; gates mirror WESTERN_EUROPE (same low-cost carriers).
+    ("HOME_VFR", "short", 50, 25, 25),
 ]
 
 # (origin, destination, zone, core) - 2026 VNO/KUN/RIX scheduled passenger network,
@@ -71,7 +74,8 @@ ZONES = [
 # anchors + fare-war routes; everything non-core rotates in cohorts.
 # Researched from Wikipedia airport route tables (Task 7); seasonal scheduled routes count,
 # charter-only excluded. `core` routes scan every day and seed the deal templates; the rest
-# rotate. Pilot scope is VNO/KUN/RIX only (no TLL, founder decision). Zone assignment:
+# rotate. LT origins are VNO/KUN/RIX only (no TLL, founder decision); WP7 adds abroad
+# origins in zone HOME_VFR (reverse diaspora routes). Zone assignment:
 # MEDITERRANEAN = Med-coast/island/Red-Sea/Madeira leisure; CANARIES = Canary Islands;
 # SCANDINAVIA = Nordics; CITY_BREAKS = central/western city pairs; WESTERN_EUROPE = UK/IE/FR/
 # BE/NL/DE regional & low-cost (incl. VFR corridors); MIDDLE_EAST = DXB/TLV; CAUCASUS = Georgia/
@@ -244,6 +248,19 @@ ROUTES = [
     ("VNO", "BKK", "LONG_HAUL", False),
     ("VNO", "JFK", "LONG_HAUL", False),
     ("VNO", "NRT", "LONG_HAUL", False),
+    # WP7 — reverse diaspora routes (origin abroad → home); zone HOME_VFR keeps them out of
+    # zone-filtered templates. Verified 2026-09-10, see
+    # docs/plans/2026-09-10-wp7-home-persona-plan.md
+    ("STN", "KUN", "HOME_VFR", True),  # Ryanair
+    ("STN", "VNO", "HOME_VFR", True),  # Ryanair
+    ("LTN", "KUN", "HOME_VFR", True),  # Wizz Air
+    ("LTN", "VNO", "HOME_VFR", True),  # Wizz Air
+    ("DUB", "KUN", "HOME_VFR", True),  # Ryanair
+    ("DUB", "VNO", "HOME_VFR", True),  # Ryanair
+    ("OSL", "VNO", "HOME_VFR", True),  # Norwegian / Wizz Air
+    ("CPH", "KUN", "HOME_VFR", True),  # Ryanair
+    ("BGO", "VNO", "HOME_VFR", True),  # Wizz Air
+    ("LPL", "KUN", "HOME_VFR", True),  # Ryanair
 ]
 
 AUDIENCES = [
@@ -667,14 +684,96 @@ def seed_all(session: Session) -> None:
             newsletter_tag="ski",
             content_angle="The Alps at a Baltic-friendly price",
         ),
+        # WP7 — „Grįžtu namo" persona: reverse diaspora routes (zone HOME_VFR, seeded
+        # 2026-09-10) × the three home-* PEAK_WINDOWS. Fixed windows span the peak
+        # window's outbound AND return ranges; date_fit enforces the return range.
+        # No suggested_headline_template: the brand-voice fallback owns the headline.
+        # Only home-xmas is enabled at seed time (+10 specs/day); home-easter and
+        # home-summer ship disabled and are switched on by one-off SQL
+        # (scripts/2027-01-07_enable_home_easter.sql, scripts/2027-03-01_enable_home_summer.sql)
+        # so the ~900-call/day envelope is not spent on windows months away.
+        # See docs/plans/2026-09-10-wp7-home-persona-plan.md.
+        dict(
+            slug="home-xmas",
+            name="Kalėdoms namo",
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            priority=100,
+            date_window_type="fixed",
+            fixed_start_date=date(2026, 12, 18),  # PEAK_WINDOWS home-xmas-2026 start
+            fixed_end_date=date(2027, 1, 6),  # … its return_end (out Dec 18–23 · back Jan 2–6)
+            included_zones=["HOME_VFR"],
+            included_destinations=["VNO", "KUN"],
+            # The resolver searches ONE calendar duration (trip_len_min_days): 12 days
+            # puts Dec 21–23 departures back Jan 2–4, inside the window's return range;
+            # Dec 18–20 still peak via kaledos-2026.
+            trip_len_min_days=12,
+            trip_len_max_days=19,
+            max_stops=1,
+            allow_overnight_layover=False,
+            family_friendly_times_only=False,
+            public_label="Kalėdoms namo",
+            newsletter_tag="home",
+            content_angle="Kalėdoms namo iš užsienio — išskrendi gruodžio 18–23, grįžti po Naujųjų",
+        ),
+        # Seeded disabled (headroom): scripts/2027-01-07_enable_home_easter.sql flips it
+        # once the Christmas window has passed.
+        dict(
+            slug="home-easter",
+            name="Velykoms namo",
+            enabled=False,
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            priority=100,
+            date_window_type="fixed",
+            fixed_start_date=date(2027, 3, 25),  # PEAK_WINDOWS home-easter-2027
+            fixed_end_date=date(2027, 4, 5),
+            included_zones=["HOME_VFR"],
+            included_destinations=["VNO", "KUN"],
+            trip_len_min_days=3,
+            trip_len_max_days=11,
+            max_stops=1,
+            allow_overnight_layover=False,
+            family_friendly_times_only=False,
+            public_label="Velykoms namo",
+            newsletter_tag="home",
+            content_angle="Velykoms namo — ilgasis savaitgalis pas savus, be persėdimų per naktį",
+        ),
+        # Seeded disabled: its window is nine months out and would cost ~10 specs/day
+        # for nothing. scripts/2027-03-01_enable_home_summer.sql flips it in March.
+        dict(
+            slug="home-summer",
+            name="Vasarai namo",
+            enabled=False,
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            priority=100,
+            date_window_type="fixed",
+            fixed_start_date=date(2027, 6, 20),  # PEAK_WINDOWS home-summer-2027
+            fixed_end_date=date(2027, 7, 5),
+            included_zones=["HOME_VFR"],
+            included_destinations=["VNO", "KUN"],
+            trip_len_min_days=5,
+            trip_len_max_days=15,
+            max_stops=1,
+            allow_overnight_layover=False,
+            family_friendly_times_only=False,
+            public_label="Vasarai namo",
+            newsletter_tag="home",
+            content_angle="Vasarai namo — Joninės ir liepos pradžia Lietuvoje už sąžiningą kainą",
+        ),
     ]
     for t in templates:
         slug = str(t.pop("slug"))
         a, m = aud[str(t.pop("audience"))], mom[str(t.pop("moment"))]
+        enabled = bool(t.pop("enabled", True))  # insert-only: never re-enables a disabled row
         _get_or_create(
             session,
             models.DealTemplate,
-            dict(audience_segment_id=a.id, travel_moment_id=m.id, enabled=True, **t),
+            dict(audience_segment_id=a.id, travel_moment_id=m.id, enabled=enabled, **t),
             slug=slug,
         )
     session.commit()

@@ -258,7 +258,7 @@ export function QueueBoard({
         </div>
         <div className="pagehead">
           <div>
-            <h1>Review{activeOrigin ? ` · from ${origins.find((o) => o.code === activeOrigin)?.label}` : ''}</h1>
+            <h1>Review{activeOrigin ? ` · from ${origins.find((o) => o.code === activeOrigin)?.label ?? activeOrigin}` : ''}</h1>
             <div className="sub">
               Fresh finds from the scanner — publish, save for later, or dismiss.
             </div>

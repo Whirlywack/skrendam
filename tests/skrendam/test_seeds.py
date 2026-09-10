@@ -11,7 +11,7 @@ def test_seed_is_idempotent(session):
     assert session.query(models.Route).count() >= 10
     assert session.query(models.AudienceSegment).count() == 6
     assert session.query(models.TravelMoment).count() == 10
-    assert session.query(models.DealTemplate).count() == 15
+    assert session.query(models.DealTemplate).count() == 18
     # every template references a real audience + moment
     for t in session.query(models.DealTemplate):
         assert t.audience_segment_id and t.travel_moment_id
@@ -105,6 +105,23 @@ def test_moment_structure_audit_2026_08_29(session):
             assert d in seeded, f"{t.slug}: {d} has no route"
 
 
+LT_ORIGINS = {"VNO", "KUN", "RIX"}
+# WP7 reverse diaspora origins (abroad → home); see docs/plans/2026-09-10-wp7-home-persona-plan.md
+HOME_ORIGINS = {"STN", "LTN", "DUB", "OSL", "CPH", "BGO", "LPL"}
+HOME_VFR_ROUTES = {
+    ("STN", "KUN"),
+    ("STN", "VNO"),
+    ("LTN", "KUN"),
+    ("LTN", "VNO"),
+    ("DUB", "KUN"),
+    ("DUB", "VNO"),
+    ("OSL", "VNO"),
+    ("CPH", "KUN"),
+    ("BGO", "VNO"),
+    ("LPL", "KUN"),
+}
+
+
 def test_route_list_size_and_validity():
     from fli.models import Airport
     from skrendam.seeds import ROUTES, ZONES
@@ -113,10 +130,111 @@ def test_route_list_size_and_validity():
     zone_names = {z[0] for z in ZONES}
     assert len(ROUTES) == len({(o, d) for o, d, *_ in ROUTES})  # no dupes
     for o, d, z, *_rest in ROUTES:
-        assert o in {"VNO", "KUN", "RIX"}, f"{o}-{d}: pilot scope is VNO/KUN/RIX only"
+        assert o in LT_ORIGINS | HOME_ORIGINS, f"{o}-{d}: origin outside pilot + home scope"
+        if z == "HOME_VFR":
+            assert o in HOME_ORIGINS, f"{o}-{d}: HOME_VFR origin must be abroad"
+            assert d in {"VNO", "KUN"}, f"{o}-{d}: HOME_VFR destination must be home"
+        else:
+            assert o in LT_ORIGINS, f"{o}-{d}: pilot scope is VNO/KUN/RIX only"
         assert o in Airport.__members__, f"unknown origin {o}"
         assert d in Airport.__members__, f"unknown destination {d} ({o}-{d})"
         assert z in zone_names, f"{o}-{d}: zone {z} not seeded"
+
+
+def test_home_vfr_routes_are_exactly_the_verified_ten():
+    from skrendam.seeds import ROUTES, ZONES
+
+    assert ("HOME_VFR", "short", 50, 25, 25) in ZONES
+    home = {(o, d) for o, d, z, *_ in ROUTES if z == "HOME_VFR"}
+    assert home == HOME_VFR_ROUTES
+    assert all(core for _o, _d, z, core in ROUTES if z == "HOME_VFR")
+
+
+def test_no_zone_filtered_template_references_home_vfr(session):
+    # HOME_VFR exists to keep the reverse routes out of zone-filtered templates
+    # (otherwise ten routes × every matching template would triple the scan cost).
+    # The home-* templates are the intended consumers: they pair the zone with a
+    # destination filter (VNO/KUN), so only they may reference it.
+    seed_all(session)
+    zoned = [t for t in session.query(models.DealTemplate) if t.included_zones]
+    assert zoned, "seed should contain zone-filtered templates"
+    for t in zoned:
+        if t.included_destinations:
+            continue
+        assert "HOME_VFR" not in t.included_zones, f"{t.slug} references HOME_VFR"
+    referencing = {t.slug for t in zoned if "HOME_VFR" in t.included_zones}
+    assert referencing == {"home-xmas", "home-easter", "home-summer"}
+
+
+HOME_TEMPLATE_WINDOWS = {
+    # slug -> (PEAK_WINDOWS slug, fixed_start, fixed_end)
+    "home-xmas": ("home-xmas-2026", date(2026, 12, 18), date(2027, 1, 6)),
+    "home-easter": ("home-easter-2027", date(2027, 3, 25), date(2027, 4, 5)),
+    "home-summer": ("home-summer-2027", date(2027, 6, 20), date(2027, 7, 5)),
+}
+
+
+def test_home_templates_fixed_windows_match_peak_windows(session):
+    seed_all(session)
+    windows = {w.slug: w for w in session.query(models.PeakWindow).all()}
+    by_slug = {t.slug: t for t in session.query(models.DealTemplate).all()}
+    for slug, (wslug, start, end) in HOME_TEMPLATE_WINDOWS.items():
+        t, w = by_slug[slug], windows[wslug]
+        assert t.date_window_type == "fixed"
+        assert (t.fixed_start_date, t.fixed_end_date) == (start, end), slug
+        # the template window spans the peak window's outbound AND return ranges
+        assert t.fixed_start_date == w.start_date
+        assert t.fixed_end_date == (w.return_end_date or w.end_date)
+        assert t.included_zones == ["HOME_VFR"] and t.included_destinations == ["VNO", "KUN"]
+        assert t.newsletter_tag == "home" and t.trip_type == "roundtrip"
+        assert t.priority == 100 and t.min_departure_dates is None
+        assert t.suggested_headline_template is None  # brand-voice fallback owns the headline
+        assert t.trip_len_min_days is not None and t.trip_len_max_days is not None
+        assert t.trip_len_min_days <= (end - start).days
+    # Only home-xmas scans at launch (+10 specs/day). The other two ship disabled and
+    # are switched on by one-off SQL: scripts/2027-01-07_enable_home_easter.sql and
+    # scripts/2027-03-01_enable_home_summer.sql.
+    assert by_slug["home-xmas"].enabled
+    assert by_slug["home-easter"].enabled is False
+    assert by_slug["home-summer"].enabled is False
+
+
+def test_home_xmas_min_stay_lands_in_the_return_range(session):
+    # The resolver feeds ONE calendar duration (trip_len_min_days). At 12 days a
+    # Dec 21–23 departure returns Jan 2–4, inside home-xmas-2026's Jan 2–6 return
+    # range; Dec 18–20 departures still peak via kaledos-2026 (Dec 18 – Jan 3).
+    from datetime import timedelta
+
+    from skrendam.scanning.resolver import resolve
+
+    seed_all(session)
+    tpl = session.query(models.DealTemplate).filter_by(slug="home-xmas").one()
+    assert (tpl.trip_len_min_days, tpl.trip_len_max_days) == (12, 19)
+    w = session.query(models.PeakWindow).filter_by(slug="home-xmas-2026").one()
+    home_routes = session.query(models.Route).filter_by(zone="HOME_VFR", enabled=True).all()
+    specs = resolve(tpl, home_routes, date(2026, 9, 10))
+    assert specs and all(s.duration_days == 12 for s in specs)
+    spec = specs[0]
+    assert spec.window_start <= date(2026, 12, 23) <= spec.window_end
+    assert w.return_start_date <= date(2026, 12, 23) + timedelta(days=spec.duration_days)
+    assert date(2026, 12, 23) + timedelta(days=spec.duration_days) <= w.return_end_date
+
+
+def test_home_vfr_routes_feed_only_home_templates(session):
+    # The headroom arithmetic (plan Global Constraints) assumes the ten reverse
+    # routes cost specs ONLY through the home-* templates.
+    from skrendam.scanning.resolver import resolve
+
+    seed_all(session)
+    home_routes = session.query(models.Route).filter_by(zone="HOME_VFR", enabled=True).all()
+    assert {(r.origin, r.destination) for r in home_routes} == HOME_VFR_ROUTES
+    today = date(2026, 9, 10)
+    for tpl in session.query(models.DealTemplate).filter_by(enabled=True).all():
+        specs = resolve(tpl, home_routes, today)
+        if tpl.slug.startswith("home-"):
+            assert {(s.origin, s.destination) for s in specs} == HOME_VFR_ROUTES, tpl.slug
+        else:
+            assert specs == [], f"{tpl.slug} would scan HOME_VFR routes"
 
 
 def test_core_composition_feeds_every_enabled_template(session):
@@ -125,9 +243,12 @@ def test_core_composition_feeds_every_enabled_template(session):
     seed_all(session)
     routes = session.query(models.Route).filter_by(enabled=True).all()
     core = [r for r in routes if r.core]
-    assert 26 <= len(core) <= 34
+    assert 26 <= len(core) <= 40
     today = date(2026, 6, 15)
-    for tpl in session.query(models.DealTemplate).filter_by(enabled=True).all():
+    enabled = session.query(models.DealTemplate).filter_by(enabled=True).all()
+    slugs = {t.slug for t in enabled}
+    assert "home-xmas" in slugs and not ({"home-easter", "home-summer"} & slugs)
+    for tpl in enabled:
         specs = resolve(tpl, core, today)
         assert specs, f"template {tpl.slug} has no core route feeding it"
 

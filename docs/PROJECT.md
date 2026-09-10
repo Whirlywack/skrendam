@@ -5,7 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-11 (WP8 instrumentation).
+> Last updated 2026-09-11 (WP7 home persona, WP8 instrumentation).
 
 ---
 
@@ -57,7 +57,7 @@ Stage 1, in order:
 ```
 fli (Google Flights RPC)
    └─ daily scan, 06:00 EEST, launchd on the founder's MacBook  (skrendam/)
-        └─ 159 routes (29 core daily + tail cohorts), 15 deal templates
+        └─ 169 routes (39 core daily + tail cohorts), 18 deal templates
         └─ scoring: weighted gates + MAD outlier scorer, month-local baselines
         └─ writes: price_log, candidates, matches, drafts → Neon Postgres
               └─ Deal Desk (web/, Next.js, port 3000): Review → publish
@@ -72,15 +72,17 @@ fli (Google Flights RPC)
 - **Database:** Neon Postgres, project `yip` (`still-mode-83548775`). ⚠️ The
   active DB is the **`dev` branch** (`br-cool-hill-agqjm1kk`); the `production`
   branch is idle/empty. Everything (desk, site, scan) points at dev.
-- **Templates = deal archetypes.** 15 of them (audience × travel moment ×
+- **Templates = deal archetypes.** 18 of them (audience × travel moment ×
   date window × destination scope × price gates). Restructured 2026-08-29
   ("moment-structure audit", PR #30): plan-ahead-summer is seasonal Jun–Aug
   + 60-day lead; last-warm-days split Oct (broad Med) / Nov (verified-warm
   destinations only); winter-sun starts Dec 1; Christmas markets open Nov 20;
   weekend template hard-gates FRI/SAT departures; **four** fixed-window family
   templates track the official LT school breaks (autumn, February, Easter and
-  — added 2026-09-10 — Christmas). The desk's **Machine → Coverage** tab
-  renders the whole map.
+  — added 2026-09-10 — Christmas); **three fixed-window `home-*` templates**
+  (WP7, 2026-09-10) watch the reverse-diaspora routes in the Christmas / Easter /
+  summer home windows. The desk's **Machine → Coverage** tab renders the whole
+  map.
 - **`peak_windows`** (added 2026-09-10, WP2): the calendar's normally-expensive
   stretches (school breaks, public holidays, long weekends, custom "home for
   Christmas" ranges) with the persona codes each appeals to. The demand layer
@@ -91,6 +93,17 @@ fli (Google Flights RPC)
   the same `LT_*_BREAK` constants and must move together (a peak window opens
   on the Friday before its break, matching the template's departure window).
   The desk Coverage tab flags stale template windows.
+  **After merging WP7 the new zone/routes/templates reach Neon only via
+  `uv run skrendam seed` run by hand from the main checkout — the daily scan
+  never seeds (`daily-scan.sh` runs `run-scan` without `--seed`).**
+  **One-off chores — 2027-01-07: run
+  `scripts/2027-01-07_enable_home_easter.sql`** to switch on `home-easter`
+  (check the next run's `api_calls` stays under ~950); **2027-03-01: run
+  `scripts/2027-03-01_enable_home_summer.sql`** to switch on `home-summer`.
+  Both ship `enabled=False` so their ~10 specs/day each are not spent months
+  early — only `home-xmas` scans now. Then roll the three `home-*` fixed
+  windows and the `home-*`
+  `peak_windows` rows forward a year, same as the June chore.
 - **Seeds are insert-only** (`skrendam/seeds.py`): value changes to existing
   rows need one-off SQL on the live DB (pattern: `scripts/2026-08-29_*.sql`).
 - **Site** (yip.lt): V2 Lithuanian Poster&Bead design, LIVE since 2026-08-28.
@@ -170,23 +183,55 @@ fli (Google Flights RPC)
 Every fare that becomes a deal passes through this classification stack —
 it's the heart of the product:
 
-- **Zones** (8): `WESTERN_EUROPE, MEDITERRANEAN, SCANDINAVIA, CANARIES,
-  CITY_BREAKS, LONG_HAUL, MIDDLE_EAST, CAUCASUS`. Every route belongs to one
-  zone; zones carry the default price gates (threshold €, min abs savings,
-  min discount %) that templates fall back to.
-- **Routes** (159): origin×destination pairs seeded in `skrendam/seeds.py`.
-  ~29 are **core** (scanned daily); the tail rotates in cohorts
+- **Zones** (9): `WESTERN_EUROPE, MEDITERRANEAN, SCANDINAVIA, CANARIES,
+  CITY_BREAKS, LONG_HAUL, MIDDLE_EAST, CAUCASUS, HOME_VFR`. Every route
+  belongs to one zone; zones carry the default price gates (threshold €, min
+  abs savings, min discount %) that templates fall back to. **`HOME_VFR`**
+  (WP7, 2026-09-10; gates as `WESTERN_EUROPE`: €50 / €25 / 25%) exists only
+  to hold the reverse-diaspora routes: a route's zone decides which
+  zone-filtered templates scan it, and `christmas-markets` +
+  `last-minute-weekends` filter on `CITY_BREAKS`/`WESTERN_EUROPE` with no
+  destination filter — reverse routes seeded there would be scanned by both
+  every day (~+115 api_calls, over the ~900 envelope). **No zone-filtered
+  template may ever reference `HOME_VFR`** (`test_seeds.py` enforces it); only
+  the `home-*` templates reach it, via `included_zones=["HOME_VFR"]`.
+- **Routes** (169): origin×destination pairs seeded in `skrendam/seeds.py`.
+  ~39 are **core** (scanned daily); the tail rotates in cohorts
   (`id % N == day-ordinal % N`, default width 10) to fit the Google budget.
+  Origins are VNO/KUN/RIX (pilot scope, no TLL) **plus, since WP7
+  (2026-09-10), ten reverse routes with the origin abroad** — Lithuanians
+  living in the UK/Ireland/Nordics flying home: `STN→KUN, STN→VNO, LTN→KUN,
+  LTN→VNO, DUB→KUN, DUB→VNO, OSL→VNO, CPH→KUN, BGO→VNO, LPL→KUN`, all core,
+  zone `HOME_VFR`. Every pair has a public schedule source (research
+  `.superpowers/sdd/2026-09-10-demand-layer-implementation-plan/wp7-research.md`);
+  the spec's OSL→KUN, BGO→KUN and MAN→KUN were dropped as not operating.
+  Never verify routes by scanning — schedule facts come from the research.
 - **Audiences** (6): families, couples, flexible_adults, budget, city_break,
   vfr — each with an itinerary-strictness default.
 - **Travel moments** (10): the marketing concepts — school_holidays,
   sept_shoulder, last_warm_days, xmas_markets, last_minute,
   plan_ahead_summer, vfr_visit, long_haul_chance, winter_sun, ski_season.
-- **Deal templates** (15): the operational unit = audience × moment × date
+  Distinct from these are the **subscriber moment preferences** the site's
+  signup offers (`site/src/lib/subscribe-prefs.ts` `PREF_MOMENTS`): sun, city,
+  family, weekend, last_minute and — since WP7 (2026-09-10) — **`home`
+  („Grįžtu namo iš užsienio")**. A template's `newsletter_tag` maps to pref
+  codes through `personas.json` (identical copies in `skrendam/`, `web/`,
+  `site/`; drift-tested): both `vfr` and `home` tags → `["home"]`, so a
+  subscriber who picks `home` receives the `home-*` finds and the existing
+  `vfr-watch` ones.
+- **Deal templates** (18): the operational unit = audience × moment × date
   window (relative / seasonal / seasonal+lead / fixed) × destination scope
   (zones or an explicit list) × price gates × itinerary rules. A moment can
   have several templates (last_warm_days has Oct-broad + Nov-warm-only;
-  school_holidays has summer + four fixed-date break templates). A fare
+  school_holidays has summer + four fixed-date break templates; vfr_visit has
+  `vfr-watch` + the three WP7 **`home-*`** templates — `home-xmas` „Kalėdoms
+  namo" 2026-12-18→2027-01-06, `home-easter` „Velykoms namo"
+  2027-03-25→04-05, `home-summer` „Vasarai namo" 2027-06-20→07-05; all
+  `audience=vfr`, `newsletter_tag=home`, `included_zones=[HOME_VFR]`,
+  `included_destinations=[VNO,KUN]`, priority 100, windows copied from the
+  `home-*` `peak_windows` rows; **`home-easter` (on 2027-01-07) and
+  `home-summer` (on 2027-03-01) ship disabled; only `home-xmas` scans now** —
+  the dated SQL chores flip them). A fare
   attaches to EVERY template whose scope+window+gates it satisfies — that's
   by design; the desk shows supersede/route-context chips for duplicates.
   **The live map of all of this is the desk's Machine → Coverage tab.**
@@ -211,7 +256,10 @@ it's the heart of the product:
   date passes or the fare disappears (expiry sweep). Published deals carry
   freshness ("going fast" chip) and are re-checked before being trusted.
 - **Desk filtering (web/):** Today = top-20 shortlist; Review = all `new`
-  candidates filtered by origin-city chips (Vilnius/Kaunas/Riga) × moment
+  candidates filtered by origin-city chips (one per enabled route origin —
+  Vilnius/Kaunas/Riga plus the abroad WP7 origins, labelled from
+  `airports.json` via `originLabels()` — origins sharing a city name carry
+  the code, „London STN" / „London LTN"; IATA code as fallback) × moment
   chips × best-first sort; Live = published board; Machine = config
   (templates, routes, zones, audiences, moments, scan health, coverage).
 - **Site collections (site/):** public landing pages over published deals via

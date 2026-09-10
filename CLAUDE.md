@@ -31,6 +31,7 @@ uv sync --all-extras
 # Run tests (use these specific commands)
 make test                    # Standard test suite
 make test-fuzz              # Run fuzzing tests (pytest -vv --fuzz)
+make test-live              # tests/search hits Google Flights LIVE — never from the scan laptop; skipped by default
 make test-all               # Run all tests (pytest -vv --all)
 uv run pytest -vv           # Alternative direct command
 
