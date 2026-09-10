@@ -40,8 +40,21 @@ describe('refCode / parseRefCode round-trip', () => {
     expect(parseRefCode('00')).toBe(0);
   });
 
-  it('throws RangeError for ids at/above 36 ** 11', () => {
-    expect(() => refCode(36 ** 11)).toThrow(RangeError);
+  it('throws RangeError for ids above the safe-integer ceiling', () => {
+    expect(() => refCode(2 ** 53)).toThrow(RangeError);
+  });
+
+  it('round-trips the largest safe id', () => {
+    const id = Number.MAX_SAFE_INTEGER;
+    expect(parseRefCode(refCode(id))).toBe(id);
+  });
+
+  it('returns null for an out-of-range body instead of throwing', () => {
+    // 'zzzzzzzzzzz' parses to ~1.3e17 — past Number.MAX_SAFE_INTEGER, where
+    // float rounding makes the re-derivation meaningless. Public input:
+    // it must come back null, never a RangeError out of parseRefCode.
+    expect(() => parseRefCode('zzzzzzzzzzzz')).not.toThrow();
+    expect(parseRefCode('zzzzzzzzzzzz')).toBeNull();
   });
 
   it('throws RangeError for negative ids', () => {

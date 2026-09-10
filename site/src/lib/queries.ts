@@ -21,6 +21,8 @@ function dealBase() {
     score: candidateTemplateMatches.matchScore,
     score100: candidateTemplateMatches.score0100,
     scoreV2: candidateTemplateMatches.scoreV2,
+    archetype: candidateTemplateMatches.archetype,
+    demandSignals: candidateTemplateMatches.demandSignals,
     qualityTier: candidateTemplateMatches.qualityTier,
     snapshot: candidates.itinerarySnapshot,
     candLastSeen: candidates.lastSeenAt,

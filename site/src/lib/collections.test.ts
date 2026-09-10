@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLLECTIONS, collectionBySlug } from './collections';
+import { COLLECTIONS, collectionBySlug, destinationsCollection } from './collections';
 
 describe('collectionBySlug', () => {
   it('returns the correct filter for pigus-skrydziai-is-vilniaus', () => {
@@ -56,6 +56,26 @@ describe('collectionBySlug', () => {
 
   it('returns undefined for an unknown slug', () => {
     expect(collectionBySlug('does-not-exist')).toBeUndefined();
+  });
+});
+
+describe('destinationsCollection', () => {
+  it('finds the Cyprus collection from either of its airports', () => {
+    expect(destinationsCollection('LCA')?.slug).toBe('cyprus-flight-deals-from-lithuania');
+    expect(destinationsCollection('PFO')?.slug).toBe('cyprus-flight-deals-from-lithuania');
+  });
+
+  it('returns undefined for a destination no collection covers', () => {
+    expect(destinationsCollection('BCN')).toBeUndefined();
+  });
+
+  it('returns undefined for a missing destination', () => {
+    expect(destinationsCollection(null)).toBeUndefined();
+    expect(destinationsCollection(undefined)).toBeUndefined();
+  });
+
+  it('never matches an origin code against a destinations filter', () => {
+    expect(destinationsCollection('VNO')).toBeUndefined();
   });
 });
 

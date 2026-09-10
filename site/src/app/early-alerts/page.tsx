@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { TrackingFields } from '@/components/TrackingFields';
+import { ServerTrackingFields } from '@/components/TrackingFields';
+import { trackingFromSearchParams } from '@/lib/tracking';
 import { subscribePageAction } from '@/app/subscribe-action';
 import { S } from '@/lib/lt';
 
@@ -67,7 +68,15 @@ function ZapIcon() {
   );
 }
 
-export default function EarlyAlertsPage() {
+export default async function EarlyAlertsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // Hidden tracking inputs rendered server-side (see /subscribe): this page is
+  // the TikTok bio destination, so its utm_* must survive a fast submit.
+  const tracking = trackingFromSearchParams(await searchParams);
+
   return (
     <main className="yip-site yip-early">
       <Header />
@@ -113,7 +122,7 @@ export default function EarlyAlertsPage() {
           <div className="cmpcard cmpcard--early">
             <span className="cmptag tag-wait">Renkam sąrašą</span>
             <h3>Skubios žinutės</h3>
-            <div className="cmp-price">Nemokama · jau netrukus</div>
+            <div className="cmp-price">{S.earlyFounding}</div>
             <ul className="cmplist">
               <li>
                 <ZapIcon />
@@ -138,7 +147,7 @@ export default function EarlyAlertsPage() {
               <input type="hidden" name="mode" value="page" />
               <input type="hidden" name="early_alerts" value="on" />
               <input type="hidden" name="source" value="early" />
-              <TrackingFields />
+              <ServerTrackingFields tracking={tracking} />
               <div className="ea-form-row">
                 <input
                   type="email"
@@ -166,7 +175,8 @@ export default function EarlyAlertsPage() {
           </span>
           <p>
             Mokamas planas su pirkimu tiesiai iš pardavėjo ir žaibiškais kainos kritimo
-            pranešimais — planuose, bet dar ne dabar. Kol kas skubios žinutės nemokamos.
+            pranešimais — planuose, bet dar ne dabar. Skubios žinutės bus mokamos: kainą
+            pasakysim prieš pradžią, o sąraše esantiems — pirmiems.
           </p>
         </div>
       </section>

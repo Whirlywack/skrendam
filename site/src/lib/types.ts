@@ -1,5 +1,6 @@
 import type { QualityTag } from './quality';
 import type { BookingCta } from './booking';
+import type { DealArchetype } from './mappers';
 export type StatusKind = 'fresh' | 'going_fast' | 'gone';
 
 export interface TicketView {
@@ -31,4 +32,10 @@ export interface PublicDeal {
   airline: string;
   verifiedAt: string | null;  // candidates.verified_at passthrough; not rendered yet
   groundHint: string | null;  // e.g. "Iš Vilniaus: 59 min traukiniu"; not rendered yet
+  // Demand layer (0.4B). Passed through for the copy and collection work that
+  // follows; nothing renders them yet, and every one is null on a legacy row
+  // the demand scorer never touched.
+  archetype: DealArchetype | null;  // why it looked interesting: date | rare | destination
+  windowSlug: string | null;        // peak window it sits in, e.g. "xmas_markets"
+  savingFamily: number | null;      // € saved for a family of four, when the window is a family one
 }

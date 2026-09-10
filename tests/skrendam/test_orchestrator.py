@@ -660,3 +660,22 @@ def test_scoring_and_demand_share_one_duration_partitioned_history(session, monk
     adapter = FliAdapter(RoundTripBackend(), pace=lambda: None)
     run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
     assert calls == [(1, "roundtrip", 5)]
+
+
+def test_purge_sweep_deletes_long_unsubscribed(session):
+    """Unsubscribed rows are erased 30 days later; active subscribers stay."""
+    _seed(session)
+    now = datetime(2026, 6, 2)
+    session.add_all(
+        [
+            models.Subscriber(id=1, email="gone@yip.lt", unsubscribed_at=now - timedelta(days=31)),
+            models.Subscriber(
+                id=2, email="recent@yip.lt", unsubscribed_at=now - timedelta(days=29)
+            ),
+            models.Subscriber(id=3, email="active@yip.lt", unsubscribed_at=None),
+        ]
+    )
+    session.commit()
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t", now=now)
+    assert {s.id for s in session.query(models.Subscriber)} == {2, 3}

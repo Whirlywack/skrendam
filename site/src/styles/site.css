@@ -1332,95 +1332,6 @@
   flex-direction: column;
 }
 
-/* Hero signup card — distinct from the existing .cap email band at page bottom.
-   The global .cap is an inline flex row band; this is a white card with top border. */
-.yip-site .hero-left .cap {
-  margin-top: 18px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 14px 34px rgba(28, 24, 19, 0.16);
-  border-top: 4px solid var(--amber);
-  position: relative;
-  /* Reset the inherited flex-row layout from the global .cap */
-  display: block;
-  color: var(--ink);
-}
-
-/* "Free" pill badge on the signup card */
-.yip-site .freebadge {
-  position: absolute;
-  top: -10px;
-  right: 14px;
-  background: var(--sea);
-  color: #fff;
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
-}
-
-/* Signup card internal layout classes */
-.yip-site .cap-lbl {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.yip-site .cap-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 9px;
-}
-
-.yip-site .cap-row input {
-  flex: 1;
-  border: 1.5px solid var(--perf);
-  border-radius: 11px;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-family: 'Hanken Grotesk', sans-serif;
-}
-
-.yip-site .cap-sub {
-  font-size: 12px;
-  color: var(--fg3);
-  margin-top: 7px;
-}
-
-/* Trust indicators row inside the signup card */
-.yip-site .trust {
-  display: flex;
-  gap: 13px;
-  margin-top: 9px;
-  font-size: 10.5px;
-  color: var(--fg3);
-  flex-wrap: wrap;
-}
-
-.yip-site .trust span {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-}
-
-/* Dashed divider inside signup card */
-.yip-site .cap-div {
-  border-top: 1px dashed var(--line);
-  margin: 12px 0 10px;
-}
-
-/* "Want them sooner?" row at bottom of signup card */
-.yip-site .cap-early {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
 
 /* Secondary sea-tinted button */
 .yip-site .btn-sec {
@@ -1480,80 +1391,6 @@
 
 .yip-site .microproof b {
   color: var(--ink);
-}
-
-
-/* =========================================================================
-   DARK INK SIGNUP BAND  (.band + .bead)
-   Source: homepage-v3-brand.html
-   ========================================================================= */
-
-.yip-site .band {
-  background: var(--ink);
-  border-radius: 24px;
-  margin: 24px 26px;
-  padding: 34px 36px;
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  position: relative;
-  overflow: hidden;
-  flex-wrap: wrap;
-}
-
-/* Amber glow bead in top-right corner */
-.yip-site .band .bead {
-  position: absolute;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--amber-400, #EFA227), var(--amber-ink));
-  right: -56px;
-  top: -56px;
-  opacity: 0.9;
-}
-
-/* Content column inside the band */
-.yip-site .band .bcol {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  min-width: 240px;
-}
-
-.yip-site .band h2 {
-  font-family: 'Bricolage Grotesque', sans-serif;
-  font-weight: 800;
-  font-size: 28px;
-  line-height: 1.06;
-  letter-spacing: -0.02em;
-  color: var(--cream);
-  margin: 0 0 8px;
-}
-
-.yip-site .band p {
-  color: var(--perf);
-  font-size: 14px;
-  margin: 0;
-}
-
-/* Email input + CTA row inside the band */
-.yip-site .band .f {
-  display: flex;
-  gap: 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.yip-site .band input {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border-radius: 11px;
-  padding: 11px 13px;
-  font-size: 13px;
-  width: 190px;
-  font-family: 'Hanken Grotesk', sans-serif;
 }
 
 
@@ -2480,23 +2317,6 @@
   text-align: center;
 }
 
-/* Optional early-alerts checkbox row on idle /subscribe */
-.yip-site .sub-ea-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  font-size: 12.5px;
-  color: var(--fg2);
-}
-
-.yip-site .sub-ea-row input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--sea);
-  flex-shrink: 0;
-  cursor: pointer;
-}
 
 /* Early-alerts link on idle /subscribe page */
 .yip-site .sub-ea-link {
@@ -2728,10 +2548,6 @@
   .yip-site .hero-grid { grid-template-columns: 1fr; gap: 16px; }
   .yip-site .hero-grid > * { min-width: 0; }
   .yip-site .hero-photo { min-height: 180px; height: 180px; }
-  .yip-site .cap-row { flex-direction: column; }
-  .yip-site .cap-row input { min-width: 0; }
-  .yip-site .cap-row .btn-primary { width: 100%; justify-content: center; }
-  .yip-site .cap-early { flex-direction: column; align-items: flex-start; }
 
   /* featured ticket becomes a vertical ticket like the rest */
   .yip-site .feat { grid-template-columns: 1fr; }
@@ -2746,11 +2562,6 @@
   .yip-site .coll { grid-template-columns: 1fr 1fr; }
   .yip-site .proc { grid-template-columns: 1fr 1fr; gap: 18px; }
 
-  /* dark capture band: stack copy over a full-width form */
-  .yip-site .band { margin: 16px; padding: 24px 20px; flex-direction: column; align-items: stretch; gap: 16px; }
-  .yip-site .band .f { flex-direction: column; }
-  .yip-site .band input { width: 100%; box-sizing: border-box; }
-  .yip-site .band .btn-primary { width: 100%; justify-content: center; }
 
   /* deal page */
   .yip-site .dbook { flex-direction: column; align-items: stretch; }

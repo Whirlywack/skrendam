@@ -360,20 +360,6 @@ export const scanRequests = pgTable("scan_requests", {
 		}),
 ]);
 
-export const subscribers = pgTable("subscribers", {
-	id: serial().primaryKey().notNull(),
-	email: varchar().notNull(),
-	source: varchar(),
-	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	confirmed: boolean().default(false).notNull(),
-	confirmToken: varchar("confirm_token"),
-	confirmedAt: timestamp("confirmed_at", { withTimezone: true, mode: 'string' }),
-	earlyAlerts: boolean("early_alerts").default(false).notNull(),
-	prefs: json(),
-}, (table) => [
-	unique("subscribers_email_key").on(table.email),
-]);
-
 export const candidateScores = pgTable("candidate_scores", {
 	id: serial().primaryKey().notNull(),
 	candidateId: integer("candidate_id").notNull(),
@@ -415,4 +401,21 @@ export const peakWindows = pgTable("peak_windows", {
 	createdAt: timestamp("created_at", { mode: 'string' }).notNull(),
 }, (table) => [
 	unique("peak_windows_slug_key").on(table.slug),
+]);
+
+export const subscribers = pgTable("subscribers", {
+	id: serial().primaryKey().notNull(),
+	email: varchar().notNull(),
+	source: varchar(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	confirmed: boolean().default(false).notNull(),
+	confirmToken: varchar("confirm_token"),
+	confirmedAt: timestamp("confirmed_at", { withTimezone: true, mode: 'string' }),
+	earlyAlerts: boolean("early_alerts").default(false).notNull(),
+	prefs: json(),
+	unsubscribeToken: varchar("unsubscribe_token"),
+	unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true, mode: 'string' }),
+}, (table) => [
+	uniqueIndex("ix_subscribers_unsubscribe_token").using("btree", table.unsubscribeToken.asc().nullsLast().op("text_ops")),
+	unique("subscribers_email_key").on(table.email),
 ]);

@@ -14,6 +14,9 @@
 }
 .v2 a { color: inherit; text-decoration: none; }
 .v2 a:hover { color: var(--v2-amber-deep); }
+/* Body-copy pages (privacy): a link inside running text has to look like one —
+   the reset above strips the underline everywhere else on purpose. */
+.v2 .prose a { text-decoration: underline; text-underline-offset: 2px; }
 .v2 .wrap { max-width: 1240px; margin: 0 auto; padding-inline: 40px; }
 .v2 .mono { font-family: var(--font-mono); }
 .v2 .v2-stamp--light { color: #fff; border-color: rgba(255, 255, 255, .85); }
@@ -120,11 +123,15 @@
   border: 1.5px solid var(--sand-300); background: #fff; color: var(--v2-ink); font-family: inherit;
 }
 .v2-capture input[type="email"]:focus { outline: 2px solid var(--v2-amber); outline-offset: 1px; }
-.v2-capture .btn {
+/* .v2-unsub: the single button on /atsisakyti — same amber as the capture row. */
+.v2-capture .btn,
+.v2-unsub .btn {
   font-weight: 700; font-size: 15px; padding: 13px 22px; border-radius: 12px;
   background: var(--v2-amber); color: var(--v2-ink); border: 0; cursor: pointer; font-family: inherit;
 }
-.v2-capture .btn:hover { background: var(--v2-amber-deep); color: var(--v2-paper); }
+.v2-capture .btn:hover,
+.v2-unsub .btn:hover { background: var(--v2-amber-deep); color: var(--v2-paper); }
+.v2-unsub form { margin-top: 20px; }
 .v2-capture .ok { font-weight: 700; font-size: 16px; }
 .v2-capture [role="alert"] { color: var(--coral-600, #B3462E); font-size: 13px; }
 

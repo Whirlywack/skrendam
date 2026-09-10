@@ -19,6 +19,38 @@ function tierScore(r: { scoreV2?: number | string | null }, score: number): numb
   return r.scoreV2 != null ? Number(r.scoreV2) : score;
 }
 
+// The engine's archetype vocabulary (skrendam/scanning/scoring/demand.py).
+// The column is a bare varchar, so anything unknown is treated as absent
+// rather than handed to copy that switches on it.
+const ARCHETYPES = ['date', 'rare', 'destination'] as const;
+export type DealArchetype = (typeof ARCHETYPES)[number];
+
+/** Reads the demand layer off a row: archetype + the two signals the site
+ *  will speak in (peak window, family saving). Every value is validated —
+ *  demand_signals is free-form json written by the scan. */
+function demand(r: { archetype?: string | null; demandSignals?: unknown }): {
+  archetype: DealArchetype | null;
+  windowSlug: string | null;
+  savingFamily: number | null;
+} {
+  const signals = (r.demandSignals && typeof r.demandSignals === 'object'
+    ? r.demandSignals
+    : {}) as Record<string, unknown>;
+  const slug = signals.window_slug;
+  const saving = signals.saving_family;
+  // `Number('')` is 0, so an empty string must not become a €0 saving claim.
+  const savingNum = typeof saving === 'number'
+    || (typeof saving === 'string' && saving.trim() !== '')
+    ? Number(saving) : NaN;
+  return {
+    archetype: (ARCHETYPES as readonly string[]).includes(r.archetype ?? '')
+      ? (r.archetype as DealArchetype)
+      : null,
+    windowSlug: typeof slug === 'string' && slug ? slug : null,
+    savingFamily: Number.isFinite(savingNum) ? savingNum : null,
+  };
+}
+
 function legs(snapshot: unknown): { stops: number; airline: string } {
   const s = (snapshot ?? {}) as Record<string, unknown>;
   const legsArr = s.legs as Array<{ airline?: { code?: string } }> | undefined;
@@ -106,5 +138,6 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     booking: bookingCta(pd.bookingUrl ?? null),
     verifiedAt: r.verifiedAt ? String(r.verifiedAt) : null,
     groundHint: groundHint(pd.origin),
+    ...demand(r),
   };
 }

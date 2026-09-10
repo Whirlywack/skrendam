@@ -1,3 +1,5 @@
+import { parseRefCode } from './refcode';
+
 // ---------------------------------------------------------------------------
 // Pure validation / normalisation helpers
 // No DB or network deps — safe to import in tests.
@@ -91,7 +93,6 @@ export type TrackingKey = (typeof TRACKING_KEYS)[number];
 
 const UTM_KEYS = TRACKING_KEYS.filter((key) => key !== 'ref');
 const UTM_MAX_LENGTH = 80;
-const REF_RE = /^[a-z0-9]{2,12}$/;
 
 const CONTROL_CHARS_RE = /[\x00-\x1f\x7f]/g;
 
@@ -112,21 +113,59 @@ export function cleanUtm(input: Record<string, unknown>): Record<string, string>
   return out;
 }
 
-/** Validates a referral code: lowercase alphanumeric, 2-12 chars. */
+/**
+ * Validates a referral code by actually decoding it (`parseRefCode`), not by
+ * shape: a code that fails its checksum names no subscriber, so storing it as
+ * `referred_by` would be a broken attribution. Input is lowercased case-safe
+ * — links get typed and shared — but nothing else is accepted.
+ */
 export function cleanRef(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
-  return REF_RE.test(raw) ? raw : null;
+  const code = raw.trim().toLowerCase();
+  return parseRefCode(code) !== null ? code : null;
 }
 
 /**
- * Merges a prefs patch onto an existing prefs object without dropping
- * unrelated keys — e.g. `savePreferencesAction` writing `{origins, moments}`
- * must not clobber `{utm, referred_by}` written at signup. `patch` keys win
- * on conflict.
+ * Column values that turn a conflicting `subscribers` row back into a fresh
+ * signup. Two rows qualify (see `subscribeAction`): one still waiting for its
+ * confirm click, and one that unsubscribed and is now typing its address
+ * again. The latter gets a full double opt-in (`confirmed` false) so rejoining
+ * is an explicit click, never a silent flip, and `unsubscribedAt` is cleared
+ * so the 30-day purge stops counting. Single opt-in (no Resend key) passes the
+ * confirm time instead and the row is live at once.
+ *
+ * `unsubscribeToken` is deliberately absent: the link in the mails they
+ * already have must keep working. Prefs are merged (jsonb `||`) by the caller,
+ * never written here.
  */
-export function mergePrefs(
-  existing: Record<string, unknown> | null | undefined,
-  patch: Record<string, unknown>,
-): Record<string, unknown> {
-  return { ...(existing ?? {}), ...patch };
+export function resubscribeReset(confirmToken: string, confirmedAt: string | null) {
+  return {
+    confirmToken,
+    confirmed: confirmedAt !== null,
+    confirmedAt,
+    unsubscribedAt: null,
+  };
 }
+
+/**
+ * Builds the `prefs` object written at signup: first-touch attribution plus,
+ * for an early-alerts opt-in, `founding_interest: true` (the early-alerts
+ * list is a waitlist for a paid plan, not a free product — the flag marks
+ * who asked before the price existed).
+ *
+ * Returns null when there is nothing to store so the column stays NULL
+ * instead of being filled with an empty object.
+ */
+export function signupPrefs(
+  utm: Record<string, string>,
+  ref: string | null,
+  founding: boolean,
+): Record<string, unknown> | null {
+  const prefs: Record<string, unknown> = {
+    ...(Object.keys(utm).length ? { utm } : {}),
+    ...(ref ? { referred_by: ref } : {}),
+    ...(founding ? { founding_interest: true } : {}),
+  };
+  return Object.keys(prefs).length ? prefs : null;
+}
+

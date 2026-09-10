@@ -66,11 +66,23 @@ export const S = {
   successSub: 'Išsiuntėm patvirtinimo nuorodą. Paspausk ją — ir kitas radinys tavo.',
   subscribedTitle: 'Viskas — lauk radinių.',
   subscribedSub: 'Pirmieji radiniai tavo pašte šią savaitę.',
-  earlyCheckbox: 'Noriu ir skubių žinučių — nemokamai',
+  // The early-alerts list is a waitlist for a paid plan. Never call it free.
+  earlyFounding: 'Pirmiesiems — kaina bus pranešta prieš pradžią',
   earlyCheckboxSub: 'Rečiausi radiniai iškart, kai tik juos randam — dar prieš savaitinį laišką.',
   emailPlaceholder: 'tavo@pastas.lt',
   emailInvalid: 'Įvesk veikiantį el. pašto adresą.',
   genericError: 'Kažkas nepavyko — pabandyk dar kartą.',
+
+  // Unsubscribe (/atsisakyti) — the link lands on a confirm page first, so a
+  // mail scanner's prefetch never unsubscribes anyone; the button is the click.
+  unsubscribeConfirmTitle: 'Atsisakyti laiškų?',
+  unsubscribeConfirmBody: 'Paspausk, jei tikrai nebenori mūsų laiškų.',
+  unsubscribeConfirmCta: 'Atsisakyti laiškų',
+  unsubscribedTitle: 'Prenumerata atšaukta.',
+  unsubscribedBody: 'Daugiau laiškų nesiųsim. Tavo duomenis ištrinsim per 30 dienų.',
+  unsubscribeInvalid:
+    'Nuoroda nebegalioja — gali būti, kad prenumeratos jau atsisakei. ' +
+    'Jei laiškai vis tiek ateina, parašyk mums: hello@yip.lt.',
 
   // Nav & footer
   navHow: 'Kaip tai veikia',
@@ -93,9 +105,6 @@ export const S = {
   footerLegal: '© 2026 Yip. Bilietą perki pas aviakompaniją ar agentūrą — kainos keičiasi greitai.',
 
   // Signup card / capture
-  freeBadge: 'Nemokama',
-  capTitle: 'Gauk kitą retą radinį el. paštu',
-  capSub: 'Geriausi radiniai viename ramiame savaitiniame laiške.',
   submitting: 'Siunčiam…',
   emailAria: 'El. pašto adresas',
   trustNoSpam: 'Be spamo',

@@ -6,12 +6,14 @@ import {
   cleanPrefs,
   cleanUtm,
   cleanRef,
-  mergePrefs,
+  signupPrefs,
+  resubscribeReset,
   SUBSCRIBE_SOURCES,
   TRACKING_KEYS,
   ORIGIN_CODES,
   MOMENT_CODES,
 } from '@/lib/subscribe-prefs';
+import { refCode } from '@/lib/refcode';
 
 // ---------------------------------------------------------------------------
 // normalizeEmail
@@ -161,8 +163,20 @@ describe('cleanUtm', () => {
 // ---------------------------------------------------------------------------
 
 describe('cleanRef', () => {
-  test('accepts lowercase alphanumeric 2-12 chars', () => {
-    expect(cleanRef('ab3x')).toBe('ab3x');
+  const VALID = refCode(13359); // 'ab35'
+
+  test('accepts a real referral code', () => {
+    expect(cleanRef(VALID)).toBe(VALID);
+  });
+
+  test('accepts an uppercased code by lowercasing it', () => {
+    expect(cleanRef(VALID.toUpperCase())).toBe(VALID);
+  });
+
+  test('rejects a well-shaped code that fails its checksum', () => {
+    // The old shape-only check let any [a-z0-9]{2,12} through, so a typo or a
+    // made-up code was stored as an attribution that decodes to nobody.
+    expect(cleanRef('ab3x')).toBeNull();
   });
 
   test('rejects disallowed characters', () => {
@@ -178,13 +192,15 @@ describe('cleanRef', () => {
     expect(cleanRef('a'.repeat(13))).toBeNull();
   });
 
-  test('rejects uppercase', () => {
-    expect(cleanRef('AB3x')).toBeNull();
-  });
-
   test('rejects non-string input', () => {
     expect(cleanRef(123)).toBeNull();
     expect(cleanRef(null)).toBeNull();
+  });
+
+  test('round-trips every code refCode mints', () => {
+    for (const id of [0, 1, 42, 13359, 999999]) {
+      expect(cleanRef(refCode(id))).toBe(refCode(id));
+    }
   });
 });
 
@@ -204,44 +220,6 @@ describe('TRACKING_KEYS', () => {
     ]);
   });
 });
-
-// ---------------------------------------------------------------------------
-// mergePrefs
-// ---------------------------------------------------------------------------
-
-describe('mergePrefs', () => {
-  test('keeps existing attribution while overwriting the patched keys', () => {
-    const existing = { utm: { source: 'tiktok' }, referred_by: 'ab3x' };
-    const result = mergePrefs(existing, { origins: ['VNO'], moments: ['sun'] });
-    expect(result).toEqual({
-      utm: { source: 'tiktok' },
-      referred_by: 'ab3x',
-      origins: ['VNO'],
-      moments: ['sun'],
-    });
-  });
-
-  test('null existing prefs merges cleanly', () => {
-    expect(mergePrefs(null, { origins: [], moments: [] })).toEqual({ origins: [], moments: [] });
-  });
-
-  test('undefined existing prefs merges cleanly', () => {
-    expect(mergePrefs(undefined, { origins: ['RIX'], moments: [] })).toEqual({
-      origins: ['RIX'],
-      moments: [],
-    });
-  });
-
-  test('patch keys overwrite same-named existing keys', () => {
-    const existing = { origins: ['VNO'], moments: ['sun'] };
-    const result = mergePrefs(existing, { origins: ['WAW'], moments: [] });
-    expect(result).toEqual({ origins: ['WAW'], moments: [] });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// cleanPrefs — origins filtering
-// ---------------------------------------------------------------------------
 
 describe('cleanPrefs — origins', () => {
   test('accepts valid origin codes', () => {
@@ -310,5 +288,77 @@ describe('cleanPrefs — combined', () => {
     );
     expect(result.origins).toEqual(['VNO', 'WAW']);
     expect(result.moments).toEqual(['sun', 'last_minute']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// signupPrefs
+// ---------------------------------------------------------------------------
+
+describe('signupPrefs', () => {
+  test('returns null when there is nothing to store', () => {
+    expect(signupPrefs({}, null, false)).toBeNull();
+  });
+
+  test('keeps utm under a utm key', () => {
+    expect(signupPrefs({ source: 'tiktok' }, null, false)).toEqual({
+      utm: { source: 'tiktok' },
+    });
+  });
+
+  test('stores a referral code as referred_by', () => {
+    expect(signupPrefs({}, 'ab3', false)).toEqual({ referred_by: 'ab3' });
+  });
+
+  test('marks an early opt-in as founding interest', () => {
+    expect(signupPrefs({}, null, true)).toEqual({ founding_interest: true });
+  });
+
+  test('combines attribution and founding interest', () => {
+    expect(signupPrefs({ source: 'tiktok' }, 'ab3', true)).toEqual({
+      utm: { source: 'tiktok' },
+      referred_by: 'ab3',
+      founding_interest: true,
+    });
+  });
+
+  test('never sets founding_interest to false — the key is absent instead', () => {
+    expect(Object.keys(signupPrefs({}, 'ab3', false) ?? {})).toEqual(['referred_by']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resubscribeReset — the on-conflict SET for unconfirmed / unsubscribed rows
+// ---------------------------------------------------------------------------
+
+describe('resubscribeReset', () => {
+  test('double opt-in: back to an unconfirmed row with a fresh token, purge clock stopped', () => {
+    expect(resubscribeReset('tok', null)).toEqual({
+      confirmToken: 'tok',
+      confirmed: false,
+      confirmedAt: null,
+      unsubscribedAt: null,
+    });
+  });
+
+  test('single opt-in: confirmed on the spot, unsubscribe mark still cleared', () => {
+    const at = '2026-09-10T08:00:00.000Z';
+    expect(resubscribeReset('tok', at)).toEqual({
+      confirmToken: 'tok',
+      confirmed: true,
+      confirmedAt: at,
+      unsubscribedAt: null,
+    });
+  });
+
+  test('never touches the unsubscribe token, email, prefs or the early flag', () => {
+    // The link in mails a rejoining subscriber already has must keep working,
+    // and prefs are merged (jsonb ||) by the caller, never written here.
+    expect(Object.keys(resubscribeReset('tok', null)).sort()).toEqual([
+      'confirmToken',
+      'confirmed',
+      'confirmedAt',
+      'unsubscribedAt',
+    ]);
   });
 });

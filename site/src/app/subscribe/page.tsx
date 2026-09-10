@@ -1,6 +1,7 @@
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { TrackingFields } from '@/components/TrackingFields';
+import { ServerTrackingFields } from '@/components/TrackingFields';
+import { trackingFromSearchParams, type Tracking } from '@/lib/tracking';
 import {
   subscribePageAction,
   savePreferencesAction,
@@ -14,7 +15,7 @@ import { S } from '@/lib/lt';
 // ---------------------------------------------------------------------------
 
 type PageProps = {
-  searchParams: Promise<{ state?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -42,7 +43,7 @@ function EnvelopeIcon() {
 // State: idle — standalone capture card (entry B)
 // ---------------------------------------------------------------------------
 
-function IdleState() {
+function IdleState({ tracking }: { tracking: Tracking }) {
   return (
     <div className="sub-card" style={{ textAlign: 'center' }}>
       <div className="sub-wm">yıp</div>
@@ -55,7 +56,7 @@ function IdleState() {
       <form action={subscribePageAction}>
         <input type="hidden" name="source" value="subscribe" />
         <input type="hidden" name="mode" value="page" />
-        <TrackingFields />
+        <ServerTrackingFields tracking={tracking} />
 
         <div className="sub-row">
           <input
@@ -283,7 +284,12 @@ export const metadata = {
 };
 
 export default async function SubscribePage({ searchParams }: PageProps) {
-  const { state } = await searchParams;
+  const sp = await searchParams;
+  const state = typeof sp.state === 'string' ? sp.state : undefined;
+  // utm_* / ref survive the redirect chain into this page, so render them as
+  // hidden inputs server-side: a submit that beats hydration still carries
+  // attribution. TrackingFields adds only the keys sessionStorage knows.
+  const tracking = trackingFromSearchParams(sp);
 
   let content: React.ReactNode;
 
@@ -319,7 +325,7 @@ export default async function SubscribePage({ searchParams }: PageProps) {
       break;
 
     default:
-      content = <IdleState />;
+      content = <IdleState tracking={tracking} />;
   }
 
   return (

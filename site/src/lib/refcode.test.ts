@@ -40,11 +40,41 @@ describe('refCode / parseRefCode round-trip', () => {
     expect(parseRefCode('00')).toBe(0);
   });
 
-  it('throws RangeError for ids at/above 36 ** 11', () => {
-    expect(() => refCode(36 ** 11)).toThrow(RangeError);
+  it('throws RangeError for ids above the safe-integer ceiling', () => {
+    expect(() => refCode(2 ** 53)).toThrow(RangeError);
+  });
+
+  it('round-trips the largest safe id', () => {
+    const id = Number.MAX_SAFE_INTEGER;
+    expect(parseRefCode(refCode(id))).toBe(id);
+  });
+
+  it('returns null for an out-of-range body instead of throwing', () => {
+    // 'zzzzzzzzzzz' parses to ~1.3e17 — past Number.MAX_SAFE_INTEGER, where
+    // float rounding makes the re-derivation meaningless. Public input:
+    // it must come back null, never a RangeError out of parseRefCode.
+    expect(() => parseRefCode('zzzzzzzzzzzz')).not.toThrow();
+    expect(parseRefCode('zzzzzzzzzzzz')).toBeNull();
   });
 
   it('throws RangeError for negative ids', () => {
     expect(() => refCode(-1)).toThrow(RangeError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Drift guard — the site and the Deal Desk must decode the same codes
+// ---------------------------------------------------------------------------
+
+describe('refcode.ts is byte-identical in site/ and web/', () => {
+  it('has no drift between the two copies', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const here = new URL('./refcode.ts', import.meta.url);
+    const there = new URL('../../../web/src/lib/refcode.ts', import.meta.url);
+    const [site, web] = await Promise.all([
+      readFile(here, 'utf8'),
+      readFile(there, 'utf8'),
+    ]);
+    expect(web).toBe(site);
   });
 });
