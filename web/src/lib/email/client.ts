@@ -8,7 +8,8 @@ export function emailEnabled(): boolean {
   return !!process.env.RESEND_API_KEY;
 }
 
-export const FROM: string = process.env.YIP_FROM_EMAIL ?? 'Yip <hello@yip.lt>';
+// `||`, not `??`: `.env.example` ships the key empty; empty means unset here.
+export const FROM: string = process.env.YIP_FROM_EMAIL || 'Yip <hello@yip.lt>';
 
 export interface OutgoingMail {
   to: string;

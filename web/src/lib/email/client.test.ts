@@ -35,6 +35,21 @@ describe('FROM', () => {
   it('defaults to the Yip sender', () => {
     expect(FROM).toBe('Yip <hello@yip.lt>');
   });
+
+  // FROM is read once at module load, so the empty-env case needs a fresh import.
+  it('treats an empty YIP_FROM_EMAIL (as .env.example ships it) as unset', async () => {
+    vi.stubEnv('YIP_FROM_EMAIL', '');
+    vi.resetModules();
+    const fresh = await import('./client');
+    expect(fresh.FROM).toBe('Yip <hello@yip.lt>');
+  });
+
+  it('uses YIP_FROM_EMAIL when set', async () => {
+    vi.stubEnv('YIP_FROM_EMAIL', 'Yip <labas@yip.lt>');
+    vi.resetModules();
+    const fresh = await import('./client');
+    expect(fresh.FROM).toBe('Yip <labas@yip.lt>');
+  });
 });
 
 describe('sendMail', () => {

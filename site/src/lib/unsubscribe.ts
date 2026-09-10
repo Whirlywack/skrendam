@@ -14,9 +14,11 @@
  *  Unlike `siteUrl()` in `@/lib/seo`, the fallback here is the live domain, not
  *  localhost: this URL is read in someone's inbox, where a localhost link is a
  *  dead end. Read at call time so a send picks up the current environment.
+ *  `||`, not `??`: `.env.example` ships the key empty, and an empty base would
+ *  put a relative link in someone's mail.
  */
 export function unsubscribeUrl(token: string): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://yip.lt').replace(/\/$/, '');
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || 'https://yip.lt').replace(/\/$/, '');
   return `${base}/atsisakyti?token=${encodeURIComponent(token)}`;
 }
 

@@ -19,6 +19,11 @@ describe('unsubscribeUrl', () => {
     expect(unsubscribeUrl('abc123')).toBe('https://yip.lt/atsisakyti?token=abc123');
   });
 
+  test('treats an empty NEXT_PUBLIC_SITE_URL (as .env.example ships it) as unset', () => {
+    process.env.NEXT_PUBLIC_SITE_URL = '';
+    expect(unsubscribeUrl('abc123')).toBe('https://yip.lt/atsisakyti?token=abc123');
+  });
+
   test('tolerates a trailing slash on the base', () => {
     process.env.NEXT_PUBLIC_SITE_URL = 'https://yip.lt/';
     expect(unsubscribeUrl('abc123')).toBe('https://yip.lt/atsisakyti?token=abc123');
