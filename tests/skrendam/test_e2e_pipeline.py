@@ -20,32 +20,36 @@ from skrendam.verification import recheck_candidate
 TODAY = date(2026, 6, 15)
 
 # ─── Expected exact pipeline counts for TODAY=2026-06-15 with NewFakeBackend ─────────
-# Re-derived 2026-08-29 for the moment-structure audit seed (159 routes, 14
-# templates: last-warm-days split Oct/Nov, three fixed-window school-break
-# templates, plan-ahead-summer seasonal+60d lead, weekend gate live): the
-# templates over due_routes(rotation_days=10) resolve to 151 specs; the fake is
+# Re-derived 2026-09-10 for family-xmas-sun (founder decision 3; 159 routes, 15
+# templates: last-warm-days split Oct/Nov, four fixed-window school-break
+# templates (autumn/feb/easter/xmas), plan-ahead-summer seasonal+60d lead,
+# weekend gate live): the templates over due_routes(rotation_days=10) resolve
+# to 154 specs (151 + 3 new family-xmas-sun WINTER_WARM specs); the fake is
 # single-month so Wave-1 month-local scoring is neutral (month == window stats).
 #
-# 7 calendar points per spec → 151 * 7 = 1057 price_log rows.
+# 7 calendar points per spec → 154 * 7 = 1078 price_log rows.
 # Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only 30.0 is flagged
 # (single-month fake: month decile == window decile).
-# near_dates = prices ≤ 30.0*1.10=33.0 → 5 points → satisfies min_departure_dates=5.
+# near_dates = prices ≤ 30.0*1.10=33.0 → 5 points → satisfies min_departure_dates=5
+# (and the new template's min_departure_dates=3).
 # Weighted fires wherever the EUR30 fare passes a price-cap/psych gate; matches
 # per template (a fare can attach to EVERY in-scope template, so the Oct 30 -
 # Nov 4 school-break fares also file under the last-warm-days windows):
 #   family-school-holiday-sun 30, last-warm-days 22, family-autumn-sun 21,
 #   last-warm-days-november 14, vfr-watch 10, family-easter-sun 5,
-#   family-feb-sun 3 → 105 matches over 84 distinct candidates.
+#   family-feb-sun 3, family-xmas-sun 3 → 108 matches over 87 distinct
+#   candidates (empirically measured 2026-09-10; family-xmas-sun's 3 WINTER_WARM
+#   specs each add one candidate + one match).
 # last-minute-weekends is now ZERO by design: its flagged point (today+3 =
 # Thu Jun 18) fails the FRI/SAT hard gate added 2026-08-29.
 # september-sun, christmas-markets, plan-ahead-summer, winter-sun-escape and
 # ski-alps stay quiet: discount-only gates (25-30%) vs the fake's 6%
 # below-median fare. Outlier scorer quiet too (z=-1.35 at month MAD 1.0).
-# Drafts are per match → 105.
-E2E_PRICE_LOG_ROWS = 1057
-E2E_CANDIDATES = 84
-E2E_MATCHES = 105
-E2E_DRAFTS = 105
+# Drafts are per match → 108.
+E2E_PRICE_LOG_ROWS = 1078
+E2E_CANDIDATES = 87
+E2E_MATCHES = 108
+E2E_DRAFTS = 108
 
 
 # ─── FakeBackend ─────────────────────────────────────────────────────────────────────
@@ -110,8 +114,8 @@ def test_full_pipeline_offline(session):
 
     summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
-    # ── 1. summary: all 14 templates scanned ─────────────────────────────────────────
-    assert summary.templates_scanned == 14
+    # ── 1. summary: all 15 templates scanned ─────────────────────────────────────────
+    assert summary.templates_scanned == 15
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()

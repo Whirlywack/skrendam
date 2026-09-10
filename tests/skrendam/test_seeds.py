@@ -11,7 +11,7 @@ def test_seed_is_idempotent(session):
     assert session.query(models.Route).count() >= 10
     assert session.query(models.AudienceSegment).count() == 6
     assert session.query(models.TravelMoment).count() == 10
-    assert session.query(models.DealTemplate).count() == 14
+    assert session.query(models.DealTemplate).count() == 15
     # every template references a real audience + moment
     for t in session.query(models.DealTemplate):
         assert t.audience_segment_id and t.travel_moment_id
@@ -61,6 +61,9 @@ def test_new_templates_and_gate_values(session):
     assert all(by_slug[s].min_departure_dates == 5 for s in planable)
     assert all(by_slug[s].min_departure_dates is None for s in exempt)
     assert by_slug["christmas-markets"].min_discount_pct == 25  # 06-03 flood watch-item
+    # family-xmas-sun sits between planable (5) and exempt (None): a fixed
+    # ~10-day window can support a 3-near-date gate but not a 5-date one.
+    assert by_slug["family-xmas-sun"].min_departure_dates == 3
 
 
 def test_moment_structure_audit_2026_08_29(session):
@@ -156,3 +159,12 @@ def test_peak_windows_seeded_from_spec_section_10(session):
     }
     seed_all(session)  # insert-only
     assert session.query(models.PeakWindow).count() == 13
+
+
+def test_family_xmas_sun_is_seeded_with_the_date_archetype_window(session):
+    seed_all(session)
+    t = session.query(models.DealTemplate).filter_by(slug="family-xmas-sun").one()
+    assert (t.fixed_start_date, t.fixed_end_date) == (date(2026, 12, 18), date(2026, 12, 28))
+    assert t.included_destinations == ["TFS", "LPA", "HRG", "SSH", "DXB", "RAK"]
+    assert (t.max_price_eur, t.min_discount_pct, t.min_departure_dates) == (450, 20, 3)
+    assert t.family_friendly_times_only and t.newsletter_tag == "family_sun"
