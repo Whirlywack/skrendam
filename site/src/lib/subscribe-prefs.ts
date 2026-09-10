@@ -74,7 +74,7 @@ export function cleanPrefs(
 
 /**
  * The single list of tracking field names — used to build hidden form inputs
- * (TrackingFields, SignupCard, subscribe/page.tsx) and to read them back out
+ * (TrackingFields, subscribe/page.tsx) and to read them back out
  * of FormData in subscribeAction. Keep this the one source of truth instead
  * of hand-maintaining parallel lists.
  */
