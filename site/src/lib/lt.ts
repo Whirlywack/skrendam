@@ -73,7 +73,11 @@ export const S = {
   emailInvalid: 'Įvesk veikiantį el. pašto adresą.',
   genericError: 'Kažkas nepavyko — pabandyk dar kartą.',
 
-  // Unsubscribe (/atsisakyti)
+  // Unsubscribe (/atsisakyti) — the link lands on a confirm page first, so a
+  // mail scanner's prefetch never unsubscribes anyone; the button is the click.
+  unsubscribeConfirmTitle: 'Atsisakyti laiškų?',
+  unsubscribeConfirmBody: 'Paspausk, jei tikrai nebenori mūsų laiškų.',
+  unsubscribeConfirmCta: 'Atsisakyti laiškų',
   unsubscribedTitle: 'Prenumerata atšaukta.',
   unsubscribedBody: 'Daugiau laiškų nesiųsim. Tavo duomenis ištrinsim per 30 dienų.',
   unsubscribeInvalid:

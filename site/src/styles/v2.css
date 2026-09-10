@@ -123,11 +123,15 @@
   border: 1.5px solid var(--sand-300); background: #fff; color: var(--v2-ink); font-family: inherit;
 }
 .v2-capture input[type="email"]:focus { outline: 2px solid var(--v2-amber); outline-offset: 1px; }
-.v2-capture .btn {
+/* .v2-unsub: the single button on /atsisakyti — same amber as the capture row. */
+.v2-capture .btn,
+.v2-unsub .btn {
   font-weight: 700; font-size: 15px; padding: 13px 22px; border-radius: 12px;
   background: var(--v2-amber); color: var(--v2-ink); border: 0; cursor: pointer; font-family: inherit;
 }
-.v2-capture .btn:hover { background: var(--v2-amber-deep); color: var(--v2-paper); }
+.v2-capture .btn:hover,
+.v2-unsub .btn:hover { background: var(--v2-amber-deep); color: var(--v2-paper); }
+.v2-unsub form { margin-top: 20px; }
 .v2-capture .ok { font-weight: 700; font-size: 16px; }
 .v2-capture [role="alert"] { color: var(--coral-600, #B3462E); font-size: 13px; }
 
