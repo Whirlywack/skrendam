@@ -5,7 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-11 (WP6 email streams).
+> Last updated 2026-09-11 (WP8 instrumentation).
 
 ---
 
@@ -135,6 +135,35 @@ fli (Google Flights RPC)
   Subscribers page, kept for the manual first upgrade ask — the nurture does
   not read it). First-send
   checklist: `docs/handoffs/2026-09-11-wp6-email-streams.md`.
+- **Letter stats** (WP8, 2026-09-11, branch `feat/wp8-instrumentation`). Two
+  **read-only** desk pages under Letters — they only select from
+  `deal_events`, `issues`, `subscribers` (+ `published_deals` /
+  `candidate_template_matches` for deal facts); no writes, no new tables.
+  Aggregation is pure TypeScript over the raw rows (`web/src/lib/stats.ts`,
+  unit-tested; `stats-queries.ts` only fetches).
+  - **Per issue** (`/letters/<id>/stats`, linked from every sent issue): the
+    issue's `click` and `booked_claim` events (`deal_events.issue_id`) as four
+    tables — **archetype** (`date`/`rare`/`destination` from
+    `candidate_template_matches`, else `none`) × **pref code** (every persona
+    code of the deal's `newsletter_tag` via `personas.json`, so one event
+    counts once per code and that table does not sum to the total) ×
+    **origin** × **plan** — each with clicks / claims and a totals row
+    computed from the raw events. ⚠ **Anonymous claims and clicks (no
+    subscriber: forwarded mail, a link without `s=`, a deleted subscriber)
+    are counted under plan `anon`**, not dropped — the totals include them.
+  - **Overview** (`/letters/stats`): one row per **sent nurture issue** —
+    recipients (`issues.stats.sent`), free-at-send (subscribers created
+    before `sent_at` who were free at that moment — still free, or paid
+    only later), paid-between (`paid_since` in
+    [`sent_at`, next nurture `sent_at` or now)) and the **free→paid rate =
+    paid-between / `stats.sent`**; plus **TikTok attribution** — signups and
+    paid count per `prefs.utm.content` (the video id; no id → `unknown`).
+    A denominator of 0 prints „—", never a fake 0%.
+  - **Founder review rule (spec §4 WP8):** after **~8 issues**, re-tune the
+    §6 demand constants (commodity cap, date-fit multipliers, tier weights,
+    cadence — `docs/plans/2026-09-10-demand-layer-launch-spec.md` §6) **by
+    hand from these numbers — not code.** The pages report; nothing
+    auto-adjusts from them.
 
 ## 4. How deals are classified (the taxonomy)
 
@@ -254,6 +283,10 @@ time-of-day gates enforced, `family-xmas-sun`, and `skrendam analyze
 pages, `/go` + `/uzsisakiau` tracking, `deal_events` — see §3 "Email
 streams". Code-complete; **not yet sending** until the founder works through
 the first-send checklist (`docs/handoffs/2026-09-11-wp6-email-streams.md`).
+**WP8 (2026-09-11, branch `feat/wp8-instrumentation`):** read-only Letter
+stats — per-issue clicks/claims by archetype × pref × origin × plan, free→paid
+per nurture issue, TikTok signups by video — see §3 "Letter stats" (incl. the
+~8-issues founder review rule).
 
 **Not yet done (the queue):**
 1. **Wire the site to live deals** — publish steadily from Review (~1,400
