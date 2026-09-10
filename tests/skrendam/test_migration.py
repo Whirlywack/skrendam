@@ -103,3 +103,32 @@ def test_0011_rewrites_machine_headlines(tmp_path, monkeypatch):
             # oneway template: never "return" (frozen _headline is trip-type aware)
             3: "€140 one-way to Larnaca (usually €285) — leave this weekend.",
         }
+
+
+def test_0013_backfills_unsubscribe_token_for_every_row(tmp_path, monkeypatch):
+    """0013 gives every pre-existing subscriber a distinct unsubscribe token."""
+    url = f"sqlite+pysqlite:///{tmp_path / 'm.db'}"
+    monkeypatch.setenv("SKRENDAM_DATABASE_URL", url)
+    assert _alembic("upgrade", "0012_demand_layer").returncode == 0
+
+    eng = sa.create_engine(url)
+    with eng.begin() as c:
+        for email in ("a@yip.lt", "b@yip.lt", "c@yip.lt"):
+            c.execute(
+                sa.text(
+                    "INSERT INTO subscribers (email, created_at) VALUES (:e, CURRENT_TIMESTAMP)"
+                ),
+                {"e": email},
+            )
+
+    up = _alembic("upgrade", "head")
+    assert up.returncode == 0, up.stderr
+    with eng.connect() as c:
+        rows = c.execute(
+            sa.text("SELECT unsubscribe_token, unsubscribed_at FROM subscribers")
+        ).fetchall()
+    tokens = [r[0] for r in rows]
+    assert len(tokens) == 3
+    assert all(t for t in tokens), "every row must end with a non-empty token"
+    assert len(set(tokens)) == 3, "tokens must be distinct"
+    assert all(r[1] is None for r in rows), "backfill must not mark anyone unsubscribed"

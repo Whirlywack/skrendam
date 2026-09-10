@@ -341,6 +341,15 @@ class Subscriber(Base):
         Boolean, nullable=False, default=False, server_default=text("false")
     )
     prefs: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Every marketing send must carry an unsubscribe link built from this token
+    # (site: unsubscribeUrl()). Nullable only so 0013 can backfill existing rows.
+    unsubscribe_token: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Set on unsubscribe; the daily scan purges the row 30 days later
+    # (orchestrator._purge_unsubscribed) — the retention promise on /privatumas.
+    unsubscribed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    __table_args__ = (
+        Index("ix_subscribers_unsubscribe_token", "unsubscribe_token", unique=True),
+    )
 
 
 class ScanRequest(Base):
