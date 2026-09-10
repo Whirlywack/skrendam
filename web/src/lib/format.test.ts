@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { formatDates, parseEngineTs, pct } from './format';
+import { eur, formatDates, parseEngineTs, pct } from './format';
 
 test('formats one-way and round-trip date ranges', () => {
   expect(formatDates('2026-10-14', null)).toBe('14 Oct');
@@ -21,4 +21,8 @@ test('parseEngineTs reads naive engine timestamps as UTC (B2 regression)', () =>
   expect(parseEngineTs('2026-08-22T08:42:11+03:00').toISOString()).toBe(
     '2026-08-22T05:42:11.000Z',
   );
+});
+test('eur renders „93 €" — symbol after, non-breaking space, same bytes as site/src/lib/format.ts', () => {
+  expect(eur(93)).toBe('93 €');
+  expect(eur(92.6)).toBe('93 €');
 });
