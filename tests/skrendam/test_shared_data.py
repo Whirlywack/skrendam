@@ -14,7 +14,10 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize("name", ["airports.json", "airlines.json"])
+@pytest.mark.parametrize(
+    "name",
+    ["airports.json", "airlines.json", "personas.json", "demand_tiers.json"],
+)
 @pytest.mark.parametrize("app", ["site", "web"])
 def test_app_copy_matches_canonical(name, app):
     canonical = json.loads((ROOT / "skrendam" / name).read_text(encoding="utf-8"))

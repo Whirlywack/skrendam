@@ -1,0 +1,6 @@
+{
+  "weights": {"A": 1.0, "B": 0.85, "C": 0.7},
+  "A": ["CDG","BVA","FCO","CIA","BGY","MXP","BUD","AMS","IST","STN","LTN","LGW","PRG","TFS","LPA","ALC","HER","CHQ","FNC","LCA","PFO","AGP","PMI","BCN"],
+  "B": ["BER","VIE","LIS","DUB","NCE","OSL","TIA","HRG","SSH","DXB","BKK","TGD","BRI","NAP","ATH","OPO","VLC","KRK","WAW","CPH","MLA","AYT"],
+  "vfr": ["STN","LTN","LGW","DUB","OSL","BGO","CPH","MAN","EDI","BRS","LPL","ARN","HHN","EIN","SNN"]
+}

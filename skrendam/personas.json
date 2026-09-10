@@ -1,0 +1,13 @@
+{
+  "family_sun": ["family"],
+  "plan_summer": ["family"],
+  "last_minute": ["weekend", "last_minute"],
+  "xmas": ["weekend", "city"],
+  "sept_sun": ["weekend"],
+  "vfr": ["home"],
+  "home": ["home"],
+  "winter_sun": ["sun"],
+  "last_warm": ["sun"],
+  "long_haul": ["city"],
+  "ski": ["city"]
+}
