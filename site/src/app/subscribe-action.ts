@@ -7,6 +7,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
 import { emailEnabled, sendConfirmEmail, sendEarlyConfirmEmail } from '@/lib/email';
+import { mergePrefsSql } from '@/lib/subscribers';
 import { subscribeEmailLimiter, subscribeIpLimiter } from '@/lib/rate-limit';
 import {
   normalizeEmail,
@@ -16,6 +17,7 @@ import {
   cleanUtm,
   cleanRef,
   mergePrefs,
+  signupPrefs,
   TRACKING_KEYS,
 } from '@/lib/subscribe-prefs';
 import { S } from '@/lib/lt';
@@ -31,6 +33,11 @@ import { S } from '@/lib/lt';
 // ---------------------------------------------------------------------------
 
 const COOKIE_NAME = 'yip_pt';
+
+// Marks a subscriber who joined the early-alerts list while it was still a
+// waitlist — the list is a paid plan in the making, so this records who asked
+// before a price existed. Merged into prefs, never written over it.
+const FOUNDING_INTEREST = { founding_interest: true };
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -57,9 +64,10 @@ export async function subscribeAction(
   const raw = (formData.get('email') ?? '').toString();
   const email = normalizeEmail(raw);
   const source = cleanSource(formData.get('source')?.toString());
-  // The free forms no longer offer an early-alerts opt-in (it's becoming a
-  // paid feature) — only the dedicated /early-alerts page's hidden field
-  // (source === 'early') may still set this.
+  // Only the /early-alerts form opts into early alerts: it posts source='early'
+  // plus the hidden early_alerts field. This is a shape check on public form
+  // input, not a trust boundary — anything can POST these fields, so what
+  // actually protects an address is the double opt-in below.
   const earlyAlerts =
     source === 'early' &&
     (formData.get('early_alerts') === 'on' || formData.get('early_alerts') === '1');
@@ -67,15 +75,21 @@ export async function subscribeAction(
 
   // Attribution captured on signup (TikTok launch): utm_* + ref, stored on
   // prefs. Never overwritten on conflict — see onConflictDoUpdate below.
+  // An early-alerts opt-in also lands `founding_interest: true` there: the
+  // early list is a waitlist for a paid plan, so we record who asked before
+  // the price existed.
   const trackingBag: Record<string, unknown> = {};
   for (const key of TRACKING_KEYS) trackingBag[key] = formData.get(key);
   const utm = cleanUtm(trackingBag);
   const ref = cleanRef(trackingBag.ref);
-  const attribution: Record<string, unknown> = {
-    ...(Object.keys(utm).length ? { utm } : {}),
-    ...(ref ? { referred_by: ref } : {}),
-  };
-  const prefs = Object.keys(attribution).length ? attribution : null;
+  const prefs = signupPrefs(utm, ref, earlyAlerts);
+  const founding = earlyAlerts ? FOUNDING_INTEREST : {};
+  // prefs on conflict: coalesce fills the column ONCE (attribution is
+  // first-touch and must never be overwritten), then the founding-interest
+  // patch is merged on top with jsonb `||`, so an existing subscriber joining
+  // the early list keeps every key they already had. Omitted entirely when
+  // there is nothing to write, so a NULL prefs is not replaced by '{}'.
+  const prefsOnConflict = prefs ? { prefs: mergePrefsSql(founding, prefs) } : {};
 
   if (!isValidEmail(email)) {
     if (mode === 'page') {
@@ -128,6 +142,7 @@ export async function subscribeAction(
           set: {
             confirmToken: token,
             earlyAlerts: sql`${subscribers.earlyAlerts} OR ${earlyAlerts}`,
+            ...prefsOnConflict,
           },
           setWhere: eq(subscribers.confirmed, false),
         })
@@ -156,6 +171,7 @@ export async function subscribeAction(
             confirmed: sql`true`,
             confirmedAt: nowIso,
             earlyAlerts: sql`${subscribers.earlyAlerts} OR ${earlyAlerts}`,
+            ...prefsOnConflict,
           },
           setWhere: eq(subscribers.confirmed, false),
         })
@@ -182,7 +198,7 @@ export async function subscribeAction(
         // Single opt-in (dev / no Resend): no email channel exists — flip directly.
         await db
           .update(subscribers)
-          .set({ earlyAlerts: true })
+          .set({ earlyAlerts: true, prefs: mergePrefsSql(FOUNDING_INTEREST) })
           .where(and(eq(subscribers.email, email), eq(subscribers.confirmed, true)));
       }
     }
@@ -274,10 +290,12 @@ export async function joinEarlyAlertsAction(): Promise<void> {
   }
 
   try {
-    // Null the token at flow end — single-use closure.
+    // Null the token at flow end — single-use closure. founding_interest is
+    // merged (not written over prefs): the row already carries signup
+    // attribution and, often, saved origin/moment prefs.
     await db
       .update(subscribers)
-      .set({ earlyAlerts: true, confirmToken: null })
+      .set({ earlyAlerts: true, confirmToken: null, prefs: mergePrefsSql(FOUNDING_INTEREST) })
       .where(eq(subscribers.confirmToken, token));
   } catch (err) {
     if (isRedirectError(err)) throw err;

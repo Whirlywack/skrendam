@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { subscribers } from '@/db/generated/schema';
 import { and, eq } from 'drizzle-orm';
+import { mergePrefsSql } from '@/lib/subscribers';
 
 export const dynamic = 'force-dynamic'; // never cache a state-changing route
 
@@ -19,7 +20,13 @@ export async function GET(req: NextRequest) {
   if (req.nextUrl.searchParams.get('early') === '1') {
     const upgraded = await db
       .update(subscribers)
-      .set({ earlyAlerts: true, confirmToken: null })
+      .set({
+        earlyAlerts: true,
+        confirmToken: null,
+        // Same founding-interest mark subscribeAction writes — this is the
+        // other door into the early list (already-confirmed subscriber).
+        prefs: mergePrefsSql({ founding_interest: true }),
+      })
       .where(and(eq(subscribers.confirmToken, token), eq(subscribers.confirmed, true)))
       .returning({ id: subscribers.id });
     return to(upgraded.length > 0 ? '/subscribe?state=early-joined' : '/subscribe?state=invalid');

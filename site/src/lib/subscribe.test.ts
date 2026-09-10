@@ -7,6 +7,7 @@ import {
   cleanUtm,
   cleanRef,
   mergePrefs,
+  signupPrefs,
   SUBSCRIBE_SOURCES,
   TRACKING_KEYS,
   ORIGIN_CODES,
@@ -310,5 +311,41 @@ describe('cleanPrefs — combined', () => {
     );
     expect(result.origins).toEqual(['VNO', 'WAW']);
     expect(result.moments).toEqual(['sun', 'last_minute']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// signupPrefs
+// ---------------------------------------------------------------------------
+
+describe('signupPrefs', () => {
+  test('returns null when there is nothing to store', () => {
+    expect(signupPrefs({}, null, false)).toBeNull();
+  });
+
+  test('keeps utm under a utm key', () => {
+    expect(signupPrefs({ source: 'tiktok' }, null, false)).toEqual({
+      utm: { source: 'tiktok' },
+    });
+  });
+
+  test('stores a referral code as referred_by', () => {
+    expect(signupPrefs({}, 'ab3', false)).toEqual({ referred_by: 'ab3' });
+  });
+
+  test('marks an early opt-in as founding interest', () => {
+    expect(signupPrefs({}, null, true)).toEqual({ founding_interest: true });
+  });
+
+  test('combines attribution and founding interest', () => {
+    expect(signupPrefs({ source: 'tiktok' }, 'ab3', true)).toEqual({
+      utm: { source: 'tiktok' },
+      referred_by: 'ab3',
+      founding_interest: true,
+    });
+  });
+
+  test('never sets founding_interest to false — the key is absent instead', () => {
+    expect(Object.keys(signupPrefs({}, 'ab3', false) ?? {})).toEqual(['referred_by']);
   });
 });

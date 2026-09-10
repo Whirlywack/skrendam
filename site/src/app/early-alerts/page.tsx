@@ -113,7 +113,7 @@ export default function EarlyAlertsPage() {
           <div className="cmpcard cmpcard--early">
             <span className="cmptag tag-wait">Renkam sąrašą</span>
             <h3>Skubios žinutės</h3>
-            <div className="cmp-price">Nemokama · jau netrukus</div>
+            <div className="cmp-price">{S.earlyFounding}</div>
             <ul className="cmplist">
               <li>
                 <ZapIcon />
@@ -166,7 +166,8 @@ export default function EarlyAlertsPage() {
           </span>
           <p>
             Mokamas planas su pirkimu tiesiai iš pardavėjo ir žaibiškais kainos kritimo
-            pranešimais — planuose, bet dar ne dabar. Kol kas skubios žinutės nemokamos.
+            pranešimais — planuose, bet dar ne dabar. Skubios žinutės bus mokamos: kainą
+            pasakysim prieš pradžią, o sąraše esantiems — pirmiems.
           </p>
         </div>
       </section>

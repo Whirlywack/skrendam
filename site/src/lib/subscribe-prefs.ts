@@ -119,6 +119,28 @@ export function cleanRef(raw: unknown): string | null {
 }
 
 /**
+ * Builds the `prefs` object written at signup: first-touch attribution plus,
+ * for an early-alerts opt-in, `founding_interest: true` (the early-alerts
+ * list is a waitlist for a paid plan, not a free product — the flag marks
+ * who asked before the price existed).
+ *
+ * Returns null when there is nothing to store so the column stays NULL
+ * instead of being filled with an empty object.
+ */
+export function signupPrefs(
+  utm: Record<string, string>,
+  ref: string | null,
+  founding: boolean,
+): Record<string, unknown> | null {
+  const prefs: Record<string, unknown> = {
+    ...(Object.keys(utm).length ? { utm } : {}),
+    ...(ref ? { referred_by: ref } : {}),
+    ...(founding ? { founding_interest: true } : {}),
+  };
+  return Object.keys(prefs).length ? prefs : null;
+}
+
+/**
  * Merges a prefs patch onto an existing prefs object without dropping
  * unrelated keys — e.g. `savePreferencesAction` writing `{origins, moments}`
  * must not clobber `{utm, referred_by}` written at signup. `patch` keys win

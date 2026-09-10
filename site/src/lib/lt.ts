@@ -67,6 +67,8 @@ export const S = {
   subscribedTitle: 'Viskas — lauk radinių.',
   subscribedSub: 'Pirmieji radiniai tavo pašte šią savaitę.',
   earlyCheckbox: 'Noriu ir skubių žinučių — nemokamai',
+  // The early-alerts list is a waitlist for a paid plan. Never call it free.
+  earlyFounding: 'Pirmiesiems — kaina bus pranešta prieš pradžią',
   earlyCheckboxSub: 'Rečiausi radiniai iškart, kai tik juos randam — dar prieš savaitinį laišką.',
   emailPlaceholder: 'tavo@pastas.lt',
   emailInvalid: 'Įvesk veikiantį el. pašto adresą.',
