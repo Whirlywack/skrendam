@@ -322,6 +322,10 @@ class PublishedDeal(Base):
         Boolean, nullable=False, default=False, server_default="false"
     )
     published_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    # When the deal left "live" (date sweep or curator; recheck never expires). Emails and the
+    # site read it to tell subscribers a deal they saw is gone (WP6). 0014
+    # backfilled it from valid_until/last_seen_at/published_at for old rows.
+    expired_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class Subscriber(Base):
@@ -347,9 +351,49 @@ class Subscriber(Base):
     # Set on unsubscribe; the daily scan purges the row 30 days later
     # (orchestrator._purge_unsubscribed) — the retention promise on /privatumas.
     unsubscribed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Email stream membership (spec 2026-09-10 WP6): 'free' gets the nurture
+    # letter, 'paid' gets instant alerts + the Thursday digest. Set by hand from
+    # the desk for now ('manual'); 'stripe' once payments exist.
+    plan: Mapped[str] = mapped_column(String, nullable=False, default="free", server_default="free")
+    paid_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_source: Mapped[str | None] = mapped_column(String, nullable=True)  # 'manual' | 'stripe'
     __table_args__ = (
         Index("ix_subscribers_unsubscribe_token", "unsubscribe_token", unique=True),
+        Index("ix_subscribers_plan", "plan"),
     )
+
+
+class Issue(Base):
+    """One sent (or attempted) email issue: a paid digest, a free nurture letter
+    or an instant alert. deal_ids/expired_deal_ids are lists of published_deals
+    ids; stats holds send counts (recipients, skipped, errors)."""
+
+    __tablename__ = "issues"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String)  # 'paid_digest' | 'free_nurture' | 'instant'
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    deal_ids: Mapped[list] = mapped_column(JSON)
+    expired_deal_ids: Mapped[list] = mapped_column(JSON)
+    stats: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class DealEvent(Base):
+    """A subscriber action on a published deal: a tracked click or a self-reported
+    booking. The only source of real counts in emails and on the site."""
+
+    __tablename__ = "deal_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    deal_id: Mapped[int] = mapped_column(ForeignKey("published_deals.id"), index=True)
+    issue_id: Mapped[int | None] = mapped_column(
+        ForeignKey("issues.id"), nullable=True, index=True
+    )
+    subscriber_id: Mapped[int | None] = mapped_column(
+        ForeignKey("subscribers.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    kind: Mapped[str] = mapped_column(String)  # 'click' | 'booked_claim'
+    source: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
 class ScanRequest(Base):

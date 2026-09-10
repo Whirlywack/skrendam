@@ -5,8 +5,9 @@ export default function robots(): MetadataRoute.Robots {
   const base = siteUrl();
   return {
     rules: [
-      // Default: allow all content; disallow /confirm (state-change redirect, not content)
-      { userAgent: '*', allow: '/', disallow: ['/confirm'] },
+      // Default: allow all content; disallow the state-changing / redirect-only
+      // routes (not content): /confirm, the tracked /go links, the claim page.
+      { userAgent: '*', allow: '/', disallow: ['/confirm', '/go/', '/uzsisakiau/'] },
       // Explicitly welcome AI answer engines (GEO) — do not block
       {
         userAgent: [

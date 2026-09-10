@@ -252,7 +252,7 @@ def run_scan(
     session.commit()
 
     _expire_stale(session, now)
-    _expire_published_past_date(session, today)
+    _expire_published_past_date(session, today, now)
     _purge_unsubscribed(session, now)
 
     price_rows = (
@@ -501,13 +501,14 @@ def _purge_unsubscribed(session, now):
     session.flush()
 
 
-def _expire_published_past_date(session, today):
+def _expire_published_past_date(session, today, now):
     """Date-based expiry for live published deals.
 
     Pure calendar logic — works identically during an fli outage, which is the
     point: empty rechecks never expire deals (verification.py), so dates and
     humans are the only expirers. NULL dates drop out of the comparisons: a
-    dateless deal stays curator-managed.
+    dateless deal stays curator-managed. `expired_at` is stamped with the run's
+    `now` so emails can say when a deal a reader saw went away (WP6).
     """
     stale = session.scalars(
         select(models.PublishedDeal).where(
@@ -517,4 +518,5 @@ def _expire_published_past_date(session, today):
     )
     for pd in stale:
         pd.status = "expired"
+        pd.expired_at = now
     session.flush()

@@ -13,6 +13,8 @@ import {
   publishedDeals,
   scanRequests,
 } from '@/db/generated/schema';
+import { emailEnabled } from '@/lib/email/client';
+import { defaultDeps, recordSkippedNoKey, sendInstant } from '@/lib/email/streams';
 
 // ---------------------------------------------------------------------------
 // Auth guard — re-checked inside EVERY action (proxy can skip middleware on
@@ -126,7 +128,7 @@ export async function publishDeal(input: {
 
   const now = new Date().toISOString();
 
-  await db.insert(publishedDeals).values({
+  const [row] = await db.insert(publishedDeals).values({
     candidateId: cand.id,
     dealTemplateId: input.templateId,
     publicLabel: tmpl?.publicLabel ?? null,
@@ -148,12 +150,26 @@ export async function publishDeal(input: {
     tier: 'free',
     status: 'live',
     publishedAt: now,
-  });
+  }).returning();
 
   await db
     .update(candidates)
     .set({ status: 'approved' })
     .where(eq(candidates.id, cand.id));
+
+  // Instant paid stream (WP6). The deal is live regardless of what happens
+  // here: a send failure is logged and shows on the Letters page as a failed
+  // issue, it never fails the publish. Without a Resend key the issue row is
+  // still recorded (skipped_no_key) so the e2e journey publishes without one.
+  try {
+    if (emailEnabled()) {
+      await sendInstant(row, defaultDeps);
+    } else {
+      await recordSkippedNoKey('instant', [row.id], defaultDeps);
+    }
+  } catch (e) {
+    console.error(`[email] instant stream for deal ${row.id} failed:`, e);
+  }
 
   revalidatePath('/queue');
   revalidatePath('/published');
@@ -248,7 +264,7 @@ export async function expireDeal(id: number): Promise<void> {
   await requireAdmin();
   await db
     .update(publishedDeals)
-    .set({ status: 'expired' })
+    .set({ status: 'expired', expiredAt: new Date().toISOString() })
     .where(eq(publishedDeals.id, id));
   revalidatePath('/published');
 }
@@ -257,7 +273,7 @@ export async function republishDeal(id: number): Promise<void> {
   await requireAdmin();
   await db
     .update(publishedDeals)
-    .set({ status: 'live', unverifiedSince: null })
+    .set({ status: 'live', unverifiedSince: null, expiredAt: null })
     .where(eq(publishedDeals.id, id));
   revalidatePath('/published');
 }

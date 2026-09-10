@@ -1,5 +1,5 @@
 import subprocess
-from datetime import date
+from datetime import date, datetime
 
 import sqlalchemy as sa
 from sqlalchemy import select
@@ -132,3 +132,51 @@ def test_0013_backfills_unsubscribe_token_for_every_row(tmp_path, monkeypatch):
     assert all(t for t in tokens), "every row must end with a non-empty token"
     assert len(set(tokens)) == 3, "tokens must be distinct"
     assert all(r[1] is None for r in rows), "backfill must not mark anyone unsubscribed"
+
+
+def test_0014_backfills_expired_at(tmp_path, monkeypatch):
+    """0014 stamps expired_at on already-expired deals and defaults plan to 'free'."""
+    url = f"sqlite+pysqlite:///{tmp_path / 'm.db'}"
+    monkeypatch.setenv("SKRENDAM_DATABASE_URL", url)
+    assert _alembic("upgrade", "0013_unsubscribe").returncode == 0
+
+    eng = sa.create_engine(url)
+    with eng.begin() as c:
+        c.execute(
+            sa.text(
+                "INSERT INTO subscribers (email, created_at) VALUES ('a@yip.lt', CURRENT_TIMESTAMP)"
+            )
+        )
+        common = (
+            "candidate_id, deal_template_id, headline, origin, destination, trip_type, price, "
+            "tier, published_at, status, valid_until, last_seen_at"
+        )
+        rows = [
+            (1, "expired", "2026-08-01", None),  # valid_until wins
+            (2, "expired", None, "2026-08-05 10:00:00"),  # falls back to last_seen_at
+            (3, "live", None, None),  # untouched
+        ]
+        for pid, status, valid_until, last_seen in rows:
+            c.execute(
+                sa.text(
+                    f"INSERT INTO published_deals (id, {common}) VALUES "
+                    "(:id, 1, 1, 'h', 'VNO', 'BCN', 'oneway', 30.0, 'free', '2026-07-01 08:00:00', "
+                    ":status, :valid_until, :last_seen)"
+                ),
+                {"id": pid, "status": status, "valid_until": valid_until, "last_seen": last_seen},
+            )
+
+    up = _alembic("upgrade", "head")
+    assert up.returncode == 0, up.stderr
+    with eng.connect() as c:
+        expired = {
+            r[0]: (datetime.fromisoformat(r[1]) if r[1] else None)
+            for r in c.execute(sa.text("SELECT id, expired_at FROM published_deals ORDER BY id"))
+        }
+        plan = c.execute(sa.text("SELECT plan FROM subscribers")).scalar_one()
+    assert expired == {
+        1: datetime(2026, 8, 1, 0, 0, 0),
+        2: datetime(2026, 8, 5, 10, 0, 0),
+        3: None,
+    }
+    assert plan == "free"

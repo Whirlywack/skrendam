@@ -6,10 +6,11 @@ export function emailEnabled(): boolean {
   return !!process.env.RESEND_API_KEY;
 }
 
-const FROM = process.env.YIP_FROM_EMAIL ?? 'Yip <hello@yip.lt>';
+// `||`, not `??`: an empty value in .env.local means "unset", not "no sender".
+const FROM = process.env.YIP_FROM_EMAIL || 'Yip <hello@yip.lt>';
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001').replace(/\/$/, '');
 }
 
 /** Ask an already-confirmed subscriber to confirm the early-alerts upgrade by
