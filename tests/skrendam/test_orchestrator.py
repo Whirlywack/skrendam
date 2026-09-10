@@ -539,6 +539,44 @@ def test_run_scan_persists_score_v2_archetype_and_signals(session):
     assert m.demand_signals["commodity_share"] is None  # no history yet -> unknown, not commodity
 
 
+class TierCBackend(FakeBackend):
+    """A strong-but-not-rare fare on a spread calendar.
+
+    Prices 55..145 (median 100, MAD 30) keep the modified z at ~-1.0, so the
+    outlier/error-fare scorers stay quiet and the 45% discount stays under
+    demand.RARE_DISCOUNT_PCT: the headline is a plain weighted 0.95.
+    """
+
+    PRICES = [55.0, 70.0, 85.0, 100.0, 115.0, 130.0, 145.0]
+
+    def search_calendar(self, spec):
+        return [(date(2026, 7, 20 + i), None, p) for i, p in enumerate(self.PRICES)]
+
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        fares = super().search_flights(origin, destination, travel_date, return_date, cabin)
+        fares[0]["price"] = 55.0
+        return fares
+
+
+def test_quality_tier_follows_score_v2_not_the_headline_score(session):
+    """D6: a headline-great fare to a low-demand destination is NOT tiered great.
+
+    XXX is in no demand_tiers.json band -> tier C -> weight 0.70, which drags a
+    95 headline down to 66 on score_v2. score_0_100 keeps the honest headline
+    number; quality_tier must follow score_v2 and stay NULL.
+    """
+    _seed(session)
+    session.query(models.Route).filter_by(id=1).update({"destination": "XXX"})
+    session.commit()
+    adapter = FliAdapter(TierCBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    m = session.query(models.CandidateTemplateMatch).one()
+    assert m.score_0_100 >= 88
+    assert m.demand_signals["demand_tier"] == "C" and m.demand_signals["demand_weight"] == 0.7
+    assert m.score_v2 < 88
+    assert m.quality_tier is None
+
+
 class EarlyBirdBackend(FakeBackend):
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
         fares = super().search_flights(origin, destination, travel_date, return_date, cabin)

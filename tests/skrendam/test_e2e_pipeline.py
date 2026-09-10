@@ -19,33 +19,38 @@ from skrendam.verification import recheck_candidate
 #      and plan-ahead-summer both resolve); relative templates always resolve. ────────
 TODAY = date(2026, 6, 15)
 
-# ─── Expected exact pipeline counts for TODAY=2026-06-15 with NewFakeBackend ─────────
-# Re-derived 2026-09-10 for family-xmas-sun (founder decision 3; 159 routes, 15
-# templates: last-warm-days split Oct/Nov, four fixed-window school-break
-# templates (autumn/feb/easter/xmas), plan-ahead-summer seasonal+60d lead,
-# weekend gate live): the templates over due_routes(rotation_days=10) resolve
-# to 154 specs (151 + 3 new family-xmas-sun WINTER_WARM specs); the fake is
-# single-month so Wave-1 month-local scoring is neutral (month == window stats).
+# ─── Expected exact pipeline counts for TODAY=2026-06-15 with FakeBackend ────────────
+# Re-derived empirically 2026-09-10 (WP2 review wave) by running the pipeline and
+# reading the numbers off, not by arithmetic. 159 seeded routes, 15 templates
+# (last-warm-days split Oct/Nov, four fixed-window school-break templates
+# autumn/feb/easter/xmas, plan-ahead-summer seasonal + 60d lead, weekend gate
+# live). The templates over due_routes(rotation_days=10) resolve to 154 specs.
 #
 # 7 calendar points per spec → 154 * 7 = 1078 price_log rows.
-# Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only 30.0 is flagged
-# (single-month fake: month decile == window decile).
-# near_dates = prices ≤ 30.0*1.10=33.0 → 5 points → satisfies min_departure_dates=5
-# (and the new template's min_departure_dates=3).
-# Weighted fires wherever the EUR30 fare passes a price-cap/psych gate; matches
-# per template (a fare can attach to EVERY in-scope template, so the Oct 30 -
-# Nov 4 school-break fares also file under the last-warm-days windows):
+# Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only the 30.0 point is
+# flagged (the fake is single-month, so month decile == window decile and Wave-1
+# month-local scoring is neutral). One search_flights call per spec.
+# near_dates = prices ≤ 30.0*1.10 = 33.0 → 5 → clears min_departure_dates=5 (and
+# family-xmas-sun's 3).
+#
+# Matches per template — a fare attaches to EVERY in-scope template, so the
+# Oct 30 - Nov 4 school-break fares also file under the last-warm-days windows:
 #   family-school-holiday-sun 30, last-warm-days 22, family-autumn-sun 21,
 #   last-warm-days-november 14, vfr-watch 10, family-easter-sun 5,
-#   family-feb-sun 3, family-xmas-sun 3 → 108 matches over 87 distinct
-#   candidates (empirically measured 2026-09-10; family-xmas-sun's 3 WINTER_WARM
-#   specs each add one candidate + one match).
-# last-minute-weekends is now ZERO by design: its flagged point (today+3 =
-# Thu Jun 18) fails the FRI/SAT hard gate added 2026-08-29.
-# september-sun, christmas-markets, plan-ahead-summer, winter-sun-escape and
-# ski-alps stay quiet: discount-only gates (25-30%) vs the fake's 6%
-# below-median fare. Outlier scorer quiet too (z=-1.35 at month MAD 1.0).
-# Drafts are per match → 108.
+#   family-feb-sun 3, family-xmas-sun 3  →  108 matches over 87 distinct
+#   candidates, 1 draft per match → 108 drafts.
+#
+# The five family templates account for 62 of those 108, and they are now earned:
+# since 2026-09-10 the fake's legs carry real ISO times (09:15-12:40 out /
+# 14:00-17:30 back), so family_friendly_times_only is evaluated on actual hours
+# instead of being waved through as "unknown". Moving the outbound to 05:30 drops
+# every family template and leaves 46 matches — the gate is live, not vacuous.
+#
+# Zero by design: last-minute-weekends (its flagged point, today+3 = Thu Jun 18,
+# fails the FRI/SAT gate added 2026-08-29); september-sun, christmas-markets,
+# plan-ahead-summer, winter-sun-escape, ski-alps and long-haul-opportunist
+# (discount-only gates of 25-30% vs the fake's 6%-below-median fare). The outlier
+# scorer stays quiet too (z=-1.35 at month MAD 1.0).
 E2E_PRICE_LOG_ROWS = 1078
 E2E_CANDIDATES = 87
 E2E_MATCHES = 108
@@ -88,13 +93,35 @@ class FakeBackend:
         return points
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        # Real ISO leg times: without them every fare had unknown hours and the
+        # time-of-day gate was permissive by default, so the four family
+        # templates were never actually exercised (test-staleness audit C11).
+        # 09:15-12:40 out / 14:00-17:30 back is civilised on every leg, so the
+        # family gate now PASSES on its merits.
+        legs = [
+            {
+                "airline": {"code": "W6"},
+                "flight_number": "1",
+                "departure_time": f"{travel_date}T09:15:00",
+                "arrival_time": f"{travel_date}T12:40:00",
+            }
+        ]
+        if return_date is not None:
+            legs.append(
+                {
+                    "airline": {"code": "W6"},
+                    "flight_number": "2",
+                    "departure_time": f"{return_date}T14:00:00",
+                    "arrival_time": f"{return_date}T17:30:00",
+                }
+            )
         return [
             {
                 "price": 30.0,
                 "currency": "EUR",
                 "stops": 0,
                 "duration": 215,
-                "legs": [{"airline": {"code": "W6"}, "flight_number": "1"}],
+                "legs": legs,
                 "self_transfer": False,
                 "mixed_cabin": False,
                 "booking_url": "https://x",
@@ -129,6 +156,31 @@ def test_full_pipeline_offline(session):
     # ── 4. exact candidate count ──────────────────────────────────────────────────────
     candidates = session.query(models.Candidate).all()
     assert len(candidates) == E2E_CANDIDATES
+
+    # ── 4b. exact match count (E2E_MATCHES was declared but never asserted) ──────────
+    assert session.query(models.CandidateTemplateMatch).count() == E2E_MATCHES
+
+    # ── 4c. the time-gated family templates match on their merits ────────────────────
+    #    The fake's legs carry real hours, so family_friendly_times_only is really
+    #    evaluated here; an all-zero family row would mean the gate silently ate them.
+    family_matches = dict(
+        session.execute(
+            select(models.DealTemplate.slug, func.count(models.CandidateTemplateMatch.id))
+            .join(
+                models.CandidateTemplateMatch,
+                models.CandidateTemplateMatch.deal_template_id == models.DealTemplate.id,
+            )
+            .where(models.DealTemplate.family_friendly_times_only.is_(True))
+            .group_by(models.DealTemplate.slug)
+        ).all()
+    )
+    assert family_matches == {
+        "family-school-holiday-sun": 30,
+        "family-autumn-sun": 21,
+        "family-easter-sun": 5,
+        "family-feb-sun": 3,
+        "family-xmas-sun": 3,
+    }
 
     # ── 5. no orphan candidates (every candidate has ≥1 match) ───────────────────────
     #    Subquery counts matches per candidate; outer filters for zero-match cands.

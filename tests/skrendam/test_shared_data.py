@@ -6,7 +6,6 @@ site/src/lib/ web/src/lib/` (same for airlines.json) whenever the source changes
 """
 
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -26,12 +25,13 @@ def test_app_copy_matches_canonical(name, app):
 
 
 def test_every_seeded_airport_has_a_city():
+    # Read the ROUTES table itself, not a regex over seeds.py: a route added with
+    # a different literal shape (a new origin, a tuple split over lines) used to
+    # slip past the scrape and ship an airport with no city name.
+    from skrendam.seeds import ROUTES
+
     airports = json.loads((ROOT / "skrendam" / "airports.json").read_text(encoding="utf-8"))
-    seeds = (ROOT / "skrendam" / "seeds.py").read_text(encoding="utf-8")
-    codes = set(re.findall(r'\("(?:VNO|KUN|RIX|TLL)",\s*"([A-Z]{3})"', seeds)) | {
-        "VNO",
-        "KUN",
-        "RIX",
-    }
+    codes = {origin for origin, _, _, _ in ROUTES} | {dest for _, dest, _, _ in ROUTES}
+    assert len(codes) > 100, "ROUTES looks truncated — the check would pass vacuously"
     missing = sorted(codes - airports.keys())
     assert not missing, f"no city name for seeded airports: {missing}"
