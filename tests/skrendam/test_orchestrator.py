@@ -699,3 +699,42 @@ def test_purge_sweep_deletes_long_unsubscribed(session):
     adapter = FliAdapter(FakeBackend(), pace=lambda: None)
     run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t", now=now)
     assert {s.id for s in session.query(models.Subscriber)} == {2, 3}
+
+
+def test_date_sweep_stamps_expired_at(session):
+    """The date sweep records WHEN a deal expired (the injected `now`), not just that it did."""
+    _seed(session)
+    session.add(
+        models.Candidate(
+            id=51,
+            route_id=1,
+            origin="VNO",
+            destination="BCN",
+            zone="MED",
+            trip_type="oneway",
+            travel_date=date(2026, 12, 1),
+            price=30.0,
+            deal_group_key="k51",
+        )
+    )
+    session.add(
+        models.PublishedDeal(
+            id=21,
+            candidate_id=51,
+            deal_template_id=1,
+            headline="past valid_until",
+            origin="VNO",
+            destination="BCN",
+            trip_type="oneway",
+            price=30.0,
+            status="live",
+            valid_until=date(2026, 6, 1),
+        )
+    )
+    session.commit()
+    now = datetime(2026, 6, 2, 6, 30)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t", now=now)
+    pd = session.get(models.PublishedDeal, 21)
+    assert pd.status == "expired"
+    assert pd.expired_at == now
