@@ -1,10 +1,10 @@
 import type { publishedDeals } from '../../db/generated/schema';
-import { city } from '../airports';
-import { eur, formatDates, WAS_PRICE_MIN_DROP_PCT } from '../format';
+import { eur, WAS_PRICE_MIN_DROP_PCT } from '../format';
 import { claimUrl, trackedDealUrl, unsubscribeUrl, upgradeUrl } from '../links';
 import personas from '../personas.json';
 import { momentCodes, type Recipient } from '../subscribers';
 import { L } from './copy';
+import { formatDatesLt, ltCity } from './format-lt';
 
 /** A `published_deals` row as drizzle selects it. `price`, `baselinePrice` and
  *  `discountPct` are typed as numbers but can arrive as numeric strings from
@@ -49,12 +49,14 @@ function bodyHtml(s: string): string {
   return escapeHtml(s).replace(/\r?\n/g, '<br>');
 }
 
+/** „Vilnius → Londonas" — LT nominative city names, English fallback. */
 function route(deal: Deal): string {
-  return `${city(deal.origin)} → ${city(deal.destination)}`;
+  return `${ltCity(deal.origin).nom} → ${ltCity(deal.destination).nom}`;
 }
 
+/** „gruod. 22–28" — LT month abbreviations, month first; '' without a date. */
 function dates(deal: Deal): string {
-  return deal.travelDate ? formatDates(deal.travelDate, deal.returnDate) : '';
+  return deal.travelDate ? formatDatesLt(deal.travelDate, deal.returnDate) : '';
 }
 
 /** „įprastai X €" only on deep deals — the was-price gate shared with the

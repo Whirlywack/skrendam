@@ -1,5 +1,5 @@
-import { city } from '../airports';
 import { eur } from '../format';
+import { ltCity } from './format-lt';
 
 /** Letter copy — spec §7 verbatim (launch spec, "7. Copy"). Lithuanian, `tu`
  *  voice, lowercase spoken verbs, „radinys". Banned anywhere in a mail:
@@ -14,8 +14,9 @@ export const L = {
   booked: 'Užsisakiau',
   /** Real counts only — the caller reads `n` from `deal_events`, never estimates. */
   bookedN: (n: number) => `${n} prenumeratorių užsisakė`,
+  /** „93 € — Londonas" — the price leads, the city in LT nominative. */
   instantSubject: (deal: { price: number | string; destination: string }) =>
-    `${eur(Number(deal.price))} — ${city(deal.destination)}`,
+    `${eur(Number(deal.price))} — ${ltCity(deal.destination).nom}`,
   digestSubject: (n: number) => `Savaitės radiniai: ${n}`,
   nurtureSubject: 'Ką praleidai — ir du nauji radiniai',
   lasted: (h: number) => (h < 48 ? `išbuvo ${h} val.` : `išbuvo ${Math.round(h / 24)} d.`),

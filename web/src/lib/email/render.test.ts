@@ -11,6 +11,8 @@ import { unsubscribeUrl } from '../links';
 import { refCode } from '../refcode';
 import type { Recipient } from '../subscribers';
 import { L } from './copy';
+import { formatDatesLt, ltCity } from './format-lt';
+import CITIES_LT from './cities-lt.json';
 import { dealCard, renderDigest, renderInstant, renderNurture, type Deal, type MissedDeal } from './render';
 import { DIGEST_DAY, DIGEST_TIME, FREE_LETTER_CADENCE_DAYS, FREE_LETTER_FRESH, FREE_LETTER_MISSED } from '../letters';
 
@@ -76,6 +78,20 @@ describe('letters constants (spec §6)', () => {
   });
 });
 
+describe('format-lt (mirrors site/src/lib/format.ts and cities-lt.ts)', () => {
+  it('formatDatesLt: one-way, same month, cross month with the spaced en dash', () => {
+    expect(formatDatesLt('2026-12-22', null)).toBe('gruod. 22');
+    expect(formatDatesLt('2026-12-22', '2026-12-28')).toBe('gruod. 22–28');
+    expect(formatDatesLt('2026-09-29', '2026-10-02')).toBe('rugs. 29 – spal. 2');
+    expect(formatDatesLt('2027-01-05', '2027-01-09')).toBe('saus. 5–9');
+  });
+  it('ltCity: nominative from the JSON, byte-identical to the site copy', () => {
+    expect(ltCity('STN').nom).toBe('Londonas');
+    expect(ltCity('STN')).toEqual((CITIES_LT as Record<string, unknown>).STN);
+    expect(ltCity('VNO').nom).toBe('Vilnius');
+  });
+});
+
 describe('copy (spec §7 verbatim)', () => {
   it('headings and labels', () => {
     expect(L.headline).toBe('Savaitės radinys');
@@ -93,7 +109,7 @@ describe('copy (spec §7 verbatim)', () => {
     expect(L.lasted(36)).toBe('išbuvo 36 val.');
     expect(L.lasted(72)).toBe('išbuvo 3 d.');
     expect(L.usually(275)).toBe(`įprastai ${eur(275)}`);
-    expect(L.instantSubject({ price: 93, destination: 'STN' })).toBe(`${eur(93)} — ${city('STN')}`);
+    expect(L.instantSubject({ price: 93, destination: 'STN' })).toBe(`${eur(93)} — Londonas`);
   });
 });
 
@@ -101,7 +117,9 @@ describe('dealCard', () => {
   it('shows headline, dates, price, „įprastai" (discount ≥ 30), body with <br>, CTA and claim links', () => {
     const { html, text } = dealCard(deal(), recipient(), 9);
     expect(html).toContain('Kalėdos Londone už 93 €');
-    expect(html).toContain('22–28 Dec');
+    expect(html).toContain('gruod. 22–28');
+    expect(html).toContain('Vilnius → Londonas · gruod. 22–28');
+    expect(html).not.toContain('Dec');
     expect(html).toContain(eur(93));
     expect(html).toContain(L.usually(275));
     expect(html).toContain('€93, įprastai apie €275<br>1 persėdimas');
@@ -130,15 +148,24 @@ describe('dealCard', () => {
     expect(html).not.toContain('<b>');
     expect(html).toContain('Pigu &lt;b&gt;labai&lt;/b&gt; &amp; greitai');
   });
-  it('renders a one-way date and survives a null travel date', () => {
-    expect(dealCard(deal({ returnDate: null }), recipient(), 9).html).toContain('22 Dec');
+  it('renders a one-way date, a cross-month range, and survives a null travel date', () => {
+    expect(dealCard(deal({ returnDate: null }), recipient(), 9).html).toContain('gruod. 22');
+    expect(dealCard(deal({ travelDate: '2026-09-29', returnDate: '2026-10-02' }), recipient(), 9).html)
+      .toContain('rugs. 29 – spal. 2');
     expect(() => dealCard(deal({ travelDate: null, returnDate: null }), recipient(), 9)).not.toThrow();
   });
 });
 
 describe('renderInstant', () => {
-  it('subject is the hero number and city', () => {
-    expect(renderInstant(deal(), recipient(), 9).subject).toBe(`${eur(93)} — ${city('STN')}`);
+  it('subject is the hero number and the LT nominative city from cities-lt.json', () => {
+    expect(renderInstant(deal(), recipient(), 9).subject).toBe(`${eur(93)} — Londonas`);
+    expect(renderInstant(deal(), recipient(), 9).subject).toBe(`${eur(93)} — ${ltCity('STN').nom}`);
+  });
+  it('falls back to the English airports.json name for a code cities-lt.json lacks', () => {
+    // Every airports.json code currently has an LT entry, so the only reachable
+    // fallback is a code unknown to both maps, where city() yields the code.
+    expect(ltCity('ZZZ').nom).toBe(city('ZZZ'));
+    expect(renderInstant(deal({ destination: 'ZZZ' }), recipient(), 9).subject).toBe(`${eur(93)} — ${city('ZZZ')}`);
   });
   it('html carries the tracked deal link and the unsubscribe link', () => {
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', '');
