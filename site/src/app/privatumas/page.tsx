@@ -22,7 +22,7 @@ export default function Privatumas() {
           El. paštą; tavo pasirinkimus (iš kur skrendi, kelionių momentai); prenumeratos šaltinį
           ir UTM žymas (iš nuorodos, kuria atėjai — saugomos naršyklės sesijoje kaip{' '}
           <code>yip_attr</code>, kol užsiprenumeruoji); rekomendacijos kodą (<code>ref</code>), jei
-          atėjai per draugo nuorodą; patvirtinimo slapuką <code>yip_ct</code> (tik prenumeratos
+          atėjai per draugo nuorodą; patvirtinimo slapuką <code>yip_pt</code> (tik prenumeratos
           patvirtinimui); IP adresą — tik piktnaudžiavimo apsaugai (užklausų ribojimui) ir tik
           techniniuose žurnaluose.
         </p>
