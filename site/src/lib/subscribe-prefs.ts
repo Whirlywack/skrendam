@@ -34,6 +34,7 @@ export const PREF_MOMENTS = [
   { code: 'family', label: 'Su šeima' },
   { code: 'weekend', label: 'Savaitgaliai' },
   { code: 'last_minute', label: 'Paskutinė minutė' },
+  { code: 'home', label: 'Grįžtu namo iš užsienio' },
 ] as const;
 
 export const ORIGIN_CODES = PREF_ORIGINS.map((o) => o.code);

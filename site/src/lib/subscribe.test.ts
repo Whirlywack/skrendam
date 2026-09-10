@@ -270,6 +270,12 @@ describe('cleanPrefs — moments', () => {
     expect(moments).toHaveLength(MOMENT_CODES.length);
   });
 
+  test('offers the home moment (WP7 — Lithuanians abroad flying home)', () => {
+    expect(MOMENT_CODES).toContain('home');
+    const { moments } = cleanPrefs([], ['home']);
+    expect(moments).toEqual(['home']);
+  });
+
   test('empty input returns empty array', () => {
     const { moments } = cleanPrefs([], []);
     expect(moments).toEqual([]);
