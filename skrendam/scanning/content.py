@@ -5,6 +5,9 @@ from datetime import date
 from importlib import resources
 
 from skrendam.db import models
+from skrendam.scanning.scoring import demand
+from skrendam.scanning.scoring.eligibility import leg_hour_bounds
+from skrendam.scanning.types import FareItinerary
 
 # IATA -> {city, country}; shared with site/ and web/ (they import the same JSON).
 _AIRPORTS: dict[str, dict[str, str]] = json.loads(
@@ -12,8 +15,46 @@ _AIRPORTS: dict[str, dict[str, str]] = json.loads(
 )
 
 
+# Verified monthly mean daily highs (°C, Jan..Dec) for the sun-template destinations
+# only (seeds NOV_WARM ∪ WINTER_WARM ∪ EASTER_WARM). Every row is copied from a
+# Wikipedia "Climate data" table (station + normals period cited in the task-3
+# report); a destination without a sourced row is absent, never estimated.
+_CLIMATE: dict[str, list[int]] = json.loads(
+    resources.files("skrendam").joinpath("climate.json").read_text(encoding="utf-8")
+)
+_PERSONAS = demand.load_personas()
+
+LT_MONTHS_LOC = [
+    "sausį",
+    "vasarį",
+    "kovą",
+    "balandį",
+    "gegužę",
+    "birželį",
+    "liepą",
+    "rugpjūtį",
+    "rugsėjį",
+    "spalį",
+    "lapkritį",
+    "gruodį",
+]
+# Origins are a closed set (VNO/KUN/RIX), so their genitive is safe to hardcode;
+# airports.json has no declension field, so destinations stay nominative.
+_ORIGIN_GENITIVE = {"VNO": "Vilniaus", "KUN": "Kauno", "RIX": "Rygos"}
+
+CARD_FROM_VILNIUS = "Iš Vilniaus: 59 min traukiniu"  # KUN
+CARD_FROM_RIGA = "Iš Vilniaus: traukinys nuo €9.60, ~4 val."  # RIX
+CARD_BAG_ONLY_HAND = "Tik rankinis bagažas — registruotas pagal tarifą"
+CARD_FAMILY_TOTAL = "Šeimai iš keturių: €{total:.0f}"
+CARD_EARLY_DEPARTURE = "Išvyksta prieš 07:00"
+EARLY_DEP_HOUR = 7
+WEATHER_LINE = "{city} {month}: ~{temp} °C dieną"
+SUN_PERSONA = "sun"
+
+
 def city(iata: str) -> str:
     return _AIRPORTS.get(iata, {}).get("city", iata)
+
 
 # Keep in sync with web/src/lib/format.ts and site/src/lib/format-rules.ts
 # (WAS_PRICE_MIN_DROP_PCT = 30).
@@ -35,12 +76,84 @@ def fallback_headline(
     2026-08-22): a was-price only helps on deep deals, so the "usually" clause only
     appears above WAS_PRICE_MIN_DISCOUNT.
     """
-    deep_enough = bool(baseline) and (baseline - price) / baseline >= WAS_PRICE_MIN_DISCOUNT
+    deep_enough = _deep_enough(price, baseline)
     angle = (angle or "").strip().rstrip(".")
     why = f" — {angle[0].lower() + angle[1:]}" if angle else ""
     usually = f" (usually €{baseline:.0f})" if deep_enough else ""
     fare_word = "one-way to" if trip_type == "oneway" else "return to"
     return f"€{price:.0f} {fare_word} {city(destination)}{usually}{why}."
+
+
+def _deep_enough(price: float, reference: float | None) -> bool:
+    return bool(reference) and (reference - price) / reference >= WAS_PRICE_MIN_DISCOUNT
+
+
+def _stops_lt(n: int) -> str:
+    if n == 1:
+        return "1 persėdimas"
+    if n < 10:
+        return f"{n} persėdimai"
+    return f"{n} persėdimų"
+
+
+def body_lines(
+    origin: str,
+    destination: str,
+    price: float,
+    baseline: float | None,
+    travel_date: date,
+    template: "models.DealTemplate",
+    signals: dict | None = None,
+    fare: FareItinerary | None = None,
+    window_name: str | None = None,
+) -> tuple[str, list[str]]:
+    """Rules-written Lithuanian body: (why it's worth it, the catches). Pure.
+
+    Why line, first rule that holds: the demand window's own typical price
+    (date deal), the month median (destination deal), else the bare route.
+    Both price references obey WAS_PRICE_MIN_DISCOUNT — a shallow "usually" is
+    hype. The family x4 total rides along as a second sentence when assess()
+    priced the fare for a families audience. Catches are facts only (stops,
+    early departure, transfer from Vilnius, sourced weather, bags); the desk
+    curator edits before publishing. No label prefixes, no banned words.
+    """
+    signals = signals or {}
+    typical = signals.get("window_typical")
+    if window_name and _deep_enough(price, typical):
+        why = f"{window_name} — €{price:.0f}, įprastai apie €{typical:.0f}"
+    elif _deep_enough(price, baseline):
+        why = f"€{price:.0f} vietoj įprastų €{baseline:.0f}"
+    else:
+        gen = _ORIGIN_GENITIVE.get(origin)
+        why = f"€{price:.0f} — {city(destination)}" + (f", iš {gen}" if gen else "")
+    if signals.get("saving_family") is not None:
+        why += ". " + CARD_FAMILY_TOTAL.format(total=price * demand.FAMILY_SEATS)
+
+    catches: list[str] = []
+    if fare is not None:
+        if fare.stops >= 1:
+            catches.append(_stops_lt(fare.stops))
+        earliest, _ = leg_hour_bounds(fare)
+        if earliest is not None and earliest < EARLY_DEP_HOUR:
+            catches.append(CARD_EARLY_DEPARTURE)
+    if origin == "KUN":
+        catches.append(CARD_FROM_VILNIUS)
+    elif origin == "RIX":
+        catches.append(CARD_FROM_RIGA)
+    codes = demand.persona_codes(getattr(template, "newsletter_tag", None), _PERSONAS)
+    if SUN_PERSONA in codes and destination in _CLIMATE:
+        catches.append(
+            WEATHER_LINE.format(
+                city=city(destination),
+                month=LT_MONTHS_LOC[travel_date.month - 1],
+                temp=_CLIMATE[destination][travel_date.month - 1],
+            )
+        )
+    # fli's FlightResult carries no fare-brand/baggage field, so nothing sets
+    # raw["bags"] today: the check stays so a future adapter key lights it up.
+    if fare is not None and fare.raw.get("bags") == "hand_only":
+        catches.append(CARD_BAG_ONLY_HAND)
+    return why, catches
 
 
 def build_content_draft(
@@ -50,6 +163,10 @@ def build_content_draft(
     baseline: float | None,
     travel_date: date,
     template: "models.DealTemplate",
+    *,
+    signals: dict | None = None,
+    fare: FareItinerary | None = None,
+    window_name: str | None = None,
 ) -> dict:
     fields = {
         "origin": origin,
@@ -75,11 +192,14 @@ def build_content_draft(
     headline = fill(template.suggested_headline_template) or fallback_headline(
         destination, price, baseline, template.content_angle, template.trip_type
     )
+    why, catches = body_lines(
+        origin, destination, price, baseline, travel_date, template, signals, fare, window_name
+    )
     return {
         "headline": headline,
         "tiktok_hook": fill(template.tiktok_hook_template),
         "newsletter_snippet": fill(template.content_angle),
-        "body": None,
+        "body": why + ("\n" + " · ".join(catches) if catches else ""),
         "cta_text": None,
         "created_by": "system",
         "status": "draft",

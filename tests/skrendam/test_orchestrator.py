@@ -539,6 +539,25 @@ def test_run_scan_persists_score_v2_archetype_and_signals(session):
     assert m.demand_signals["commodity_share"] is None  # no history yet -> unknown, not commodity
 
 
+def test_family_draft_body_is_persisted_from_demand_signals(session):
+    """Task 3 (WP3): the draft body is the rules-written LT why + catches.
+
+    A families audience makes assess() emit saving_family, which appends the
+    x4 total to the why line; the EUR30 fare against a EUR90 month median is
+    a deep enough drop for the "vietoj įprastų" clause.
+    """
+    _seed(session)
+    session.query(models.AudienceSegment).filter_by(id=1).update({"slug": "families"})
+    session.commit()
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    draft = session.query(models.ContentDraft).one()
+    assert isinstance(draft.body, str) and draft.body
+    assert draft.body.startswith("€30 vietoj įprastų €")
+    assert "Šeimai iš keturių: €120" in draft.body
+    assert "\n" not in draft.body  # direct, VNO, no leg times, no sun persona -> no catches
+
+
 class TierCBackend(FakeBackend):
     """A strong-but-not-rare fare on a spread calendar.
 

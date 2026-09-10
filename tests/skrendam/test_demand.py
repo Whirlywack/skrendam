@@ -251,3 +251,20 @@ def test_assess_rare_skips_demand_weight_and_destination_needs_floor_and_tier():
         personas=PERSONAS,
         tiers=TIERS | {"A": ["XXX"]},
     ).signals["archetypes"] == ["rare", "destination"]
+
+
+def test_windows_from_rows_carries_the_window_name():
+    from types import SimpleNamespace
+
+    row = SimpleNamespace(
+        slug="kaledos-2026",
+        name="Kalėdų atostogos 2026",
+        start_date=date(2026, 12, 18),
+        end_date=date(2027, 1, 3),
+        pref_codes=["family", "home"],
+        return_start_date=None,
+        return_end_date=None,
+    )
+    (w,) = demand.windows_from_rows([row])
+    assert w.name == "Kalėdų atostogos 2026"
+    assert W.name == ""  # positional construction (tests, older callers) still works

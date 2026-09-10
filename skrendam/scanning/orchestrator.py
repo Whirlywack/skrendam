@@ -34,6 +34,11 @@ class DemandContext:
     personas: dict
     tiers: dict
 
+    def window_name(self, slug: str | None) -> str | None:
+        if slug is None:
+            return None
+        return next((w.name for w in self.windows if w.slug == slug), None)
+
 
 def due_routes(routes, today: date, rotation_days: int, all_routes: bool = False) -> list:
     """Routes to scan today: enabled AND (core OR today's rotation slot).
@@ -446,7 +451,15 @@ def _persist_fare(
         for sc in scores:
             repo.upsert_score(session, cand.id, tpl.id, sc)
         draft = content_mod.build_content_draft(
-            spec.origin, spec.destination, fare.price, local_median, point.travel_date, tpl
+            spec.origin,
+            spec.destination,
+            fare.price,
+            local_median,
+            point.travel_date,
+            tpl,
+            signals=dm.signals,
+            fare=fare,
+            window_name=demand_ctx.window_name(dm.signals.get("window_slug")),
         )
         repo.ensure_content_draft(session, cand.id, tpl.id, draft)
 
