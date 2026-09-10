@@ -6,27 +6,18 @@ import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';
 import { db } from '@/db';
 import { issues } from '@/db/generated/schema';
-import { emailEnabled, sendMail } from '@/lib/email/client';
-import { renderDigest, renderNurture, type MissedDeal } from '@/lib/email/render';
+import { emailEnabled } from '@/lib/email/client';
+import { defaultLetterDeps, sendLetter } from '@/lib/email/streams';
 import {
   FREE_LETTER_MISSED,
   idList,
   pickDigest,
   pickNurture,
-  withMissedFacts,
   type IssueKind,
   type IssueStats,
+  type SendOutcome,
 } from '@/lib/letters';
-import {
-  bookedEvents,
-  dealsById,
-  expiredDeals,
-  getIssue,
-  lastIssueOf,
-  liveDeals,
-} from '@/lib/letters-queries';
-import { unsubscribeUrl } from '@/lib/links';
-import { activeSubscribers, sendable, type Plan } from '@/lib/subscribers';
+import { bookedEvents, expiredDeals, getIssue, lastIssueOf, liveDeals } from '@/lib/letters-queries';
 
 // ---------------------------------------------------------------------------
 // Auth guard — re-checked inside EVERY action.
@@ -86,82 +77,37 @@ export async function assembleIssue(kind: IssueKind): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Send: one render per recipient (the digest orders deals by each reader's
-// moments), sequential sends, tallies into `stats`, then `sent_at`. Without a
-// Resend key nothing goes out and `sent_at` stays NULL — the row records
-// `skipped_no_key` and can be sent later, once the key is configured.
+// Send: `sendLetter` does the work (re-read deals, atomic `sent_at` claim,
+// one render per recipient, stats). Without a Resend key nothing goes out and
+// `sent_at` stays NULL — the row records `skipped_no_key` and can be sent
+// later, once the key is configured. Every refusal comes back as a reason the
+// button shows inline; only bad arguments throw.
 // ---------------------------------------------------------------------------
-export async function sendIssue(id: number): Promise<void> {
+export async function sendIssue(id: number): Promise<SendOutcome> {
   await requireAdmin();
   if (!Number.isInteger(id) || id <= 0) throw new Error(`invalid issue id: ${id}`);
 
+  const outcome = await trySend(id);
+  revalidatePath('/letters');
+  revalidatePath(`/letters/${id}`);
+  return outcome;
+}
+
+async function trySend(id: number): Promise<SendOutcome> {
   const issue = await getIssue(id);
-  if (!issue) throw new Error(`issue ${id} not found`);
-  if (issue.sentAt != null) throw new Error(`issue ${id} was already sent at ${issue.sentAt}`);
+  if (!issue) return { ok: false, reason: 'not_found' };
+  if (issue.sentAt != null) return { ok: false, reason: 'already_sent' };
   const kind = issue.kind;
   assertKind(kind);
 
-  const stats: IssueStats = { attempted: 0, sent: 0, failed: 0, skipped_no_token: 0 };
-
   if (!emailEnabled()) {
-    await db
-      .update(issues)
-      .set({ stats: { ...stats, skipped_no_key: true } })
-      .where(eq(issues.id, id));
-    revalidatePath('/letters');
-    revalidatePath(`/letters/${id}`);
-    return;
+    const stats: IssueStats = { attempted: 0, sent: 0, failed: 0, skipped_no_token: 0, skipped_no_key: true };
+    await db.update(issues).set({ stats }).where(eq(issues.id, id));
+    return { ok: false, reason: 'no_key' };
   }
 
-  // Re-read the deals at send time: a fare that died since assembly must not
-  // reach a paid inbox as a live find.
-  const picked = await dealsById(idList(issue.dealIds));
-  const deals = picked.filter((d) => d.status === 'live');
-  stats.dropped_expired = picked.length - deals.length;
-  if (deals.length === 0) throw new Error(`issue ${id}: none of its deals are live any more — assemble a new one`);
-
-  let missed: MissedDeal[] = [];
-  if (kind === 'free_nurture') {
-    const expiredIds = idList(issue.expiredDealIds);
-    const [rows, events] = await Promise.all([dealsById(expiredIds), bookedEvents(expiredIds)]);
-    missed = rows
-      .filter((d): d is typeof d & { expiredAt: string } => d.expiredAt != null)
-      .map((d) => withMissedFacts(d, events));
-  }
-
-  const plan: Plan = kind === 'paid_digest' ? 'paid' : 'free';
-  const recipients = await activeSubscribers(plan);
-  const errors: string[] = [];
-
-  for (const r of recipients) {
-    if (!sendable(r)) {
-      stats.skipped_no_token += 1;
-      continue;
-    }
-    stats.attempted += 1;
-    const rendered =
-      kind === 'paid_digest' ? renderDigest(deals, r, id) : renderNurture(deals, missed, r, id);
-    const res = await sendMail({
-      to: r.email,
-      subject: rendered.subject,
-      html: rendered.html,
-      text: rendered.text,
-      unsubscribeUrl: unsubscribeUrl(r.unsubscribeToken!),
-    });
-    if (res.ok) {
-      stats.sent += 1;
-    } else {
-      stats.failed += 1;
-      if (errors.length < 5) errors.push(`${r.email}: ${res.error}`);
-    }
-  }
-  if (errors.length) stats.errors = errors;
-
-  await db
-    .update(issues)
-    .set({ sentAt: new Date().toISOString(), stats })
-    .where(eq(issues.id, id));
-
-  revalidatePath('/letters');
-  revalidatePath(`/letters/${id}`);
+  return sendLetter(
+    { id, kind, dealIds: idList(issue.dealIds), expiredDealIds: idList(issue.expiredDealIds) },
+    defaultLetterDeps,
+  );
 }

@@ -223,7 +223,7 @@ export function renderNurture(fresh: Deal[], missed: MissedDeal[], r: Recipient,
   }
 
   const { html, text } = shell(r, join(parts));
-  return { subject: L.nurtureSubject, html, text };
+  return { subject: L.nurtureSubject(fresh.length), html, text };
 }
 
 function join(parts: { html: string; text: string }[]): { html: string; text: string } {

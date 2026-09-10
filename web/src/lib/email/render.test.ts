@@ -101,7 +101,12 @@ describe('copy (spec §7 verbatim)', () => {
     expect(L.booked).toBe('Užsisakiau');
     expect(L.unsub).toBe('Atsisakyti laiškų');
     expect(L.bookDirect).toBe('Į bilietus →');
-    expect(L.nurtureSubject).toBe('Ką praleidai — ir du nauji radiniai');
+  });
+  it('nurture subject states the real number of fresh finds', () => {
+    expect(L.nurtureSubject(1)).toBe('Ką praleidai — ir vienas naujas radinys');
+    expect(L.nurtureSubject(2)).toBe('Ką praleidai — ir 2 nauji radiniai');
+    expect(L.nurtureSubject(3)).toBe('Ką praleidai — ir 3 nauji radiniai');
+    expect(L.nurtureSubject(0)).toBe('Ką praleidai');
   });
   it('functions', () => {
     expect(L.bookedN(3)).toBe('3 prenumeratorių užsisakė');
@@ -234,8 +239,11 @@ describe('renderDigest', () => {
 describe('renderNurture', () => {
   const fresh = [deal({ id: 1, headline: 'Naujas radinys A' }), deal({ id: 2, headline: 'Naujas radinys B' })];
 
-  it('subject is the nurture line', () => {
-    expect(renderNurture(fresh, [missed()], recipient({ plan: 'free' }), 9).subject).toBe(L.nurtureSubject);
+  it('subject counts the fresh deals actually in the letter', () => {
+    expect(renderNurture(fresh, [missed()], recipient({ plan: 'free' }), 9).subject).toBe(L.nurtureSubject(2));
+    expect(renderNurture([fresh[0]], [missed()], recipient({ plan: 'free' }), 9).subject).toBe(
+      'Ką praleidai — ir vienas naujas radinys',
+    );
   });
   it('fresh under L.headline, missed under L.missed with real price and lasted line', () => {
     const { html, text } = renderNurture(fresh, [missed({ lastedHours: 36 })], recipient({ plan: 'free' }), 9);

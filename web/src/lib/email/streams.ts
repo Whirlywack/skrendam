@@ -1,9 +1,17 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db, issues } from '@/db';
+import {
+  missedFacts,
+  type DealEvent,
+  type IssueKind as LetterKind,
+  type IssueStats,
+  type SendOutcome,
+} from '../letters';
+import { bookedEvents, dealsById } from '../letters-queries';
 import { unsubscribeUrl } from '../links';
 import { activeSubscribers, sendable, wantsOrigin, type Plan, type Recipient } from '../subscribers';
 import { sendMail, type OutgoingMail } from './client';
-import { renderInstant, type Deal } from './render';
+import { renderDigest, renderInstant, renderNurture, type Deal, type MissedDeal } from './render';
 
 export type IssueKind = 'paid_digest' | 'free_nurture' | 'instant';
 
@@ -64,6 +72,7 @@ export async function sendInstant(
       html,
       text,
       unsubscribeUrl: unsubscribeUrl(r.unsubscribeToken!),
+      idempotencyKey: idempotencyKey(issueId, r),
     };
     let result: { ok: boolean; error?: string };
     try {
@@ -80,6 +89,110 @@ export async function sendInstant(
   }
   await deps.finishIssue(issueId, stats, deps.now().toISOString());
   return { issueId, stats };
+}
+
+/** One key per (issue, subscriber): a re-run of the same loop cannot put a
+ *  second copy in an inbox — Resend drops repeats for 24 h. */
+function idempotencyKey(issueId: number, r: Recipient): string {
+  return `issue-${issueId}-sub-${r.id}`;
+}
+
+// ---------------------------------------------------------------------------
+// Curator-sent letters (paid digest, free nurture) — the pure half of
+// `sendIssue` in `app/letters-actions.ts`.
+
+export interface LetterDeps {
+  /** The atomic claim: `UPDATE issues SET sent_at = $sentAt WHERE id = $id
+   *  AND sent_at IS NULL`. True when this call won the row; false when a
+   *  reload, a second tab or an earlier click already did — then nothing is
+   *  sent and the stored stats are left alone. */
+  claimIssue: (id: number, sentAt: string) => Promise<boolean>;
+  dealsById: (ids: number[]) => Promise<Deal[]>;
+  bookedEvents: (dealIds: number[]) => Promise<DealEvent[]>;
+  recipients: (plan: Plan) => Promise<Recipient[]>;
+  send: (m: OutgoingMail) => Promise<{ ok: boolean; error?: string }>;
+  writeStats: (id: number, stats: IssueStats) => Promise<void>;
+  now: () => Date;
+}
+
+/** The slice of an `issues` row `sendLetter` needs. */
+export interface LetterIssue {
+  id: number;
+  kind: LetterKind;
+  dealIds: number[];
+  expiredDealIds: number[];
+}
+
+/** Send one assembled letter. Order matters: re-read the deals (a fare that
+ *  died since assembly must not reach an inbox as live — and with none left
+ *  the draft is refused untouched), claim `sent_at` atomically, then one
+ *  render per recipient (the digest orders deals by each reader's moments),
+ *  sequential sends, stats at the end. A crash mid-loop therefore shows as
+ *  "sent, no stats" — honest, since mail did go out. */
+export async function sendLetter(issue: LetterIssue, deps: LetterDeps): Promise<SendOutcome> {
+  const picked = await deps.dealsById(issue.dealIds);
+  const deals = picked.filter((d) => d.status === 'live');
+  if (deals.length === 0) return { ok: false, reason: 'no_fresh' };
+
+  const claimed = await deps.claimIssue(issue.id, deps.now().toISOString());
+  if (!claimed) return { ok: false, reason: 'already_sent' };
+
+  const stats: IssueStats = {
+    attempted: 0,
+    sent: 0,
+    failed: 0,
+    skipped_no_token: 0,
+    dropped_expired: picked.length - deals.length,
+  };
+
+  let missed: MissedDeal[] = [];
+  if (issue.kind === 'free_nurture') {
+    const [rows, events] = await Promise.all([
+      deps.dealsById(issue.expiredDealIds),
+      deps.bookedEvents(issue.expiredDealIds),
+    ]);
+    missed = missedFacts(rows, events);
+  }
+
+  const plan: Plan = issue.kind === 'paid_digest' ? 'paid' : 'free';
+  const recipients = await deps.recipients(plan);
+  const errors: string[] = [];
+
+  for (const r of recipients) {
+    if (!sendable(r)) {
+      stats.skipped_no_token += 1;
+      continue;
+    }
+    stats.attempted += 1;
+    const rendered =
+      issue.kind === 'paid_digest'
+        ? renderDigest(deals, r, issue.id)
+        : renderNurture(deals, missed, r, issue.id);
+    const mail: OutgoingMail = {
+      to: r.email,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      unsubscribeUrl: unsubscribeUrl(r.unsubscribeToken!),
+      idempotencyKey: idempotencyKey(issue.id, r),
+    };
+    let result: { ok: boolean; error?: string };
+    try {
+      result = await deps.send(mail);
+    } catch (e) {
+      result = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+    if (result.ok) {
+      stats.sent += 1;
+    } else {
+      stats.failed += 1;
+      if (errors.length < 5) errors.push(`${r.email}: ${result.error ?? 'unknown'}`);
+    }
+  }
+  if (errors.length) stats.errors = errors;
+
+  await deps.writeStats(issue.id, stats);
+  return { ok: true, stats };
 }
 
 /** The stream when `RESEND_API_KEY` is unset: the `issues` row is still
@@ -122,6 +235,26 @@ export const defaultDeps: SendDeps = {
       .update(issues)
       .set({ sentAt, stats })
       .where(eq(issues.id, id));
+  },
+  now: () => new Date(),
+};
+
+/** Real db + Resend for the curator letters. */
+export const defaultLetterDeps: LetterDeps = {
+  async claimIssue(id, sentAt) {
+    const rows = await db
+      .update(issues)
+      .set({ sentAt })
+      .where(and(eq(issues.id, id), isNull(issues.sentAt)))
+      .returning({ id: issues.id });
+    return rows.length > 0;
+  },
+  dealsById,
+  bookedEvents,
+  recipients: activeSubscribers,
+  send: sendMail,
+  async writeStats(id, stats) {
+    await db.update(issues).set({ stats }).where(eq(issues.id, id));
   },
   now: () => new Date(),
 };

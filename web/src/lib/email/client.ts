@@ -20,6 +20,10 @@ export interface OutgoingMail {
   /** This recipient's `unsubscribeUrl(token)`. Also goes out as the
    *  `List-Unsubscribe` header so mail clients can offer one-click leave. */
   unsubscribeUrl: string;
+  /** Resend `Idempotency-Key` — `issue-<id>-sub-<subscriberId>` from the
+   *  streams, so a retried loop (reload, second tab, crash + resend) is a
+   *  no-op at Resend for 24 h instead of a duplicate in the inbox. */
+  idempotencyKey?: string;
 }
 
 export type SendResult = { ok: true } | { ok: false; error: string };
@@ -31,14 +35,17 @@ export async function sendMail(m: OutgoingMail): Promise<SendResult> {
   if (!emailEnabled()) return { ok: false, error: 'RESEND_API_KEY not set' };
   try {
     const resend = new Resend(process.env.RESEND_API_KEY!);
-    const { error } = await resend.emails.send({
-      from: FROM,
-      to: m.to,
-      subject: m.subject,
-      html: m.html,
-      text: m.text,
-      headers: { 'List-Unsubscribe': `<${m.unsubscribeUrl}>` },
-    });
+    const { error } = await resend.emails.send(
+      {
+        from: FROM,
+        to: m.to,
+        subject: m.subject,
+        html: m.html,
+        text: m.text,
+        headers: { 'List-Unsubscribe': `<${m.unsubscribeUrl}>` },
+      },
+      { idempotencyKey: m.idempotencyKey },
+    );
     if (error) return { ok: false, error: error.message };
     return { ok: true };
   } catch (e) {

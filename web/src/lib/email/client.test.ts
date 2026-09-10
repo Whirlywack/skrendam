@@ -66,14 +66,24 @@ describe('sendMail', () => {
     const r = await sendMail(mail);
     expect(r).toEqual({ ok: true });
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({
-      from: FROM,
-      to: mail.to,
-      subject: mail.subject,
-      html: mail.html,
-      text: mail.text,
-      headers: { 'List-Unsubscribe': `<${mail.unsubscribeUrl}>` },
-    });
+    expect(send).toHaveBeenCalledWith(
+      {
+        from: FROM,
+        to: mail.to,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.text,
+        headers: { 'List-Unsubscribe': `<${mail.unsubscribeUrl}>` },
+      },
+      { idempotencyKey: undefined },
+    );
+  });
+
+  it('forwards idempotencyKey as the Resend request option so a retry is a no-op', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_test');
+    send.mockResolvedValue({ data: { id: 'msg_1' }, error: null });
+    await sendMail({ ...mail, idempotencyKey: 'issue-7-sub-5' });
+    expect(send.mock.calls[0][1]).toEqual({ idempotencyKey: 'issue-7-sub-5' });
   });
 
   it('returns ok:false with the message when Resend reports an error', async () => {

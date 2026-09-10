@@ -18,7 +18,15 @@ export const L = {
   instantSubject: (deal: { price: number | string; destination: string }) =>
     `${eur(Number(deal.price))} — ${ltCity(deal.destination).nom}`,
   digestSubject: (n: number) => `Savaitės radiniai: ${n}`,
-  nurtureSubject: 'Ką praleidai — ir du nauji radiniai',
+  /** Real count of fresh finds in the letter — one, several, or (only if a
+   *  caller ever allows it) none; the subject must never promise more than
+   *  the body carries. */
+  nurtureSubject: (n: number) =>
+    n === 1
+      ? 'Ką praleidai — ir vienas naujas radinys'
+      : n > 1
+        ? `Ką praleidai — ir ${n} nauji radiniai`
+        : 'Ką praleidai',
   lasted: (h: number) => (h < 48 ? `išbuvo ${h} val.` : `išbuvo ${Math.round(h / 24)} d.`),
   usually: (b: number) => `įprastai ${eur(b)}`,
   unsub: 'Atsisakyti laiškų',

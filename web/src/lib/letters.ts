@@ -62,10 +62,23 @@ function hasExpiredAt(d: Deal): d is Deal & { expiredAt: string } {
   return d.expiredAt != null;
 }
 
+/** The „Ką praleidai" rows from a set of expired deals, in the given order:
+ *  rows without `expired_at` are skipped (no honest "lasted" fact without
+ *  it), and so are rows that lasted under an hour — migration 0014 backfilled
+ *  `expired_at = published_at` for old curator-expired deals, and „išbuvo
+ *  0 val." is a claim the letter must never make. Used at assembly
+ *  (`pickNurture`), at send and by the preview, so all three agree. */
+export function missedFacts(deals: Deal[], events: DealEvent[]): MissedDeal[] {
+  return deals
+    .filter(hasExpiredAt)
+    .map((d) => withMissedFacts(d, events))
+    .filter((d) => d.lastedHours >= 1);
+}
+
 /** Free 10-day nurture: the `FREE_LETTER_FRESH` newest live deals, and the
- *  `FREE_LETTER_MISSED` most recently expired ones (latest expiry first).
- *  Expired rows without `expired_at` are skipped — there is no honest
- *  "lasted N hours" without it — as are rows whose expiry is after `now`. */
+ *  `FREE_LETTER_MISSED` most recently expired ones (latest expiry first)
+ *  that pass `missedFacts` — a zero-hour row never takes a slot. Rows whose
+ *  expiry is after `now` are skipped too. */
 export function pickNurture(
   deals: Deal[],
   events: DealEvent[],
@@ -76,12 +89,11 @@ export function pickNurture(
     .sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt))
     .slice(0, FREE_LETTER_FRESH);
 
-  const missed = deals
+  const expired = deals
     .filter((d): d is Deal & { expiredAt: string } => d.status === 'expired' && hasExpiredAt(d))
     .filter((d) => ts(d.expiredAt) <= now.getTime())
-    .sort((a, b) => ts(b.expiredAt) - ts(a.expiredAt))
-    .slice(0, FREE_LETTER_MISSED)
-    .map((d) => withMissedFacts(d, events));
+    .sort((a, b) => ts(b.expiredAt) - ts(a.expiredAt));
+  const missed = missedFacts(expired, events).slice(0, FREE_LETTER_MISSED);
 
   return { fresh, missed };
 }
@@ -100,6 +112,20 @@ export interface IssueStats {
   /** First few Resend errors, for the curator's eyes. */
   errors?: string[];
 }
+
+/** Why `sendIssue` refused — shown inline under the Send button. */
+export type SendRefusal = 'already_sent' | 'no_fresh' | 'no_key' | 'not_found';
+
+/** What `sendIssue` returns: the tallies, or a reason the curator can read
+ *  without landing on the error boundary. */
+export type SendOutcome = { ok: true; stats: IssueStats } | { ok: false; reason: SendRefusal };
+
+export const SEND_REFUSAL_TEXT: Record<SendRefusal, string> = {
+  already_sent: 'Already sent — this letter went out from another tab or an earlier click.',
+  no_fresh: 'None of these deals are live any more — assemble a new letter.',
+  no_key: 'Not sent: RESEND_API_KEY is not configured. The draft stays sendable.',
+  not_found: 'This letter no longer exists.',
+};
 
 export function statsOf(v: unknown): IssueStats | null {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;

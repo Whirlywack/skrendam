@@ -3,6 +3,7 @@ import type { Deal } from './email/render';
 import {
   FREE_LETTER_FRESH,
   FREE_LETTER_MISSED,
+  missedFacts,
   pickDigest,
   pickNurture,
   type DealEvent,
@@ -124,6 +125,26 @@ describe('pickNurture', () => {
     expect(pickNurture(rows, [], now).missed.map((d) => d.id)).toEqual([21]);
   });
 
+  it('does not show a deal that expired the hour it was published as missed (no „išbuvo 0 val.")', () => {
+    const rows = [
+      // expired_at backfilled from published_at (migration 0014 fallback)
+      deal({ id: 40, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: '2026-08-20 10:00:00' }),
+      // curator-expired 20 minutes after publish — rounds to 0 h
+      deal({ id: 41, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: '2026-08-20 10:20:00' }),
+      deal({ id: 42, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: '2026-08-20 11:00:00' }),
+    ];
+    const { missed } = pickNurture(rows, [], now);
+    expect(missed.map((d) => d.id)).toEqual([42]);
+    expect(missed[0].lastedHours).toBe(1);
+  });
+
+  it('a zero-hour row does not use up a FREE_LETTER_MISSED slot', () => {
+    const zero = deal({ id: 50, status: 'expired', publishedAt: '2026-09-05 10:00:00', expiredAt: '2026-09-05 10:00:00' });
+    const { missed } = pickNurture([zero, ...expired], [], now);
+    expect(missed).toHaveLength(FREE_LETTER_MISSED);
+    expect(missed.map((d) => d.id)).toEqual([13, 11, 12]);
+  });
+
   it('excludes deals whose expiry is still in the future relative to now', () => {
     const rows = [
       deal({ id: 30, status: 'expired', publishedAt: '2026-09-01 10:00:00', expiredAt: '2026-09-20 10:00:00' }),
@@ -135,5 +156,21 @@ describe('pickNurture', () => {
     const { fresh, missed } = pickNurture([...live, ...expired], [], now);
     expect(fresh.every((d) => d.status === 'live')).toBe(true);
     expect(missed.every((d) => d.status === 'expired')).toBe(true);
+  });
+});
+
+describe('missedFacts (send-time re-read of an issue\'s expired ids)', () => {
+  it('keeps stored order, drops rows without expiredAt and zero-hour rows, attaches real facts', () => {
+    const rows = [
+      deal({ id: 3, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: '2026-08-21 10:00:00' }),
+      deal({ id: 2, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: null }),
+      deal({ id: 1, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: '2026-08-20 10:00:00' }),
+      deal({ id: 4, status: 'expired', publishedAt: '2026-08-20 10:00:00', expiredAt: '2026-08-23 10:00:00' }),
+    ];
+    const missed = missedFacts(rows, [booked(4), booked(4), booked(3)]);
+    expect(missed.map((d) => [d.id, d.lastedHours, d.bookedCount])).toEqual([
+      [3, 24, 1],
+      [4, 72, 2],
+    ]);
   });
 });

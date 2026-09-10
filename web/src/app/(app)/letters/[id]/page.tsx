@@ -9,8 +9,8 @@ import {
   FREE_LETTER_CADENCE_DAYS,
   ISSUE_LABEL,
   idList,
+  missedFacts,
   statsOf,
-  withMissedFacts,
   type IssueKind,
 } from '@/lib/letters';
 import { bookedEvents, dealsById, getIssue } from '@/lib/letters-queries';
@@ -48,9 +48,7 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
   if (kind === 'free_nurture') {
     const expiredIds = idList(issue.expiredDealIds);
     const [rows, events] = await Promise.all([dealsById(expiredIds), bookedEvents(expiredIds)]);
-    missed = rows
-      .filter((d): d is Deal & { expiredAt: string } => d.expiredAt != null)
-      .map((d) => withMissedFacts(d, events));
+    missed = missedFacts(rows, events);
   }
 
   // A stand-in reader: no moments (so the digest shows one block), a
