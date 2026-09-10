@@ -248,6 +248,7 @@ def run_scan(
 
     _expire_stale(session, now)
     _expire_published_past_date(session, today)
+    _purge_unsubscribed(session, now)
 
     price_rows = (
         session.scalar(
@@ -461,6 +462,29 @@ def _expire_stale(session, now):
     )
     for c in stale:
         c.status = "expired"
+    session.flush()
+
+
+UNSUBSCRIBE_PURGE_DAYS = 30
+
+
+def _purge_unsubscribed(session, now):
+    """Erase subscribers who left more than 30 days ago (/privatumas promise).
+
+    A hard delete, not a flag: the privacy page tells people their data is
+    deleted within 30 days of unsubscribing, and the daily scan is the only
+    process that runs every day. The 30-day grace also leaves room to undo an
+    accidental unsubscribe before the row is gone.
+    """
+    cutoff = now - timedelta(days=UNSUBSCRIBE_PURGE_DAYS)
+    gone = session.scalars(
+        select(models.Subscriber).where(
+            models.Subscriber.unsubscribed_at.is_not(None),
+            models.Subscriber.unsubscribed_at < cutoff,
+        )
+    )
+    for sub in gone:
+        session.delete(sub)
     session.flush()
 
 
