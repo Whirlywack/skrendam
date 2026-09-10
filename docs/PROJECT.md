@@ -131,7 +131,9 @@ fli (Google Flights RPC)
   `Yip <hello@yip.lt>`), `NEXT_PUBLIC_SITE_URL` (default `https://yip.lt` —
   empty counts as unset), `PAYMENT_LINK_URL` (unset = no upgrade block).
   One-off after 0014: `scripts/2026-09-12_founding_interest_backfill.sql`
-  flags pre-existing early opt-ins as founding interest. First-send
+  flags pre-existing early opt-ins as founding interest (shown on the
+  Subscribers page, kept for the manual first upgrade ask — the nurture does
+  not read it). First-send
   checklist: `docs/handoffs/2026-09-11-wp6-email-streams.md`.
 
 ## 4. How deals are classified (the taxonomy)
@@ -233,11 +235,12 @@ it's the heart of the product:
   gate merges.
 - **`tests/search` must NEVER run from the scan laptop.** It hits Google
   Flights for real; whole-repo pytest during review waves cost two DEGRADED
-  daily scans (2026-09-09/10: 85% empties + 429s). PR #39 gates it behind
-  `--live` (`make test-live` runs it deliberately; `--all` also includes it).
-  `uv run pytest tests/skrendam` is the safe default.
+  daily scans (2026-09-09/10: 85% empties + 429s). PR #39 (open, not yet
+  merged) gates `tests/search` behind `--live`; **until it merges, never run
+  whole-repo `pytest` from the scan laptop** — `uv run pytest tests/skrendam`
+  is the only safe default.
 
-## 7. Current state (2026-09-10) and next missions
+## 7. Current state (2026-09-11) and next missions
 
 **Working:** daily scan healthy (2026-09-03: 912 calls, 0×429, 152 candidates,
 first full harvest on the new template structure — weekend gate 7/7 Fri/Sat,

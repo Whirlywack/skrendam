@@ -21,7 +21,10 @@ returns early without it and still records its `issues` row with
 | Subscribers page | `web/src/app/(app)/subscribers/`, `web/src/app/subscribers-actions.ts` | Newest first with signup prefs, referral counts, manual `plan` flip (`setPlan`). |
 | Site tracking | `site/src/app/go/[dealId]/route.ts`, `site/src/app/uzsisakiau/[dealId]/`, `site/src/lib/events.ts` | `/go/<deal>?i=&s=` → `click` + 302; `/uzsisakiau/<deal>` POST → one `booked_claim` per subscriber per deal. 60/min/IP limiter; robots disallow. |
 | Founding-interest one-off | `scripts/2026-09-12_founding_interest_backfill.sql` | Written, NOT run. See step 6 below. |
-| Test hygiene | `tests/conftest.py` (PR #39) | `tests/search` (live Google) skipped unless `--live`/`--all`. Never run it from the scan laptop. |
+
+**Pending elsewhere:** PR #39 (open, not yet merged) gates `tests/search`
+behind `--live`. This branch has no such gate — until #39 merges, never run
+whole-repo `pytest` from the scan laptop (`uv run pytest tests/skrendam` only).
 
 **There is no scheduler (decision D1 — no always-on host).** Thursday 07:00
 is a calendar habit: open `/letters`, Assemble, read the preview, Send.
@@ -110,8 +113,9 @@ it fires on every publish while the key is set.
 ### 6. Run the founding-interest one-off (once)
 
 `scripts/2026-09-12_founding_interest_backfill.sql` marks every pre-existing
-early-alerts opt-in with `prefs.founding_interest = true` so the nurture and
-the Subscribers page can recognise them. Postgres only (jsonb), idempotent,
+early-alerts opt-in with `prefs.founding_interest = true`. The Subscribers
+page shows the flag; it is captured for the first upgrade ask, which is manual
+for now — nothing in the nurture renderer reads it. Postgres only (jsonb), idempotent,
 wrapped in a transaction. Run it against Neon **dev** (the active branch)
 after 0014 is applied — via the Neon SQL editor or
 `psql "$DATABASE_URL_UNPOOLED" -f scripts/2026-09-12_founding_interest_backfill.sql`.
@@ -141,8 +145,9 @@ redirect), `issue_id → issues.id` (`kind` in `instant` / `paid_digest` /
 `free_nurture`, `deal_ids` json, `sent_at`, `stats`), `subscriber_id →
 subscribers.id` (**ON DELETE SET NULL** — a deleted subscriber's events
 survive anonymised). Per-deal "how many booked" for the nurture is already
-`count(*) where kind='booked_claim' group by deal_id` (`bookedCounts` in
-`web/src/lib/letters-queries.ts`). Click-through per issue = clicks with that
+`count(*) where kind='booked_claim' group by deal_id` (`bookedEvents` in
+`web/src/lib/letters-queries.ts`, folded to `bookedCount` per deal in
+`web/src/lib/letters.ts`). Click-through per issue = clicks with that
 `issue_id` ÷ `issues.stats.sent`. Nothing is estimated anywhere; if a number
 is not in this table, the product does not show it.
 
