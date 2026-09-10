@@ -75,7 +75,12 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
         {issue.sentAt ? (
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Sent {when(issue.sentAt)}</span>
+          <>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Sent {when(issue.sentAt)}</span>
+            <Link href={`/letters/${id}/stats`} style={{ fontSize: 13 }}>
+              stats →
+            </Link>
+          </>
         ) : (
           <SendIssueButton id={id} audience={`every ${plan} subscriber`} />
         )}
@@ -152,6 +157,12 @@ async function InstantSummary({ issue }: { issue: Issue }) {
       <p style={hint}>
         went to plan = paid the minute the deal was published · created {when(issue.createdAt)} ·{' '}
         {issue.sentAt ? `sent ${when(issue.sentAt)}` : 'not sent'}
+        {issue.sentAt && (
+          <>
+            {' '}
+            · <Link href={`/letters/${issue.id}/stats`}>stats →</Link>
+          </>
+        )}
       </p>
       <p style={hint}>deal · {deals.length}</p>
       <ol style={{ fontSize: 13, paddingLeft: 20, margin: '0 0 16px' }}>
