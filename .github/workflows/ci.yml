@@ -40,8 +40,12 @@ jobs:
               # copies of the shared IATA maps change in a site/web-only PR
               - 'site/src/lib/airports.json'
               - 'site/src/lib/airlines.json'
+              - 'site/src/lib/personas.json'
+              - 'site/src/lib/demand_tiers.json'
               - 'web/src/lib/airports.json'
               - 'web/src/lib/airlines.json'
+              - 'web/src/lib/personas.json'
+              - 'web/src/lib/demand_tiers.json'
               - 'tests/**'
               - 'alembic/**'
               - 'scripts/**'

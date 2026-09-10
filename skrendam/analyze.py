@@ -50,8 +50,13 @@ def _percentile(values: list[float], pct: float) -> float:
 
 
 # quality_tier is written by the engine via skrendam/scanning/scoring/tiering.py
-# (GREAT=88, RARE=94, 0–100 scale). great_threshold (0.88) is only the fallback for old,
-# un-backfilled rows that predate the score_0_100/quality_tier columns.
+# (GREAT=88, RARE=94, 0–100 scale). Since migration 0012, a NULL quality_tier is
+# ambiguous: it now means either "scored below GREAT on score_v2" (0012+ row,
+# tiering ran, tier legitimately not great/rare) or "un-backfilled pre-0012 row"
+# (predates the score_0_100/quality_tier columns entirely). great_threshold (0.88)
+# as a match_score fallback below only makes sense for the latter case — applying
+# it to a genuinely-scored-and-rejected 0012+ row would double-count it. WP3 owns
+# migrating downstream fallbacks like this one to score_v2.
 def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
     discounts = [d for (d,) in session.execute(
         select(models.Candidate.discount_pct).where(models.Candidate.discount_pct.is_not(None))
@@ -71,6 +76,9 @@ def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
         .group_by(models.Candidate.zone)
         .order_by(func.count(models.Candidate.id).desc())
     ).all()
+    # tier is None covers both post-0012 rows scored below GREAT (correctly
+    # excluded here) and pre-0012 un-backfilled rows (rescued by the
+    # match_score fallback below, since they never got a real tier at all).
     great = sum(1 for tier, ms in match_rows
                 if (tier in ("great", "rare"))
                 or (tier is None and ms is not None and ms >= great_threshold))

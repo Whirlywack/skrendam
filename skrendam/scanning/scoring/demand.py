@@ -46,6 +46,8 @@ class Window:
         if not (self.start <= travel_date <= self.end):
             return False
         if return_date is None:
+            # One-way fare: spec's "both legs" collapses to the single leg we
+            # have, so an outbound date inside the window counts as held.
             return True
         lo, hi = (self.return_start or self.start), (self.return_end or self.end)
         return lo <= return_date <= hi
@@ -107,6 +109,9 @@ def commodity_share(series, price: float, now: datetime) -> float | None:
 def date_fit(
     travel_date: date, return_date: date | None, codes, windows
 ) -> tuple[float, Window | None]:
+    # windows are checked in (start_date, id) order — the earliest-starting
+    # matching window wins; overlapping windows (e.g. kaledos-2026 vs
+    # home-xmas-2026) resolve deterministically.
     for w in windows:
         if set(w.pref_codes) & set(codes) and w.holds(travel_date, return_date):
             return DATE_FIT_PEAK, w

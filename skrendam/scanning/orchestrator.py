@@ -112,7 +112,13 @@ def run_scan(
         session.scalars(select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True)))
     )
     demand_ctx = DemandContext(
-        windows=demand.windows_from_rows(session.scalars(select(models.PeakWindow)).all()),
+        windows=demand.windows_from_rows(
+            session.scalars(
+                select(models.PeakWindow).order_by(
+                    models.PeakWindow.start_date, models.PeakWindow.id
+                )
+            ).all()
+        ),
         audience_slug={a.id: a.slug for a in session.scalars(select(models.AudienceSegment))},
         personas=demand.load_personas(),
         tiers=demand.load_demand_tiers(),

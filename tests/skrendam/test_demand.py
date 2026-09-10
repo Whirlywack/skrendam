@@ -63,6 +63,19 @@ def test_date_fit_peak_needs_both_legs_inside_a_window_sharing_a_code():
     )  # return not in its range
 
 
+def test_date_fit_overlapping_windows_first_in_list_order_wins():
+    # Two windows both hold the same fare and share a code with it; date_fit
+    # must return the first one in list order (the caller sorts windows by
+    # (start_date, id) before passing them in — see orchestrator.py).
+    early = demand.Window("kaledos-2026", date(2026, 12, 15), date(2026, 12, 31), ("family",))
+    late = demand.Window("home-xmas-2026", date(2026, 12, 20), date(2027, 1, 5), ("family",))
+    travel, back = date(2026, 12, 22), date(2026, 12, 29)
+    result = demand.date_fit(travel, back, ("family",), [early, late])
+    assert result == (demand.DATE_FIT_PEAK, early)
+    result = demand.date_fit(travel, back, ("family",), [late, early])
+    assert result == (demand.DATE_FIT_PEAK, late)
+
+
 def test_date_fit_weekend_is_fri_or_sat_out_and_sun_or_mon_back():
     assert (
         demand.date_fit(date(2026, 10, 9), date(2026, 10, 11), ("weekend",), [])[0]
