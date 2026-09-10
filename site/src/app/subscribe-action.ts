@@ -85,6 +85,10 @@ export async function subscribeAction(
   }
 
   const token = randomBytes(24).toString('hex');
+  // Minted on every insert so a row is never sendable-without-an-unsubscribe-link.
+  // Deliberately NOT touched in the onConflictDoUpdate branches: an existing
+  // subscriber keeps the token their old emails already carry.
+  const unsubscribeToken = randomBytes(16).toString('hex');
   const enabled = emailEnabled();
 
   // Abuse guard: this is an unauthenticated public endpoint whose success path
@@ -117,6 +121,7 @@ export async function subscribeAction(
           confirmToken: token,
           confirmed: false,
           prefs,
+          unsubscribeToken,
         })
         .onConflictDoUpdate({
           target: subscribers.email,
@@ -142,6 +147,7 @@ export async function subscribeAction(
           confirmed: true,
           confirmedAt: nowIso,
           prefs,
+          unsubscribeToken,
         })
         .onConflictDoUpdate({
           target: subscribers.email,

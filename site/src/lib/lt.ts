@@ -72,6 +72,13 @@ export const S = {
   emailInvalid: 'Įvesk veikiantį el. pašto adresą.',
   genericError: 'Kažkas nepavyko — pabandyk dar kartą.',
 
+  // Unsubscribe (/atsisakyti)
+  unsubscribedTitle: 'Prenumerata atšaukta.',
+  unsubscribedBody: 'Daugiau laiškų nesiųsim. Tavo duomenis ištrinsim per 30 dienų.',
+  unsubscribeInvalid:
+    'Nuoroda nebegalioja — gali būti, kad prenumeratos jau atsisakei. ' +
+    'Jei laiškai vis tiek ateina, parašyk mums: hello@yip.lt.',
+
   // Nav & footer
   navHow: 'Kaip tai veikia',
   navDeals: 'Radiniai',
