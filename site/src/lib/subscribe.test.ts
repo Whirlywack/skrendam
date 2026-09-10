@@ -7,6 +7,7 @@ import {
   cleanUtm,
   cleanRef,
   signupPrefs,
+  resubscribeReset,
   SUBSCRIBE_SOURCES,
   TRACKING_KEYS,
   ORIGIN_CODES,
@@ -323,5 +324,41 @@ describe('signupPrefs', () => {
 
   test('never sets founding_interest to false — the key is absent instead', () => {
     expect(Object.keys(signupPrefs({}, 'ab3', false) ?? {})).toEqual(['referred_by']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resubscribeReset — the on-conflict SET for unconfirmed / unsubscribed rows
+// ---------------------------------------------------------------------------
+
+describe('resubscribeReset', () => {
+  test('double opt-in: back to an unconfirmed row with a fresh token, purge clock stopped', () => {
+    expect(resubscribeReset('tok', null)).toEqual({
+      confirmToken: 'tok',
+      confirmed: false,
+      confirmedAt: null,
+      unsubscribedAt: null,
+    });
+  });
+
+  test('single opt-in: confirmed on the spot, unsubscribe mark still cleared', () => {
+    const at = '2026-09-10T08:00:00.000Z';
+    expect(resubscribeReset('tok', at)).toEqual({
+      confirmToken: 'tok',
+      confirmed: true,
+      confirmedAt: at,
+      unsubscribedAt: null,
+    });
+  });
+
+  test('never touches the unsubscribe token, email, prefs or the early flag', () => {
+    // The link in mails a rejoining subscriber already has must keep working,
+    // and prefs are merged (jsonb ||) by the caller, never written here.
+    expect(Object.keys(resubscribeReset('tok', null)).sort()).toEqual([
+      'confirmToken',
+      'confirmed',
+      'confirmedAt',
+      'unsubscribedAt',
+    ]);
   });
 });

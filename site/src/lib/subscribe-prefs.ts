@@ -116,13 +116,35 @@ export function cleanUtm(input: Record<string, unknown>): Record<string, string>
 /**
  * Validates a referral code by actually decoding it (`parseRefCode`), not by
  * shape: a code that fails its checksum names no subscriber, so storing it as
- * `referred_by` would be a broken attribution. Input is uppercased case-safe
+ * `referred_by` would be a broken attribution. Input is lowercased case-safe
  * — links get typed and shared — but nothing else is accepted.
  */
 export function cleanRef(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const code = raw.trim().toLowerCase();
   return parseRefCode(code) !== null ? code : null;
+}
+
+/**
+ * Column values that turn a conflicting `subscribers` row back into a fresh
+ * signup. Two rows qualify (see `subscribeAction`): one still waiting for its
+ * confirm click, and one that unsubscribed and is now typing its address
+ * again. The latter gets a full double opt-in (`confirmed` false) so rejoining
+ * is an explicit click, never a silent flip, and `unsubscribedAt` is cleared
+ * so the 30-day purge stops counting. Single opt-in (no Resend key) passes the
+ * confirm time instead and the row is live at once.
+ *
+ * `unsubscribeToken` is deliberately absent: the link in the mails they
+ * already have must keep working. Prefs are merged (jsonb `||`) by the caller,
+ * never written here.
+ */
+export function resubscribeReset(confirmToken: string, confirmedAt: string | null) {
+  return {
+    confirmToken,
+    confirmed: confirmedAt !== null,
+    confirmedAt,
+    unsubscribedAt: null,
+  };
 }
 
 /**
