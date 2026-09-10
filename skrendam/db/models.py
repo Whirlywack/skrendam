@@ -71,6 +71,27 @@ class TravelMoment(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
 
 
+class PeakWindow(Base):
+    """A normally-expensive calendar window (school break, public holiday, long
+    weekend, custom). The date archetype compares a fare with history from the
+    SAME window, not with the month's median (spec 2026-09-10 WP2.3/2.5)."""
+
+    __tablename__ = "peak_windows"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    slug: Mapped[str] = mapped_column(String, unique=True)
+    name: Mapped[str] = mapped_column(String)
+    kind: Mapped[str] = mapped_column(String)  # school_break|public_holiday|long_weekend|custom
+    start_date: Mapped[date] = mapped_column(Date)
+    end_date: Mapped[date] = mapped_column(Date)
+    # Optional separate range for the return leg (e.g. home-xmas: out Dec 18-23, back Jan 2-6).
+    return_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    return_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    pref_codes: Mapped[list] = mapped_column(JSON)
+    source_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class DealTemplate(Base):
     __tablename__ = "deal_templates"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -215,6 +236,10 @@ class CandidateTemplateMatch(Base):
     score_0_100: Mapped[int | None] = mapped_column(Integer, nullable=True)
     quality_tier: Mapped[str | None] = mapped_column(String, nullable=True)
     primary_scorer: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Demand layer (spec 2026-09-10 WP2.9). score_0_100 stays the raw headline.
+    score_v2: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    archetype: Mapped[str | None] = mapped_column(String, nullable=True)  # date|rare|destination|None
+    demand_signals: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 

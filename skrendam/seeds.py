@@ -26,6 +26,27 @@ EASTER_WARM = ["TFS", "LPA", "FNC", "HRG", "SSH", "RAK", "DXB", "LCA", "PFO"]
 LT_AUTUMN_BREAK = (date(2026, 10, 30), date(2026, 11, 4))  # break Nov 2-8
 LT_FEB_BREAK = (date(2027, 2, 12), date(2027, 2, 17))  # break Feb 15-21
 LT_EASTER_BREAK = (date(2027, 3, 19), date(2027, 3, 31))  # breaks Mar 22-29 / Mar 29-Apr 4
+LT_XMAS_BREAK = (date(2026, 12, 18), date(2026, 12, 28))  # break Dec 21 – Jan 3 (start moved Dec 23→21, ŠMSM 2026-07-30)
+
+# Peak calendar windows — spec 2026-09-10 §10. Travel dates, not departures.
+# Refresh with the school calendar each June (like LT_*_BREAK).
+SMSM = "https://smsm.lrv.lt/lt/veiklos-sritys-1/smm-svietimas/20252026-m-m-ir-20262027-m-m-mokiniu-atostogos/"
+PEAK_WINDOWS = [
+    # slug, name, kind, start, end, pref_codes, return_start, return_end, source, notes
+    ("rudens-2026", "Rudens atostogos 2026", "school_break", date(2026, 10, 31), date(2026, 11, 8), ["family", "weekend"], None, None, SMSM, "Nov 1–2 public holidays inside"),
+    ("kaledos-2026", "Kalėdų atostogos 2026", "school_break", date(2026, 12, 21), date(2027, 1, 3), ["family", "home"], None, None, SMSM, None),
+    ("ziemos-2027", "Žiemos atostogos 2027", "school_break", date(2027, 2, 15), date(2027, 2, 21), ["family", "weekend"], None, None, SMSM, "Feb 16 inside"),
+    ("pavasario-2027", "Pavasario atostogos 2027 (1–10 kl.)", "school_break", date(2027, 3, 22), date(2027, 3, 29), ["family", "home"], None, None, SMSM, "Easter Mar 28"),
+    ("pavasario-gimn-2027", "Pavasario atostogos 2027 (gimnazija)", "school_break", date(2027, 3, 29), date(2027, 4, 4), ["family"], None, None, SMSM, None),
+    ("vasara-2027", "Vasaros atostogos 2027", "school_break", date(2027, 6, 5), date(2027, 8, 31), ["family"], None, None, SMSM, "school-specific start"),
+    ("kovo-11-2027", "Kovo 11-oji 2027", "long_weekend", date(2027, 3, 11), date(2027, 3, 14), ["weekend"], None, None, None, None),
+    ("jonines-2027", "Joninės 2027", "long_weekend", date(2027, 6, 24), date(2027, 6, 27), ["weekend"], None, None, None, None),
+    ("liepos-6-2027", "Liepos 6-oji 2027", "long_weekend", date(2027, 7, 3), date(2027, 7, 6), ["weekend"], None, None, None, None),
+    ("geguzes-1-2027", "Gegužės 1-oji 2027", "public_holiday", date(2027, 5, 1), date(2027, 5, 2), ["weekend"], None, None, None, None),
+    ("home-xmas-2026", "Kalėdoms namo 2026", "custom", date(2026, 12, 18), date(2026, 12, 23), ["home"], date(2027, 1, 2), date(2027, 1, 6), None, "out Dec 18–23 · back Jan 2–6"),
+    ("home-easter-2027", "Velykoms namo 2027", "custom", date(2027, 3, 25), date(2027, 4, 5), ["home"], None, None, None, None),
+    ("home-summer-2027", "Vasarai namo 2027", "custom", date(2027, 6, 20), date(2027, 7, 5), ["home"], None, None, None, None),
+]
 
 ZONES = [
     ("WESTERN_EUROPE", "short", 50, 25, 25),
@@ -292,6 +313,15 @@ def seed_all(session: Session) -> None:
         )
         for s, n, mt, ca in MOMENTS
     }
+
+    for slug, name, kind, start, end, codes, rstart, rend, src, notes in PEAK_WINDOWS:
+        _get_or_create(
+            session,
+            models.PeakWindow,
+            dict(name=name, kind=kind, start_date=start, end_date=end, pref_codes=codes,
+                 return_start_date=rstart, return_end_date=rend, source_url=src, notes=notes),
+            slug=slug,
+        )
 
     # NOTE: insert-only — value changes to already-seeded rows need a one-off SQL update on
     # live DBs (see plan Task 10).

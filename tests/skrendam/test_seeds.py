@@ -137,3 +137,22 @@ def test_seed_never_reenables_disabled_route(session):
     seed_all(session)  # idempotent re-run
     session.refresh(r)
     assert r.enabled is False
+
+
+def test_peak_windows_seeded_from_spec_section_10(session):
+    seed_all(session)
+    rows = {w.slug: w for w in session.query(models.PeakWindow).all()}
+    assert len(rows) == 13
+    assert rows["kaledos-2026"].start_date == date(2026, 12, 21)
+    assert rows["kaledos-2026"].end_date == date(2027, 1, 3)
+    assert set(rows["kaledos-2026"].pref_codes) == {"family", "home"}
+    assert rows["home-xmas-2026"].return_start_date == date(2027, 1, 2)
+    assert rows["home-xmas-2026"].return_end_date == date(2027, 1, 6)
+    assert {w.kind for w in rows.values()} == {
+        "school_break",
+        "public_holiday",
+        "long_weekend",
+        "custom",
+    }
+    seed_all(session)  # insert-only
+    assert session.query(models.PeakWindow).count() == 13
