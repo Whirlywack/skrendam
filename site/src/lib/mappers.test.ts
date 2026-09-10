@@ -11,6 +11,8 @@ function row(over: Partial<Record<string, unknown>> = {}): Row {
     score: over.score ?? 0.96,
     score100: over.score100 ?? null,
     scoreV2: over.scoreV2 ?? null,
+    archetype: over.archetype ?? null,
+    demandSignals: over.demandSignals ?? null,
     qualityTier: over.qualityTier ?? null,
     snapshot: over.snapshot ?? { stops: 1, legs: [{ airline: { code: 'BT' } }], duration: 440, self_transfer: false },
     candLastSeen: '2026-06-03T10:00:00',
@@ -28,6 +30,62 @@ describe('toPublicDeal', () => {
     expect(d.status.kind).toBe('fresh');
     expect(d.airline).toBe('airBaltic');      // legs[0].airline.code → display name
   });
+  it('passes the demand layer through: archetype, window slug, family saving', () => {
+    const d = toPublicDeal(
+      row({
+        archetype: 'date',
+        demandSignals: { window_slug: 'xmas_markets', saving_family: 128.5, demand_tier: 'A' },
+      }),
+      new Date('2026-06-03T12:00:00Z'),
+    );
+    expect(d.archetype).toBe('date');
+    expect(d.windowSlug).toBe('xmas_markets');
+    expect(d.savingFamily).toBe(128.5);
+  });
+
+  it('a legacy row with no demand data reads as nulls, not undefined', () => {
+    const d = toPublicDeal(row(), new Date('2026-06-03T12:00:00Z'));
+    expect(d.archetype).toBeNull();
+    expect(d.windowSlug).toBeNull();
+    expect(d.savingFamily).toBeNull();
+  });
+
+  it('rejects an archetype the site does not know', () => {
+    // The column is a bare varchar — anything the engine writes lands here,
+    // and an unknown value must not reach copy that switches on it.
+    const d = toPublicDeal(row({ archetype: 'commodity' }), new Date('2026-06-03T12:00:00Z'));
+    expect(d.archetype).toBeNull();
+  });
+
+  it('drops junk demand_signals instead of leaking it', () => {
+    const d = toPublicDeal(
+      row({ demandSignals: { window_slug: 42, saving_family: 'nope' } }),
+      new Date('2026-06-03T12:00:00Z'),
+    );
+    expect(d.windowSlug).toBeNull();
+    expect(d.savingFamily).toBeNull();
+  });
+
+  it('survives demand_signals that is not an object', () => {
+    const d = toPublicDeal(row({ demandSignals: 'x' }), new Date('2026-06-03T12:00:00Z'));
+    expect(d.windowSlug).toBeNull();
+    expect(d.savingFamily).toBeNull();
+  });
+
+  it('an empty saving_family never becomes a €0 claim', () => {
+    const d = toPublicDeal(row({ demandSignals: { saving_family: '' } }), new Date());
+    expect(d.savingFamily).toBeNull();
+  });
+
+  it('null saving_family (not a family window) stays null', () => {
+    const d = toPublicDeal(
+      row({ demandSignals: { window_slug: 'sept_shoulder', saving_family: null } }),
+      new Date('2026-06-03T12:00:00Z'),
+    );
+    expect(d.windowSlug).toBe('sept_shoulder');
+    expect(d.savingFamily).toBeNull();
+  });
+
   it('going_fast flag wins the status', () => {
     const d = toPublicDeal(row({ pd: { goingFast: true } }), new Date('2026-06-03T12:00:00Z'));
     expect(d.status.kind).toBe('going_fast');
