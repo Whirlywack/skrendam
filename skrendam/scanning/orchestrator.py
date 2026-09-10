@@ -18,12 +18,21 @@ from skrendam.scanning.checkpoint import ScanCheckpoint
 from skrendam.scanning.dedup import deal_group_key
 from skrendam.scanning.history import DbPriceHistory
 from skrendam.scanning.resolver import resolve
+from skrendam.scanning.scoring import demand, tiering
 from skrendam.scanning.scoring.base import ScoringContext
 from skrendam.scanning.scoring.eligibility import in_template_scope
 from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
 NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
+
+
+@dataclass(frozen=True)
+class DemandContext:
+    windows: list
+    audience_slug: dict
+    personas: dict
+    tiers: dict
 
 
 def due_routes(routes, today: date, rotation_days: int, all_routes: bool = False) -> list:
@@ -101,6 +110,12 @@ def run_scan(
 
     templates = list(
         session.scalars(select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True)))
+    )
+    demand_ctx = DemandContext(
+        windows=demand.windows_from_rows(session.scalars(select(models.PeakWindow)).all()),
+        audience_slug={a.id: a.slug for a in session.scalars(select(models.AudienceSegment))},
+        personas=demand.load_personas(),
+        tiers=demand.load_demand_tiers(),
     )
     routes = due_routes(
         list(session.scalars(select(models.Route))), today, tail_rotation_days, all_routes
@@ -204,6 +219,7 @@ def run_scan(
                     summary,
                     history,
                     near_dates,
+                    demand_ctx,
                 )
             if aborted:
                 break
@@ -305,6 +321,7 @@ def _persist_fare(
     summary,
     history,
     departure_date_count,
+    demand_ctx,
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
     hist_series = history.for_route(route.id, spec.trip_type)
@@ -374,7 +391,26 @@ def _persist_fare(
     if created:
         summary.candidates_found += 1
 
+    demand_series = history.for_route(route.id, spec.trip_type, spec.duration_days)
     for tpl, headline, scores in matched:
+        dm = demand.assess(
+            headline=headline,
+            scores=scores,
+            template=tpl,
+            audience_slug=demand_ctx.audience_slug.get(tpl.audience_segment_id),
+            destination=spec.destination,
+            fare=fare,
+            travel_date=point.travel_date,
+            return_date=point.return_date,
+            series=demand_series,
+            local_median=local_median,
+            discount_pct=discount,
+            departure_date_count=departure_date_count,
+            now=now,
+            windows=demand_ctx.windows,
+            personas=demand_ctx.personas,
+            tiers=demand_ctx.tiers,
+        )
         _match, created = repo.upsert_match(
             session,
             cand.id,
@@ -383,8 +419,11 @@ def _persist_fare(
             headline.reason_text,
             headline.signals,
             score_0_100=headline.score_0_100,
-            quality_tier=headline.quality_tier,
+            quality_tier=tiering.quality_tier(dm.score_v2),  # D6: tier follows score_v2
             primary_scorer=headline.scorer,
+            score_v2=dm.score_v2,
+            archetype=dm.archetype,
+            demand_signals=dm.signals,
         )
         if created:
             summary.matches_created += 1

@@ -515,3 +515,49 @@ def test_scan_findings_survive_a_sweep_crash(session, monkeypatch):
     assert session.query(models.PriceLog).count() == 3
     run = session.query(models.ScanRun).one()
     assert run.status == "running" and run.finished_at is None  # watchdog's staleness signal
+
+
+def test_run_scan_persists_score_v2_archetype_and_signals(session):
+    _seed(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    m = session.query(models.CandidateTemplateMatch).first()
+    assert m is not None
+    assert m.score_v2 is not None and 0 <= m.score_v2 <= 100
+    assert m.archetype in (None, "date", "rare", "destination")
+    assert set(m.demand_signals) >= {
+        "commodity_share",
+        "is_commodity",
+        "date_fit",
+        "demand_weight",
+        "window_slug",
+        "window_typical",
+        "saving_pp",
+        "saving_family",
+        "archetypes",
+    }
+    assert m.demand_signals["commodity_share"] is None  # no history yet -> unknown, not commodity
+
+
+class EarlyBirdBackend(FakeBackend):
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        fares = super().search_flights(origin, destination, travel_date, return_date, cabin)
+        for f in fares:
+            f["legs"] = [
+                {
+                    "airline": {"code": "W6"},
+                    "departure_time": f"{travel_date}T05:50:00",
+                    "arrival_time": f"{travel_date}T08:30:00",
+                }
+            ]
+        return fares
+
+
+def test_family_friendly_template_rejects_0550_departure(session):
+    _seed(session)
+    tpl = session.get(models.DealTemplate, 1)
+    tpl.family_friendly_times_only = True
+    session.commit()
+    adapter = FliAdapter(EarlyBirdBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    assert summary.matches_created == 0
