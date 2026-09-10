@@ -90,7 +90,9 @@ def main():
     sub.add_parser("seed")
     sub.add_parser("calibrate")
     sub.add_parser("worker")
-    sub.add_parser("analyze")
+    an = sub.add_parser("analyze")
+    an.add_argument("--labels", action="store_true", help="print the curator-label proxy report")
+    an.add_argument("--out", help="also write the report to this path")
     args = parser.parse_args()
 
     if args.cmd == "run-scan":
@@ -124,7 +126,14 @@ def main():
         from skrendam import analyze
 
         session = make_sessionmaker()()
-        print(analyze.format_report(analyze.analyze(session)))
+        if args.labels:
+            report = analyze.label_report(session)
+        else:
+            report = analyze.format_report(analyze.analyze(session))
+        print(report)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as f:
+                f.write(report)
 
 
 if __name__ == "__main__":

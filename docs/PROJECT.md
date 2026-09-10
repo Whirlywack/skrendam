@@ -5,6 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
+> Last updated 2026-09-10 (WP2 demand layer).
 
 ---
 
@@ -56,7 +57,7 @@ Stage 1, in order:
 ```
 fli (Google Flights RPC)
    └─ daily scan, 06:00 EEST, launchd on the founder's MacBook  (skrendam/)
-        └─ 159 routes (29 core daily + tail cohorts), 14 deal templates
+        └─ 159 routes (29 core daily + tail cohorts), 15 deal templates
         └─ scoring: weighted gates + MAD outlier scorer, month-local baselines
         └─ writes: price_log, candidates, matches, drafts → Neon Postgres
               └─ Deal Desk (web/, Next.js, port 3000): Review → publish
@@ -67,15 +68,25 @@ fli (Google Flights RPC)
 - **Database:** Neon Postgres, project `yip` (`still-mode-83548775`). ⚠️ The
   active DB is the **`dev` branch** (`br-cool-hill-agqjm1kk`); the `production`
   branch is idle/empty. Everything (desk, site, scan) points at dev.
-- **Templates = deal archetypes.** 14 of them (audience × travel moment ×
+- **Templates = deal archetypes.** 15 of them (audience × travel moment ×
   date window × destination scope × price gates). Restructured 2026-08-29
   ("moment-structure audit", PR #30): plan-ahead-summer is seasonal Jun–Aug
   + 60-day lead; last-warm-days split Oct (broad Med) / Nov (verified-warm
   destinations only); winter-sun starts Dec 1; Christmas markets open Nov 20;
-  weekend template hard-gates FRI/SAT departures; three fixed-window family
-  templates track the official LT school breaks (**yearly chore:** refresh
-  their dates each June from smsm.lrv.lt; the desk Coverage tab flags stale
-  ones). The desk's **Machine → Coverage** tab renders the whole map.
+  weekend template hard-gates FRI/SAT departures; **four** fixed-window family
+  templates track the official LT school breaks (autumn, February, Easter and
+  — added 2026-09-10 — Christmas). The desk's **Machine → Coverage** tab
+  renders the whole map.
+- **`peak_windows`** (added 2026-09-10, WP2): the calendar's normally-expensive
+  stretches (school breaks, public holidays, long weekends, custom "home for
+  Christmas" ranges) with the persona codes each appeals to. The demand layer
+  compares a fare with history from the SAME window instead of the month's
+  median — that is what makes a Christmas-peak fare findable as a deal.
+  **Yearly chore (each June):** refresh BOTH the family templates' fixed
+  windows AND the `peak_windows` rows from smsm.lrv.lt — they are seeded from
+  the same `LT_*_BREAK` constants and must move together (a peak window opens
+  on the Friday before its break, matching the template's departure window).
+  The desk Coverage tab flags stale template windows.
 - **Seeds are insert-only** (`skrendam/seeds.py`): value changes to existing
   rows need one-off SQL on the live DB (pattern: `scripts/2026-08-29_*.sql`).
 - **Site** (yip.lt): V2 Lithuanian Poster&Bead design, LIVE since 2026-08-28.
@@ -100,19 +111,30 @@ it's the heart of the product:
 - **Travel moments** (10): the marketing concepts — school_holidays,
   sept_shoulder, last_warm_days, xmas_markets, last_minute,
   plan_ahead_summer, vfr_visit, long_haul_chance, winter_sun, ski_season.
-- **Deal templates** (14): the operational unit = audience × moment × date
+- **Deal templates** (15): the operational unit = audience × moment × date
   window (relative / seasonal / seasonal+lead / fixed) × destination scope
   (zones or an explicit list) × price gates × itinerary rules. A moment can
   have several templates (last_warm_days has Oct-broad + Nov-warm-only;
-  school_holidays has summer + three fixed-date break templates). A fare
+  school_holidays has summer + four fixed-date break templates). A fare
   attaches to EVERY template whose scope+window+gates it satisfies — that's
   by design; the desk shows supersede/route-context chips for duplicates.
   **The live map of all of this is the desk's Machine → Coverage tab.**
-- **Scoring & tiers:** two scorers run per fare (weighted gates blend + a
-  MAD-based outlier z-score), both against month-local baselines from
-  `price_log`. Score is normalized 0–100: **great ≥ 88**, **rare ≥ 94**
-  (site shows „Geras radinys" / „Retas radinys"); z ≤ −5 with ≥30% discount
-  flags a possible error fare.
+- **Scoring & tiers:** scorers run per fare (weighted gates blend + a MAD-based
+  outlier z-score, plus price-drop/rarity/error-fare strategies), all against
+  month-local baselines from `price_log`. Score is normalized 0–100: **great ≥
+  88**, **rare ≥ 94** (site shows „Geras radinys" / „Retas radinys"); z ≤ −5
+  with ≥30% discount flags a possible error fare.
+- **Demand layer** (`score_v2`, added 2026-09-10, WP2): scorers only ADD
+  matches, so a second pure pass re-ranks and DEMOTES. It takes the headline
+  score and applies: a **commodity cap** (40) when the fare sits on its own
+  90-day floor on ≥20% of scan days; a **date-fit** multiplier (peak window
+  1.25, Fri/Sat–Sun/Mon weekend 1.10); a **demand weight** by destination tier
+  (A 1.00 / B 0.85 / C 0.70, VFR corridors count A for the "home" persona);
+  and an **archetype** — `date` > `rare` > `destination` — naming why the fare
+  is interesting (a commodity fare gets none). **A match's `quality_tier`
+  follows `score_v2`, not the headline score**, so a headline-great fare to a
+  low-demand destination is not tiered great. Pre-migration-0012 rows have a
+  NULL `score_v2` and are the only ones read-side fallbacks may re-derive.
 - **Candidate lifecycle:** `new` (in Review) → curator action: publish (→
   `published_deals`, status live), reject, or save; `expired` when the travel
   date passes or the fare disappears (expiry sweep). Published deals carry
@@ -170,12 +192,17 @@ it's the heart of the product:
   design approval; `gh run watch --exit-status` (not `pr checks --watch`) to
   gate merges.
 
-## 7. Current state (2026-09-03) and next missions
+## 7. Current state (2026-09-10) and next missions
 
 **Working:** daily scan healthy (2026-09-03: 912 calls, 0×429, 152 candidates,
 first full harvest on the new template structure — weekend gate 7/7 Fri/Sat,
 first school-break finds). Site live with blink-test-passing copy. Desk has
 Today/Review/Live/Machine + Coverage. DataForSEO + Neon MCP wired into sessions.
+**Shipped 2026-09-10:** WP0 (PR #35) and WP2 — the demand layer (PR #36):
+`peak_windows`, `score_v2`/`archetype`/`demand_signals` on every match,
+time-of-day gates enforced, `family-xmas-sun`, and `skrendam analyze
+--labels`. **Next: WP3** (desk ranking and the read side move onto
+`score_v2`).
 
 **Not yet done (the queue):**
 1. **Wire the site to live deals** — publish steadily from Review (~1,400

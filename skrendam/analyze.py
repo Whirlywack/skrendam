@@ -50,15 +50,21 @@ def _percentile(values: list[float], pct: float) -> float:
 
 
 # quality_tier is written by the engine via skrendam/scanning/scoring/tiering.py
-# (GREAT=88, RARE=94, 0–100 scale). great_threshold (0.88) is only the fallback for old,
-# un-backfilled rows that predate the score_0_100/quality_tier columns.
+# (GREAT=88, RARE=94, 0–100 scale) and, since migration 0012, follows score_v2.
+# A NULL quality_tier is therefore ambiguous: either "the demand layer ran and
+# score_v2 landed below GREAT" (0012+ row, tier legitimately not great/rare) or
+# "un-backfilled pre-0012 row" (predates the columns entirely). score_v2 tells
+# the two apart, so the great_threshold (0.88) match_score fallback below is
+# applied ONLY when score_v2 IS NULL; applying it to a genuinely-scored-and-
+# rejected 0012+ row would count a fare the engine already turned down.
 def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
     discounts = [d for (d,) in session.execute(
         select(models.Candidate.discount_pct).where(models.Candidate.discount_pct.is_not(None))
     )]
     match_rows = session.execute(
         select(models.CandidateTemplateMatch.quality_tier,
-               models.CandidateTemplateMatch.match_score)).all()
+               models.CandidateTemplateMatch.match_score,
+               models.CandidateTemplateMatch.score_v2)).all()
     per_tmpl = session.execute(
         select(models.DealTemplate.name, func.count(models.CandidateTemplateMatch.id))
         .join(models.CandidateTemplateMatch,
@@ -71,9 +77,12 @@ def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
         .group_by(models.Candidate.zone)
         .order_by(func.count(models.Candidate.id).desc())
     ).all()
-    great = sum(1 for tier, ms in match_rows
+    # tier None + score_v2 set = the demand layer scored it below GREAT: excluded.
+    # tier None + score_v2 NULL = pre-0012 row that never got a real tier at all:
+    # rescued by the match_score fallback.
+    great = sum(1 for tier, ms, sv2 in match_rows
                 if (tier in ("great", "rare"))
-                or (tier is None and ms is not None and ms >= great_threshold))
+                or (tier is None and sv2 is None and ms is not None and ms >= great_threshold))
     return AnalysisReport(
         candidate_count=session.scalar(select(func.count(models.Candidate.id))) or 0,
         match_count=len(match_rows),
@@ -85,6 +94,59 @@ def analyze(session: Session, great_threshold: float = 0.88) -> AnalysisReport:
         per_zone=[ZoneVolume(z, c) for (z, c) in per_zone],
         tier_preview=TierPreview(great=great, maybe=len(match_rows) - great),
     )
+
+
+def _price_band(p: float) -> str:
+    return "<50" if p < 50 else "50–99" if p < 100 else "100–199" if p < 200 else "200+"
+
+
+def _commodity_bucket(share) -> str:
+    if share is None:
+        return "unknown"
+    return "<0.2" if share < 0.2 else "0.2–0.5" if share < 0.5 else "≥0.5"
+
+
+def label_report(session: Session) -> str:
+    """Curator labels (approved/rejected) as a proxy for "what counts as a deal".
+
+    Grouped by zone x template x price band x commodity bucket (spec WP2.11).
+    """
+    rows = session.execute(
+        select(
+            models.Candidate.zone,
+            models.DealTemplate.name,
+            models.Candidate.price,
+            models.Candidate.status,
+            models.CandidateTemplateMatch.demand_signals,
+        )
+        .join(
+            models.CandidateTemplateMatch,
+            models.CandidateTemplateMatch.candidate_id == models.Candidate.id,
+        )
+        .join(
+            models.DealTemplate,
+            models.DealTemplate.id == models.CandidateTemplateMatch.deal_template_id,
+        )
+        .where(models.Candidate.status.in_(("approved", "rejected")))
+    ).all()
+    agg: dict[tuple, list[int]] = {}
+    for zone, tname, price, status, signals in rows:
+        key = (
+            zone,
+            tname,
+            _price_band(price),
+            _commodity_bucket((signals or {}).get("commodity_share")),
+        )
+        a = agg.setdefault(key, [0, 0])
+        a[0 if status == "approved" else 1] += 1
+    lines = [
+        "| zone | template | price band | commodity | approved | rejected | approval |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for (zone, tname, band, bucket), (ok, no) in sorted(agg.items()):
+        rate = f"{round(100 * ok / (ok + no))}%"
+        lines.append(f"| {zone} | {tname} | {band} | {bucket} | {ok} | {no} | {rate} |")
+    return "\n".join(lines)
 
 
 def format_report(rep: AnalysisReport) -> str:

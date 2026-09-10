@@ -11,7 +11,7 @@ def test_seed_is_idempotent(session):
     assert session.query(models.Route).count() >= 10
     assert session.query(models.AudienceSegment).count() == 6
     assert session.query(models.TravelMoment).count() == 10
-    assert session.query(models.DealTemplate).count() == 14
+    assert session.query(models.DealTemplate).count() == 15
     # every template references a real audience + moment
     for t in session.query(models.DealTemplate):
         assert t.audience_segment_id and t.travel_moment_id
@@ -61,6 +61,9 @@ def test_new_templates_and_gate_values(session):
     assert all(by_slug[s].min_departure_dates == 5 for s in planable)
     assert all(by_slug[s].min_departure_dates is None for s in exempt)
     assert by_slug["christmas-markets"].min_discount_pct == 25  # 06-03 flood watch-item
+    # family-xmas-sun sits between planable (5) and exempt (None): a fixed
+    # ~10-day window can support a 3-near-date gate but not a 5-date one.
+    assert by_slug["family-xmas-sun"].min_departure_dates == 3
 
 
 def test_moment_structure_audit_2026_08_29(session):
@@ -137,3 +140,52 @@ def test_seed_never_reenables_disabled_route(session):
     seed_all(session)  # idempotent re-run
     session.refresh(r)
     assert r.enabled is False
+
+
+def test_peak_windows_aligned_with_family_windows(session):
+    seed_all(session)
+    rows = {w.slug: w for w in session.query(models.PeakWindow).all()}
+    assert len(rows) == 13
+    # The four school-break windows open on the family templates' departure
+    # windows (the Friday before the break), not on the break's first school-free
+    # day — otherwise the Friday fare the template searches for scores date_fit 1.0.
+    assert rows["kaledos-2026"].start_date == date(2026, 12, 18)
+    assert rows["kaledos-2026"].end_date == date(2027, 1, 3)
+    assert rows["rudens-2026"].start_date == date(2026, 10, 30)
+    assert rows["ziemos-2027"].start_date == date(2027, 2, 12)
+    assert rows["pavasario-2027"].start_date == date(2027, 3, 19)
+    tpl = {
+        t.slug: t
+        for t in session.query(models.DealTemplate).filter(
+            models.DealTemplate.slug.in_(
+                ["family-autumn-sun", "family-feb-sun", "family-easter-sun", "family-xmas-sun"]
+            )
+        )
+    }
+    for window_slug, tpl_slug in [
+        ("rudens-2026", "family-autumn-sun"),
+        ("ziemos-2027", "family-feb-sun"),
+        ("pavasario-2027", "family-easter-sun"),
+        ("kaledos-2026", "family-xmas-sun"),
+    ]:
+        assert rows[window_slug].start_date == tpl[tpl_slug].fixed_start_date
+    assert set(rows["kaledos-2026"].pref_codes) == {"family", "home"}
+    assert rows["home-xmas-2026"].return_start_date == date(2027, 1, 2)
+    assert rows["home-xmas-2026"].return_end_date == date(2027, 1, 6)
+    assert {w.kind for w in rows.values()} == {
+        "school_break",
+        "public_holiday",
+        "long_weekend",
+        "custom",
+    }
+    seed_all(session)  # insert-only
+    assert session.query(models.PeakWindow).count() == 13
+
+
+def test_family_xmas_sun_is_seeded_with_the_date_archetype_window(session):
+    seed_all(session)
+    t = session.query(models.DealTemplate).filter_by(slug="family-xmas-sun").one()
+    assert (t.fixed_start_date, t.fixed_end_date) == (date(2026, 12, 18), date(2026, 12, 28))
+    assert t.included_destinations == ["TFS", "LPA", "HRG", "SSH", "DXB", "RAK"]
+    assert (t.max_price_eur, t.min_discount_pct, t.min_departure_dates) == (450, 20, 3)
+    assert t.family_friendly_times_only and t.newsletter_tag == "family_sun"

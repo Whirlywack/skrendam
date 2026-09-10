@@ -20,6 +20,7 @@ function dealBase() {
     pd: publishedDeals,
     score: candidateTemplateMatches.matchScore,
     score100: candidateTemplateMatches.score0100,
+    scoreV2: candidateTemplateMatches.scoreV2,
     qualityTier: candidateTemplateMatches.qualityTier,
     snapshot: candidates.itinerarySnapshot,
     candLastSeen: candidates.lastSeenAt,

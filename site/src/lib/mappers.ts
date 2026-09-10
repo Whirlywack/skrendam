@@ -11,6 +11,14 @@ import { S } from './lt';
 
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 
+// D6: quality_tier follows score_v2, so a NULL tier on a row that HAS a score_v2
+// means "the demand layer scored it below great". A published deal keeps its
+// 'great' floor (it was hand-approved), but the RARITY verdict must come from
+// score_v2 — only legacy rows (score_v2 null) derive it from the headline score.
+function tierScore(r: { scoreV2?: number | string | null }, score: number): number {
+  return r.scoreV2 != null ? Number(r.scoreV2) : score;
+}
+
 function legs(snapshot: unknown): { stops: number; airline: string } {
   const s = (snapshot ?? {}) as Record<string, unknown>;
   const legsArr = s.legs as Array<{ airline?: { code?: string } }> | undefined;
@@ -36,7 +44,7 @@ export function toTicket(r: Row, now: Date): TicketView {
   // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
   const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
-    ? r.qualityTier : (qualityTag(score) ?? 'great');
+    ? r.qualityTier : (qualityTag(tierScore(r, score)) ?? 'great');
   return {
     id: pd.id,
     destination: ltCity(pd.destination).nom,
@@ -64,7 +72,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
   const { stops, airline } = legs(r.snapshot);
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
   const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
-    ? r.qualityTier : (qualityTag(score) ?? 'great');
+    ? r.qualityTier : (qualityTag(tierScore(r, score)) ?? 'great');
   const drop = Math.round(Number(pd.discountPct ?? 0));
   const fresh = pd.lastSeenAt ?? r.candLastSeen ?? null;
   const status = pd.goingFast

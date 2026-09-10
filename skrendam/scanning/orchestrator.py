@@ -18,12 +18,21 @@ from skrendam.scanning.checkpoint import ScanCheckpoint
 from skrendam.scanning.dedup import deal_group_key
 from skrendam.scanning.history import DbPriceHistory
 from skrendam.scanning.resolver import resolve
+from skrendam.scanning.scoring import demand, tiering
 from skrendam.scanning.scoring.base import ScoringContext
-from skrendam.scanning.scoring.eligibility import in_template_scope
+from skrendam.scanning.scoring.eligibility import in_template_scope, itinerary_ok
 from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
 NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
+
+
+@dataclass(frozen=True)
+class DemandContext:
+    windows: list
+    audience_slug: dict
+    personas: dict
+    tiers: dict
 
 
 def due_routes(routes, today: date, rotation_days: int, all_routes: bool = False) -> list:
@@ -101,6 +110,18 @@ def run_scan(
 
     templates = list(
         session.scalars(select(models.DealTemplate).where(models.DealTemplate.enabled.is_(True)))
+    )
+    demand_ctx = DemandContext(
+        windows=demand.windows_from_rows(
+            session.scalars(
+                select(models.PeakWindow).order_by(
+                    models.PeakWindow.start_date, models.PeakWindow.id
+                )
+            ).all()
+        ),
+        audience_slug={a.id: a.slug for a in session.scalars(select(models.AudienceSegment))},
+        personas=demand.load_personas(),
+        tiers=demand.load_demand_tiers(),
     )
     routes = due_routes(
         list(session.scalars(select(models.Route))), today, tail_rotation_days, all_routes
@@ -204,6 +225,7 @@ def run_scan(
                     summary,
                     history,
                     near_dates,
+                    demand_ctx,
                 )
             if aborted:
                 break
@@ -305,9 +327,12 @@ def _persist_fare(
     summary,
     history,
     departure_date_count,
+    demand_ctx,
 ):
     # Score against every applicable template with every enabled scorer (pure, no writes).
-    hist_series = history.for_route(route.id, spec.trip_type)
+    # ONE series per fare, partitioned by trip duration: scoring and the demand
+    # layer must share the same notion of "this route's history" (review A3).
+    hist_series = history.for_route(route.id, spec.trip_type, spec.duration_days)
     prev_pt = hist_series.previous_point(point.travel_date, now)
     prev = prev_pt.price if prev_pt else None
     prev_age = (now - prev_pt.scanned_at).days if prev_pt else None
@@ -319,6 +344,8 @@ def _persist_fare(
             continue
         if tpl.min_departure_dates is not None and departure_date_count < tpl.min_departure_dates:
             continue  # marketability gate: not enough near-price dates to plan around
+        if not itinerary_ok(fare, tpl):
+            continue  # itinerary/time gate BEFORE scoring: ErrorFareScorer never calls it
         ctx = ScoringContext(
             fare=fare,
             baseline=base,
@@ -374,7 +401,32 @@ def _persist_fare(
     if created:
         summary.candidates_found += 1
 
+    # Per-fare work hoisted out of the per-template loop: commodity_share depends
+    # only on (series, price, now) and window_typical only on (series, window), so
+    # both are computed once and shared across this fare's templates (review A7).
+    share = demand.commodity_share(hist_series, fare.price, now)
+    typical_cache: dict[str, float | None] = {}
     for tpl, headline, scores in matched:
+        dm = demand.assess(
+            headline=headline,
+            scores=scores,
+            template=tpl,
+            audience_slug=demand_ctx.audience_slug.get(tpl.audience_segment_id),
+            destination=spec.destination,
+            fare=fare,
+            travel_date=point.travel_date,
+            return_date=point.return_date,
+            series=hist_series,
+            local_median=local_median,
+            discount_pct=discount,
+            departure_date_count=departure_date_count,
+            now=now,
+            windows=demand_ctx.windows,
+            personas=demand_ctx.personas,
+            tiers=demand_ctx.tiers,
+            share=share,
+            typical_cache=typical_cache,
+        )
         _match, created = repo.upsert_match(
             session,
             cand.id,
@@ -383,8 +435,11 @@ def _persist_fare(
             headline.reason_text,
             headline.signals,
             score_0_100=headline.score_0_100,
-            quality_tier=headline.quality_tier,
+            quality_tier=tiering.quality_tier(dm.score_v2),  # D6: tier follows score_v2
             primary_scorer=headline.scorer,
+            score_v2=dm.score_v2,
+            archetype=dm.archetype,
+            demand_signals=dm.signals,
         )
         if created:
             summary.matches_created += 1

@@ -10,6 +10,7 @@ function row(over: Partial<Record<string, unknown>> = {}): Row {
           goingFast: false, status: 'live', ...((over.pd as object) ?? {}) },
     score: over.score ?? 0.96,
     score100: over.score100 ?? null,
+    scoreV2: over.scoreV2 ?? null,
     qualityTier: over.qualityTier ?? null,
     snapshot: over.snapshot ?? { stops: 1, legs: [{ airline: { code: 'BT' } }], duration: 440, self_transfer: false },
     candLastSeen: '2026-06-03T10:00:00',
@@ -40,6 +41,18 @@ describe('toPublicDeal', () => {
     // raw score 0.50 would derive no tier, but the engine tagged it "rare".
     const d = toPublicDeal(row({ score: 0.5, qualityTier: 'rare' }), new Date('2026-06-03T12:00:00Z'));
     expect(d.quality).toBe('rare');
+  });
+  it('score_v2 below GREAT keeps the published floor but drops the rarity claim', () => {
+    // D6: quality_tier follows score_v2. A published deal never falls below
+    // 'great' (a curator approved it), but "taip pigiai būna retai" must be
+    // earned by score_v2, not by the headline score the demand layer overruled.
+    const d = toPublicDeal(row({ score: 0.92, score100: 92, scoreV2: 64 }), new Date());
+    expect(d.quality).toBe('great');
+    expect(d.verdict).not.toContain('retai');
+    // ...even when the headline score alone would have said "rare".
+    const r2 = toPublicDeal(row({ score: 0.96, score100: 96, scoreV2: 64 }), new Date());
+    expect(r2.quality).toBe('great');
+    expect(r2.verdict).not.toContain('retai');
   });
   it('engine score_0_100 drives the derived tier when quality_tier is absent', () => {
     // raw score 0.50 → 50 → no tier; stored score_0_100 95 → "rare".

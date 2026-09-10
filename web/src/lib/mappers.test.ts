@@ -17,6 +17,7 @@ function makeRow(overrides: Partial<{
   news: string | null;
   publishedId: number | null;
   score100: number | null;
+  scoreV2: number | null;
   qualityTier: string | null;
   cOverrides: Record<string, unknown>;
 }>): QueueRow {
@@ -32,6 +33,7 @@ function makeRow(overrides: Partial<{
     news = null,
     publishedId = null,
     score100 = null,
+    scoreV2 = null,
     qualityTier = null,
     cOverrides = {},
   } = overrides ?? {};
@@ -52,7 +54,7 @@ function makeRow(overrides: Partial<{
     ...cOverrides,
   };
 
-  return { matchId, score, score100, qualityTier, reason, templateId, templateLabel, templateName, headline, hook, news, publishedId, c } as unknown as QueueRow;
+  return { matchId, score, score100, scoreV2, qualityTier, reason, templateId, templateLabel, templateName, headline, hook, news, publishedId, c } as unknown as QueueRow;
 }
 
 describe('toCandidateView', () => {
@@ -128,6 +130,15 @@ describe('toCandidateView', () => {
   it('null quality_tier with a stored score derives "maybe"', () => {
     const row = makeRow({ score: '0.50', score100: 70, qualityTier: null });
     expect(toCandidateView(row).tier).toBe('maybe');
+  });
+
+  it('null quality_tier with a score_v2 below GREAT is "maybe", not the headline score', () => {
+    // D6: the demand layer scored this 64 (commodity/low-demand) while the
+    // headline score stayed 92. A null tier on a scored row means "below great".
+    const row = makeRow({ score: '0.92', score100: 92, scoreV2: 64, qualityTier: null });
+    const v = toCandidateView(row);
+    expect(v.tier).toBe('maybe');
+    expect(v.score).toBe(92); // the displayed headline score is unchanged
   });
 });
 

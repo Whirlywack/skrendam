@@ -62,13 +62,17 @@ def upsert_match(
     score_0_100: int | None = None,
     quality_tier: str | None = None,
     primary_scorer: str | None = None,
+    score_v2: int | None = None,
+    archetype: str | None = None,
+    demand_signals: dict | None = None,
 ) -> tuple[models.CandidateTemplateMatch, bool]:
     """Return (match, created).
 
-    The headline fields (score_0_100/quality_tier/primary_scorer) are written on
-    BOTH insert and update; the orchestrator always supplies them. The None
-    defaults exist only so the legacy 3-arg signature still type-checks — a legacy
-    update would null these columns, so don't rely on that path to preserve them.
+    The headline fields (score_0_100/quality_tier/primary_scorer) and the demand
+    layer's fields (score_v2/archetype/demand_signals) are written on BOTH insert
+    and update; the orchestrator always supplies them. The None defaults exist
+    only so the legacy 3-arg signature still type-checks — a legacy update would
+    null these columns, so don't rely on that path to preserve them.
     """
     existing = session.scalar(
         select(models.CandidateTemplateMatch).where(
@@ -86,6 +90,9 @@ def upsert_match(
             score_0_100=score_0_100,
             quality_tier=quality_tier,
             primary_scorer=primary_scorer,
+            score_v2=score_v2,
+            archetype=archetype,
+            demand_signals=demand_signals,
         )
         session.add(m)
         session.flush()
@@ -96,6 +103,9 @@ def upsert_match(
     existing.score_0_100 = score_0_100
     existing.quality_tier = quality_tier
     existing.primary_scorer = primary_scorer
+    existing.score_v2 = score_v2
+    existing.archetype = archetype
+    existing.demand_signals = demand_signals
     session.flush()
     return existing, False
 

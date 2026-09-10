@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
@@ -515,3 +515,148 @@ def test_scan_findings_survive_a_sweep_crash(session, monkeypatch):
     assert session.query(models.PriceLog).count() == 3
     run = session.query(models.ScanRun).one()
     assert run.status == "running" and run.finished_at is None  # watchdog's staleness signal
+
+
+def test_run_scan_persists_score_v2_archetype_and_signals(session):
+    _seed(session)
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    m = session.query(models.CandidateTemplateMatch).first()
+    assert m is not None
+    assert m.score_v2 is not None and 0 <= m.score_v2 <= 100
+    assert m.archetype in (None, "date", "rare", "destination")
+    assert set(m.demand_signals) >= {
+        "commodity_share",
+        "is_commodity",
+        "date_fit",
+        "demand_weight",
+        "window_slug",
+        "window_typical",
+        "saving_pp",
+        "saving_family",
+        "archetypes",
+    }
+    assert m.demand_signals["commodity_share"] is None  # no history yet -> unknown, not commodity
+
+
+class TierCBackend(FakeBackend):
+    """A strong-but-not-rare fare on a spread calendar.
+
+    Prices 55..145 (median 100, MAD 30) keep the modified z at ~-1.0, so the
+    outlier/error-fare scorers stay quiet and the 45% discount stays under
+    demand.RARE_DISCOUNT_PCT: the headline is a plain weighted 0.95.
+    """
+
+    PRICES = [55.0, 70.0, 85.0, 100.0, 115.0, 130.0, 145.0]
+
+    def search_calendar(self, spec):
+        return [(date(2026, 7, 20 + i), None, p) for i, p in enumerate(self.PRICES)]
+
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        fares = super().search_flights(origin, destination, travel_date, return_date, cabin)
+        fares[0]["price"] = 55.0
+        return fares
+
+
+def test_quality_tier_follows_score_v2_not_the_headline_score(session):
+    """D6: a headline-great fare to a low-demand destination is NOT tiered great.
+
+    XXX is in no demand_tiers.json band -> tier C -> weight 0.70, which drags a
+    95 headline down to 66 on score_v2. score_0_100 keeps the honest headline
+    number; quality_tier must follow score_v2 and stay NULL.
+    """
+    _seed(session)
+    session.query(models.Route).filter_by(id=1).update({"destination": "XXX"})
+    session.commit()
+    adapter = FliAdapter(TierCBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    m = session.query(models.CandidateTemplateMatch).one()
+    assert m.score_0_100 >= 88
+    assert m.demand_signals["demand_tier"] == "C" and m.demand_signals["demand_weight"] == 0.7
+    assert m.score_v2 < 88
+    assert m.quality_tier is None
+
+
+class EarlyBirdBackend(FakeBackend):
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        fares = super().search_flights(origin, destination, travel_date, return_date, cabin)
+        for f in fares:
+            f["legs"] = [
+                {
+                    "airline": {"code": "W6"},
+                    "departure_time": f"{travel_date}T05:50:00",
+                    "arrival_time": f"{travel_date}T08:30:00",
+                }
+            ]
+        return fares
+
+
+def test_family_friendly_template_rejects_0550_departure(session):
+    """The gate runs BEFORE scoring, so no scorer can smuggle the fare through.
+
+    ErrorFareScorer is deliberately lenient on itinerary (an error fare is worth
+    surfacing even if ugly) and never calls itinerary_ok. The route therefore
+    carries >= ErrorFareScorer.MIN_HISTORY prior points whose floor (EUR100) the
+    EUR30 fare undercuts by 70%: error_fare WOULD fire if the orchestrator let
+    the fare reach the scorers at all.
+    """
+    _seed(session)
+    tpl = session.get(models.DealTemplate, 1)
+    tpl.family_friendly_times_only = True
+    prior = models.ScanRun(scanner_version="t", status="completed", started_at=datetime(2026, 6, 1))
+    session.add(prior)
+    session.flush()
+    for i in range(8):
+        session.add(
+            models.PriceLog(
+                run_id=prior.id,
+                route_id=1,
+                trip_type="oneway",
+                travel_date=date(2026, 7, 29),
+                price=100.0 + i,
+                currency="EUR",
+                scanner_version="t",
+                scanned_at=datetime(2026, 6, 1),
+            )
+        )
+    session.commit()
+    adapter = FliAdapter(EarlyBirdBackend(), pace=lambda: None)
+    summary = run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    assert summary.matches_created == 0
+    assert session.query(models.CandidateScore).filter_by(scorer="error_fare").count() == 0
+
+
+class RoundTripBackend(FakeBackend):
+    """FakeBackend with real return dates, so a roundtrip template resolves fares."""
+
+    def search_calendar(self, spec):
+        return [
+            (d, d + timedelta(days=spec.duration_days or 0), price)
+            for d, _, price in super().search_calendar(spec)
+        ]
+
+
+def test_scoring_and_demand_share_one_duration_partitioned_history(session, monkeypatch):
+    """One history fetch per fare, partitioned by trip duration (review A3).
+
+    Scoring used the unpartitioned series while the demand layer fetched a second,
+    duration-filtered one — two different notions of "this route's history" for the
+    same fare, and a second prefetch query per fare. Now there is exactly one.
+    """
+    from skrendam.scanning import orchestrator
+    from skrendam.scanning.history import DbPriceHistory
+
+    _seed(session)
+    session.query(models.DealTemplate).update({"trip_type": "roundtrip", "trip_len_min_days": 5})
+    session.commit()
+    calls = []
+
+    class SpyHistory(DbPriceHistory):
+        def for_route(self, route_id, trip_type, duration_days=None):
+            calls.append((route_id, trip_type, duration_days))
+            return super().for_route(route_id, trip_type, duration_days)
+
+    monkeypatch.setattr(orchestrator, "DbPriceHistory", SpyHistory)
+    adapter = FliAdapter(RoundTripBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t")
+    assert calls == [(1, "roundtrip", 5)]

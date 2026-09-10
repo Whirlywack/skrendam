@@ -28,6 +28,9 @@ def test_0011_rewrites_machine_headlines(tmp_path, monkeypatch):
     url = f"sqlite+pysqlite:///{tmp_path / 'm.db'}"
     monkeypatch.setenv("SKRENDAM_DATABASE_URL", url)
     assert _alembic("upgrade", "0010_merge_heads").returncode == 0
+    # DB is pinned at pre-0012 schema (no peak_windows table yet); this test only
+    # cares about 0011's headline rewrite, so skip the unrelated peak-window seed.
+    monkeypatch.setattr("skrendam.seeds.PEAK_WINDOWS", [])
 
     eng = sa.create_engine(url)
     with Session(eng) as s:
