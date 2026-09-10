@@ -1,5 +1,6 @@
 import { listTemplates, listAudiences, listMoments } from '@/lib/config-queries';
 import { ConfigShell } from '@/components/ConfigShell';
+import { LAUNCH_PRIORITY } from '@/lib/shortlist';
 
 export const dynamic = 'force-dynamic';
 
@@ -133,12 +134,12 @@ export default async function CoveragePage() {
                         {t.slug}
                       </div>
                     </td>
-                    {/* ≥ 100 = launch template: bold, so the reserve list reads at a glance */}
+                    {/* ≥ LAUNCH_PRIORITY = launch template: bold, so the reserve list reads at a glance */}
                     <td
                       style={{
                         ...td,
                         fontFamily: 'var(--font-mono)',
-                        fontWeight: t.priority >= 100 ? 700 : 400,
+                        fontWeight: t.priority >= LAUNCH_PRIORITY ? 700 : 400,
                       }}
                     >
                       {t.priority}
