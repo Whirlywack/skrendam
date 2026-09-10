@@ -11,7 +11,7 @@ def test_seed_is_idempotent(session):
     assert session.query(models.Route).count() >= 10
     assert session.query(models.AudienceSegment).count() == 6
     assert session.query(models.TravelMoment).count() == 10
-    assert session.query(models.DealTemplate).count() == 15
+    assert session.query(models.DealTemplate).count() == 18
     # every template references a real audience + moment
     for t in session.query(models.DealTemplate):
         assert t.audience_segment_id and t.travel_moment_id
@@ -153,11 +153,63 @@ def test_home_vfr_routes_are_exactly_the_verified_ten():
 def test_no_zone_filtered_template_references_home_vfr(session):
     # HOME_VFR exists to keep the reverse routes out of zone-filtered templates
     # (otherwise ten routes × every matching template would triple the scan cost).
+    # The home-* templates are the intended consumers: they pair the zone with a
+    # destination filter (VNO/KUN), so only they may reference it.
     seed_all(session)
     zoned = [t for t in session.query(models.DealTemplate) if t.included_zones]
     assert zoned, "seed should contain zone-filtered templates"
     for t in zoned:
+        if t.included_destinations:
+            continue
         assert "HOME_VFR" not in t.included_zones, f"{t.slug} references HOME_VFR"
+    referencing = {t.slug for t in zoned if "HOME_VFR" in t.included_zones}
+    assert referencing == {"home-xmas", "home-easter", "home-summer"}
+
+
+HOME_TEMPLATE_WINDOWS = {
+    # slug -> (PEAK_WINDOWS slug, fixed_start, fixed_end)
+    "home-xmas": ("home-xmas-2026", date(2026, 12, 18), date(2027, 1, 6)),
+    "home-easter": ("home-easter-2027", date(2027, 3, 25), date(2027, 4, 5)),
+    "home-summer": ("home-summer-2027", date(2027, 6, 20), date(2027, 7, 5)),
+}
+
+
+def test_home_templates_fixed_windows_match_peak_windows(session):
+    seed_all(session)
+    windows = {w.slug: w for w in session.query(models.PeakWindow).all()}
+    by_slug = {t.slug: t for t in session.query(models.DealTemplate).all()}
+    for slug, (wslug, start, end) in HOME_TEMPLATE_WINDOWS.items():
+        t, w = by_slug[slug], windows[wslug]
+        assert t.date_window_type == "fixed"
+        assert (t.fixed_start_date, t.fixed_end_date) == (start, end), slug
+        # the template window spans the peak window's outbound AND return ranges
+        assert t.fixed_start_date == w.start_date
+        assert t.fixed_end_date == (w.return_end_date or w.end_date)
+        assert t.included_zones == ["HOME_VFR"] and t.included_destinations == ["VNO", "KUN"]
+        assert t.newsletter_tag == "home" and t.trip_type == "roundtrip"
+        assert t.priority == 100 and t.min_departure_dates is None
+        assert t.suggested_headline_template is None  # brand-voice fallback owns the headline
+        assert t.trip_len_min_days is not None and t.trip_len_max_days is not None
+        assert t.trip_len_min_days <= (end - start).days
+    assert by_slug["home-xmas"].enabled and by_slug["home-easter"].enabled
+    assert by_slug["home-summer"].enabled is False  # scripts/2027-03-01_enable_home_summer.sql
+
+
+def test_home_vfr_routes_feed_only_home_templates(session):
+    # The headroom arithmetic (plan Global Constraints) assumes the ten reverse
+    # routes cost specs ONLY through the home-* templates.
+    from skrendam.scanning.resolver import resolve
+
+    seed_all(session)
+    home_routes = session.query(models.Route).filter_by(zone="HOME_VFR", enabled=True).all()
+    assert {(r.origin, r.destination) for r in home_routes} == HOME_VFR_ROUTES
+    today = date(2026, 9, 10)
+    for tpl in session.query(models.DealTemplate).filter_by(enabled=True).all():
+        specs = resolve(tpl, home_routes, today)
+        if tpl.slug.startswith("home-"):
+            assert {(s.origin, s.destination) for s in specs} == HOME_VFR_ROUTES, tpl.slug
+        else:
+            assert specs == [], f"{tpl.slug} would scan HOME_VFR routes"
 
 
 def test_core_composition_feeds_every_enabled_template(session):
@@ -168,7 +220,10 @@ def test_core_composition_feeds_every_enabled_template(session):
     core = [r for r in routes if r.core]
     assert 26 <= len(core) <= 40
     today = date(2026, 6, 15)
-    for tpl in session.query(models.DealTemplate).filter_by(enabled=True).all():
+    enabled = session.query(models.DealTemplate).filter_by(enabled=True).all()
+    slugs = {t.slug for t in enabled}
+    assert {"home-xmas", "home-easter"} <= slugs and "home-summer" not in slugs
+    for tpl in enabled:
         specs = resolve(tpl, core, today)
         assert specs, f"template {tpl.slug} has no core route feeding it"
 

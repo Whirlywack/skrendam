@@ -683,14 +683,86 @@ def seed_all(session: Session) -> None:
             newsletter_tag="ski",
             content_angle="The Alps at a Baltic-friendly price",
         ),
+        # WP7 — „Grįžtu namo" persona: reverse diaspora routes (zone HOME_VFR, seeded
+        # 2026-09-10) × the three home-* PEAK_WINDOWS. Fixed windows span the peak
+        # window's outbound AND return ranges; date_fit enforces the return range.
+        # No suggested_headline_template: the brand-voice fallback owns the headline.
+        # See docs/plans/2026-09-10-wp7-home-persona-plan.md.
+        dict(
+            slug="home-xmas",
+            name="Kalėdoms namo",
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            priority=100,
+            date_window_type="fixed",
+            fixed_start_date=date(2026, 12, 18),  # PEAK_WINDOWS home-xmas-2026 start
+            fixed_end_date=date(2027, 1, 6),  # … its return_end (out Dec 18–23 · back Jan 2–6)
+            included_zones=["HOME_VFR"],
+            included_destinations=["VNO", "KUN"],
+            trip_len_min_days=7,
+            trip_len_max_days=19,
+            max_stops=1,
+            allow_overnight_layover=False,
+            family_friendly_times_only=False,
+            public_label="Kalėdoms namo",
+            newsletter_tag="home",
+            content_angle="Kalėdoms namo iš Londono, Dublino ar Oslo — išskrendi gruodžio 18–23, grįžti po Naujųjų",
+        ),
+        dict(
+            slug="home-easter",
+            name="Velykoms namo",
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            priority=100,
+            date_window_type="fixed",
+            fixed_start_date=date(2027, 3, 25),  # PEAK_WINDOWS home-easter-2027
+            fixed_end_date=date(2027, 4, 5),
+            included_zones=["HOME_VFR"],
+            included_destinations=["VNO", "KUN"],
+            trip_len_min_days=3,
+            trip_len_max_days=11,
+            max_stops=1,
+            allow_overnight_layover=False,
+            family_friendly_times_only=False,
+            public_label="Velykoms namo",
+            newsletter_tag="home",
+            content_angle="Velykoms namo — ilgasis savaitgalis pas savus, be persėdimų per naktį",
+        ),
+        # Seeded disabled: its window is nine months out and would cost ~10 specs/day
+        # for nothing. scripts/2027-03-01_enable_home_summer.sql flips it in March.
+        dict(
+            slug="home-summer",
+            name="Vasarai namo",
+            enabled=False,
+            audience="vfr",
+            moment="vfr_visit",
+            trip_type="roundtrip",
+            priority=100,
+            date_window_type="fixed",
+            fixed_start_date=date(2027, 6, 20),  # PEAK_WINDOWS home-summer-2027
+            fixed_end_date=date(2027, 7, 5),
+            included_zones=["HOME_VFR"],
+            included_destinations=["VNO", "KUN"],
+            trip_len_min_days=5,
+            trip_len_max_days=15,
+            max_stops=1,
+            allow_overnight_layover=False,
+            family_friendly_times_only=False,
+            public_label="Vasarai namo",
+            newsletter_tag="home",
+            content_angle="Vasarai namo — Joninės ir liepos pradžia Lietuvoje už sąžiningą kainą",
+        ),
     ]
     for t in templates:
         slug = str(t.pop("slug"))
         a, m = aud[str(t.pop("audience"))], mom[str(t.pop("moment"))]
+        enabled = bool(t.pop("enabled", True))  # insert-only: never re-enables a disabled row
         _get_or_create(
             session,
             models.DealTemplate,
-            dict(audience_segment_id=a.id, travel_moment_id=m.id, enabled=True, **t),
+            dict(audience_segment_id=a.id, travel_moment_id=m.id, enabled=enabled, **t),
             slug=slug,
         )
     session.commit()

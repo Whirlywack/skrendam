@@ -21,12 +21,15 @@ TODAY = date(2026, 6, 15)
 
 # ─── Expected exact pipeline counts for TODAY=2026-06-15 with FakeBackend ────────────
 # Re-derived empirically 2026-09-10 (WP2 review wave) by running the pipeline and
-# reading the numbers off, not by arithmetic. 159 seeded routes, 15 templates
-# (last-warm-days split Oct/Nov, four fixed-window school-break templates
-# autumn/feb/easter/xmas, plan-ahead-summer seasonal + 60d lead, weekend gate
-# live). The templates over due_routes(rotation_days=10) resolve to 154 specs.
+# reading the numbers off, not by arithmetic. 169 seeded routes (159 + ten WP7
+# HOME_VFR reverse routes, all core), 18 templates / 17 enabled (last-warm-days
+# split Oct/Nov, four fixed-window school-break templates autumn/feb/easter/xmas,
+# plan-ahead-summer seasonal + 60d lead, weekend gate live, WP7 home-xmas +
+# home-easter fixed windows; home-summer is seeded disabled). The templates over
+# due_routes(rotation_days=10) resolve to 174 specs: 154 + 2 home templates × 10
+# reverse routes.
 #
-# 7 calendar points per spec → 154 * 7 = 1078 price_log rows.
+# 7 calendar points per spec → 174 * 7 = 1218 price_log rows.
 # Decile on [30.0,31.0,31.5,32.0,33.0,210.0,215.0] = 30.6 → only the 30.0 point is
 # flagged (the fake is single-month, so month decile == window decile and Wave-1
 # month-local scoring is neutral). One search_flights call per spec.
@@ -49,9 +52,10 @@ TODAY = date(2026, 6, 15)
 # Zero by design: last-minute-weekends (its flagged point, today+3 = Thu Jun 18,
 # fails the FRI/SAT gate added 2026-08-29); september-sun, christmas-markets,
 # plan-ahead-summer, winter-sun-escape, ski-alps and long-haul-opportunist
-# (discount-only gates of 25-30% vs the fake's 6%-below-median fare). The outlier
-# scorer stays quiet too (z=-1.35 at month MAD 1.0).
-E2E_PRICE_LOG_ROWS = 1078
+# (discount-only gates of 25-30% vs the fake's 6%-below-median fare); home-xmas
+# and home-easter (HOME_VFR zone gate: 25% discount / €25 saving vs the same 6%).
+# The outlier scorer stays quiet too (z=-1.35 at month MAD 1.0).
+E2E_PRICE_LOG_ROWS = 1218
 E2E_CANDIDATES = 87
 E2E_MATCHES = 108
 E2E_DRAFTS = 108
@@ -141,8 +145,8 @@ def test_full_pipeline_offline(session):
 
     summary = run_scan(session, today=TODAY, adapter=_make_adapter(), scanner_version="e2e-test")
 
-    # ── 1. summary: all 15 templates scanned ─────────────────────────────────────────
-    assert summary.templates_scanned == 15
+    # ── 1. summary: all 17 enabled templates scanned (home-summer is seeded disabled) ──
+    assert summary.templates_scanned == 17
 
     # ── 2. ScanRun row ───────────────────────────────────────────────────────────────
     run = session.query(models.ScanRun).one()
@@ -150,7 +154,7 @@ def test_full_pipeline_offline(session):
     assert run.started_at <= run.finished_at
     assert run.api_calls > 0
 
-    # ── 3. price_log rows logged (7 per resolved spec × 64 specs) ───────────────────
+    # ── 3. price_log rows logged (7 per resolved spec × 174 specs) ──────────────────
     assert session.query(models.PriceLog).count() == E2E_PRICE_LOG_ROWS
 
     # ── 4. exact candidate count ──────────────────────────────────────────────────────

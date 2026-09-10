@@ -42,7 +42,7 @@ def test_run_scan_command_seeds_and_scans(session, monkeypatch, tmp_path):
     summary = run_scan_command(
         session_factory=lambda: session, backend=FakeBackend(), today=date(2026, 6, 2), seed=True
     )
-    assert summary.templates_scanned == 15
+    assert summary.templates_scanned == 17  # 18 seeded, home-summer disabled
     assert session.query(models.Candidate).count() >= 1
 
 
