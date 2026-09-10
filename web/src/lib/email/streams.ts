@@ -13,7 +13,8 @@ export interface SendDeps {
   recipients: (plan: Plan) => Promise<Recipient[]>;
   send: (m: OutgoingMail) => Promise<{ ok: boolean; error?: string }>;
   insertIssue: (kind: IssueKind, dealIds: number[], expiredIds: number[]) => Promise<number>;
-  finishIssue: (id: number, stats: SendStats) => Promise<void>;
+  /** `sentAt` null = nothing went out (no key); a timestamp = the stream ran. */
+  finishIssue: (id: number, stats: SendStats, sentAt: string | null) => Promise<void>;
   now: () => Date;
 }
 
@@ -77,13 +78,28 @@ export async function sendInstant(
       console.error(`[email] instant issue ${issueId}: send to subscriber ${r.id} failed: ${result.error ?? 'unknown'}`);
     }
   }
-  await deps.finishIssue(issueId, stats);
+  await deps.finishIssue(issueId, stats, deps.now().toISOString());
   return { issueId, stats };
 }
 
-/** Real db + Resend. `insertIssue` leaves `sent_at` null until `finishIssue`
- *  stamps it together with the stats, so a crash mid-stream shows on the
- *  Letters page as an unfinished issue rather than a silent success. */
+/** The stream when `RESEND_API_KEY` is unset: the `issues` row is still
+ *  recorded so the Letters page shows what would have gone out, with
+ *  `stats.skipped_no_key` and `sent_at` left NULL — nothing was sent. */
+export async function recordSkippedNoKey(
+  kind: IssueKind,
+  dealIds: number[],
+  deps: SendDeps,
+): Promise<{ issueId: number; stats: SendStats }> {
+  const issueId = await deps.insertIssue(kind, dealIds, []);
+  const stats: SendStats = { ...zeroStats(), skipped_no_key: true };
+  await deps.finishIssue(issueId, stats, null);
+  return { issueId, stats };
+}
+
+/** Real db + Resend. `insertIssue` leaves `sent_at` null; `finishIssue`
+ *  writes the stats and stamps `sent_at` only when the stream really ran —
+ *  the no-key path passes null so the Letters page shows it as skipped, and
+ *  a crash mid-stream shows as an unfinished issue, never a silent success. */
 export const defaultDeps: SendDeps = {
   recipients: activeSubscribers,
   send: sendMail,
@@ -101,10 +117,10 @@ export const defaultDeps: SendDeps = {
       .returning({ id: issues.id });
     return row.id;
   },
-  async finishIssue(id, stats) {
+  async finishIssue(id, stats, sentAt) {
     await db
       .update(issues)
-      .set({ sentAt: new Date().toISOString(), stats })
+      .set({ sentAt, stats })
       .where(eq(issues.id, id));
   },
   now: () => new Date(),

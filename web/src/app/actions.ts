@@ -14,7 +14,7 @@ import {
   scanRequests,
 } from '@/db/generated/schema';
 import { emailEnabled } from '@/lib/email/client';
-import { defaultDeps, sendInstant, zeroStats } from '@/lib/email/streams';
+import { defaultDeps, recordSkippedNoKey, sendInstant } from '@/lib/email/streams';
 
 // ---------------------------------------------------------------------------
 // Auth guard — re-checked inside EVERY action (proxy can skip middleware on
@@ -165,8 +165,7 @@ export async function publishDeal(input: {
     if (emailEnabled()) {
       await sendInstant(row, defaultDeps);
     } else {
-      const issueId = await defaultDeps.insertIssue('instant', [row.id], []);
-      await defaultDeps.finishIssue(issueId, { ...zeroStats(), skipped_no_key: true });
+      await recordSkippedNoKey('instant', [row.id], defaultDeps);
     }
   } catch (e) {
     console.error(`[email] instant stream for deal ${row.id} failed:`, e);

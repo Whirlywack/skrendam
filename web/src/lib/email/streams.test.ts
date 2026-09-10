@@ -9,7 +9,7 @@ import { unsubscribeUrl } from '../links';
 import type { Recipient } from '../subscribers';
 import type { OutgoingMail } from './client';
 import type { Deal } from './render';
-import { sendInstant, zeroStats, type SendDeps, type SendStats } from './streams';
+import { recordSkippedNoKey, sendInstant, zeroStats, type SendDeps, type SendStats } from './streams';
 
 function deal(over: Partial<Deal> = {}): Deal {
   return {
@@ -178,10 +178,12 @@ describe('sendInstant', () => {
     ]);
     const { issueId, stats } = await sendInstant(deal(), deps());
     expect(finishIssue).toHaveBeenCalledTimes(1);
-    expect(finishIssue).toHaveBeenCalledWith(7, {
-      attempted: 1, sent: 1, failed: 0, skipped_no_token: 1, skipped_origin: 1,
-    });
-    expect(finishIssue).toHaveBeenCalledWith(issueId, stats);
+    expect(finishIssue).toHaveBeenCalledWith(
+      7,
+      { attempted: 1, sent: 1, failed: 0, skipped_no_token: 1, skipped_origin: 1 },
+      NOW.toISOString(),
+    );
+    expect(finishIssue).toHaveBeenCalledWith(issueId, stats, NOW.toISOString());
     expect(finishIssue.mock.invocationCallOrder[0]).toBeGreaterThan(send.mock.invocationCallOrder[0]);
   });
 
@@ -190,7 +192,33 @@ describe('sendInstant', () => {
     const { issueId, stats } = await sendInstant(deal(), deps());
     expect(issueId).toBe(7);
     expect(send).not.toHaveBeenCalled();
-    expect(finishIssue).toHaveBeenCalledWith(7, zeroStats());
+    expect(finishIssue).toHaveBeenCalledWith(7, zeroStats(), NOW.toISOString());
     expect(stats).toEqual(zeroStats());
+  });
+
+  it('stamps sent_at with a non-null ISO string after a real send', async () => {
+    recipients.mockResolvedValue([recipient()]);
+    await sendInstant(deal(), deps());
+    const sentAt = finishIssue.mock.calls[0][2];
+    expect(sentAt).toBe('2026-09-10T07:00:00.000Z');
+    expect(new Date(sentAt!).toISOString()).toBe(sentAt);
+  });
+});
+
+describe('recordSkippedNoKey (publishDeal without RESEND_API_KEY)', () => {
+  it('records the issue with skipped_no_key and leaves sent_at NULL', async () => {
+    const { issueId, stats } = await recordSkippedNoKey('instant', [42], deps());
+    expect(issueId).toBe(7);
+    expect(stats).toEqual({ ...zeroStats(), skipped_no_key: true });
+    expect(insertIssue).toHaveBeenCalledWith('instant', [42], []);
+    expect(finishIssue).toHaveBeenCalledTimes(1);
+    expect(finishIssue).toHaveBeenCalledWith(7, { ...zeroStats(), skipped_no_key: true }, null);
+    expect(finishIssue.mock.calls[0][2]).toBeNull();
+  });
+
+  it('never touches recipients or the sender', async () => {
+    await recordSkippedNoKey('instant', [42], deps());
+    expect(recipients).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 });
