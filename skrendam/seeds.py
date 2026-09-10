@@ -33,10 +33,14 @@ LT_XMAS_BREAK = (date(2026, 12, 18), date(2026, 12, 28))  # break Dec 21 – Jan
 SMSM = "https://smsm.lrv.lt/lt/veiklos-sritys-1/smm-svietimas/20252026-m-m-ir-20262027-m-m-mokiniu-atostogos/"
 PEAK_WINDOWS = [
     # slug, name, kind, start, end, pref_codes, return_start, return_end, source, notes
-    ("rudens-2026", "Rudens atostogos 2026", "school_break", date(2026, 10, 31), date(2026, 11, 8), ["family", "weekend"], None, None, SMSM, "Nov 1–2 public holidays inside"),
-    ("kaledos-2026", "Kalėdų atostogos 2026", "school_break", date(2026, 12, 21), date(2027, 1, 3), ["family", "home"], None, None, SMSM, None),
-    ("ziemos-2027", "Žiemos atostogos 2027", "school_break", date(2027, 2, 15), date(2027, 2, 21), ["family", "weekend"], None, None, SMSM, "Feb 16 inside"),
-    ("pavasario-2027", "Pavasario atostogos 2027 (1–10 kl.)", "school_break", date(2027, 3, 22), date(2027, 3, 29), ["family", "home"], None, None, SMSM, "Easter Mar 28"),
+    # For the four breaks that pair with a fixed-window family template, starts = the
+    # family templates' departure windows (Friday before the break); ends = ŠMSM break
+    # end. A window that opened on the break's first school-free day scored the Friday
+    # departure the template actually searches for at date_fit 1.0.
+    ("rudens-2026", "Rudens atostogos 2026", "school_break", LT_AUTUMN_BREAK[0], date(2026, 11, 8), ["family", "weekend"], None, None, SMSM, "Nov 1–2 public holidays inside"),
+    ("kaledos-2026", "Kalėdų atostogos 2026", "school_break", LT_XMAS_BREAK[0], date(2027, 1, 3), ["family", "home"], None, None, SMSM, None),
+    ("ziemos-2027", "Žiemos atostogos 2027", "school_break", LT_FEB_BREAK[0], date(2027, 2, 21), ["family", "weekend"], None, None, SMSM, "Feb 16 inside"),
+    ("pavasario-2027", "Pavasario atostogos 2027 (1–10 kl.)", "school_break", LT_EASTER_BREAK[0], date(2027, 3, 29), ["family", "home"], None, None, SMSM, "Easter Mar 28"),
     ("pavasario-gimn-2027", "Pavasario atostogos 2027 (gimnazija)", "school_break", date(2027, 3, 29), date(2027, 4, 4), ["family"], None, None, SMSM, None),
     ("vasara-2027", "Vasaros atostogos 2027", "school_break", date(2027, 6, 5), date(2027, 8, 31), ["family"], None, None, SMSM, "school-specific start"),
     ("kovo-11-2027", "Kovo 11-oji 2027", "long_weekend", date(2027, 3, 11), date(2027, 3, 14), ["weekend"], None, None, None, None),

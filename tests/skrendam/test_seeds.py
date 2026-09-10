@@ -142,12 +142,33 @@ def test_seed_never_reenables_disabled_route(session):
     assert r.enabled is False
 
 
-def test_peak_windows_seeded_from_spec_section_10(session):
+def test_peak_windows_aligned_with_family_windows(session):
     seed_all(session)
     rows = {w.slug: w for w in session.query(models.PeakWindow).all()}
     assert len(rows) == 13
-    assert rows["kaledos-2026"].start_date == date(2026, 12, 21)
+    # The four school-break windows open on the family templates' departure
+    # windows (the Friday before the break), not on the break's first school-free
+    # day — otherwise the Friday fare the template searches for scores date_fit 1.0.
+    assert rows["kaledos-2026"].start_date == date(2026, 12, 18)
     assert rows["kaledos-2026"].end_date == date(2027, 1, 3)
+    assert rows["rudens-2026"].start_date == date(2026, 10, 30)
+    assert rows["ziemos-2027"].start_date == date(2027, 2, 12)
+    assert rows["pavasario-2027"].start_date == date(2027, 3, 19)
+    tpl = {
+        t.slug: t
+        for t in session.query(models.DealTemplate).filter(
+            models.DealTemplate.slug.in_(
+                ["family-autumn-sun", "family-feb-sun", "family-easter-sun", "family-xmas-sun"]
+            )
+        )
+    }
+    for window_slug, tpl_slug in [
+        ("rudens-2026", "family-autumn-sun"),
+        ("ziemos-2027", "family-feb-sun"),
+        ("pavasario-2027", "family-easter-sun"),
+        ("kaledos-2026", "family-xmas-sun"),
+    ]:
+        assert rows[window_slug].start_date == tpl[tpl_slug].fixed_start_date
     assert set(rows["kaledos-2026"].pref_codes) == {"family", "home"}
     assert rows["home-xmas-2026"].return_start_date == date(2027, 1, 2)
     assert rows["home-xmas-2026"].return_end_date == date(2027, 1, 6)
