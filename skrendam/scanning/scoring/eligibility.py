@@ -16,7 +16,7 @@ def _hour(leg, key: str) -> int | None:
         return None
     try:
         return datetime.fromisoformat(value).hour
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 

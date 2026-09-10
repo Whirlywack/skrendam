@@ -132,7 +132,7 @@ def main():
             report = analyze.format_report(analyze.analyze(session))
         print(report)
         if args.out:
-            with open(args.out, "w") as f:
+            with open(args.out, "w", encoding="utf-8") as f:
                 f.write(report)
 
 
