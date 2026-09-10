@@ -42,6 +42,8 @@ test:
 	uv run --extra dev pytest -vv
 test-mcp:
 	uv run --extra dev pytest -vv --mcp
+test-live:
+	uv run --extra dev pytest -vv --live tests/search
 test-fuzz:
 	uv run --extra dev pytest -vv --fuzz
 test-all:
