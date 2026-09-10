@@ -108,9 +108,7 @@ def test_label_report_groups_approval_rate_by_zone_template_band_and_commodity(s
     seed_all(session)
     route = session.query(models.Route).filter_by(origin="VNO", destination="BCN").one()
     tpl = session.query(models.DealTemplate).filter_by(slug="last-warm-days").one()
-    for i, (status, share) in enumerate(
-        [("approved", 0.1), ("rejected", 0.6), ("approved", None)]
-    ):
+    for i, (status, share) in enumerate([("approved", 0.1), ("rejected", 0.6), ("approved", None)]):
         c = models.Candidate(
             route_id=route.id,
             origin="VNO",
