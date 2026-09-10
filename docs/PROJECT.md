@@ -222,8 +222,9 @@ it's the heart of the product:
 - **Desk filtering (web/):** Today = top-20 shortlist; Review = all `new`
   candidates filtered by origin-city chips (one per enabled route origin —
   Vilnius/Kaunas/Riga plus the abroad WP7 origins, labelled from
-  `airports.json` with the IATA code as fallback; STN and LTN both read
-  „London") × moment chips × best-first sort; Live = published board; Machine = config
+  `airports.json` via `originLabels()` — origins sharing a city name carry
+  the code, „London STN" / „London LTN"; IATA code as fallback) × moment
+  chips × best-first sort; Live = published board; Machine = config
   (templates, routes, zones, audiences, moments, scan health, coverage).
 - **Site collections (site/):** public landing pages over published deals via
   three filter kinds — **origin** (`publishedDeals.origin`), **zone**

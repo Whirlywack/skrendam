@@ -2,7 +2,7 @@ import { getQueueRows, getLatestScanRun, getRouteOrigins, getRouteSignals } from
 import { groupByTemplate, toScanView } from '@/lib/mappers';
 import { attachRouteContext } from '@/lib/routeContext';
 import { QueueBoard } from '@/components/QueueBoard';
-import { city } from '@/lib/airports';
+import { originLabels } from '@/lib/airports';
 
 export default async function QueuePage({
   searchParams,
@@ -35,6 +35,7 @@ export default async function QueuePage({
   }
 
   const visible = active ? rows.filter((r) => r.c.origin === active) : rows;
+  const labels = originLabels(originCodes);
 
   return (
     <QueueBoard
@@ -42,7 +43,7 @@ export default async function QueuePage({
       scan={toScanView(run)}
       origins={originCodes.map((code) => ({
         code,
-        label: city(code),
+        label: labels.get(code) ?? code,
         count: counts.get(code) ?? 0,
       }))}
       activeOrigin={active}
