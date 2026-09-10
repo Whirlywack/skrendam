@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@/db', () => ({ db: {}, subscribers: {} }));
 
 import { momentCodes, sendable, wantsOrigin, type Recipient } from './subscribers';
+import { referralCounts } from './subscribers-queries';
+import { refCode } from './refcode';
 
 function recipient(over: Partial<Recipient> = {}): Recipient {
   return { id: 1, email: 'a@b.lt', plan: 'paid', prefs: null, unsubscribeToken: 'tok', ...over };
@@ -52,5 +54,35 @@ describe('sendable', () => {
   });
   it('is true when both are present', () => {
     expect(sendable(recipient())).toBe(true);
+  });
+});
+
+describe('referralCounts', () => {
+  it('counts rows per referred_by code', () => {
+    const a = refCode(1);
+    const b = refCode(2);
+    const counts = referralCounts([
+      { prefs: { referred_by: a } },
+      { prefs: { referred_by: a } },
+      { prefs: { referred_by: b } },
+    ]);
+    expect(counts.get(a)).toBe(2);
+    expect(counts.get(b)).toBe(1);
+    expect(counts.size).toBe(2);
+  });
+  it('is empty when no row carries a referral', () => {
+    expect(referralCounts([]).size).toBe(0);
+    expect(referralCounts([{ prefs: null }, { prefs: {} }]).size).toBe(0);
+  });
+  it('ignores null prefs and non-string referred_by values', () => {
+    const a = refCode(1);
+    const counts = referralCounts([
+      { prefs: null },
+      { prefs: { referred_by: 7 } },
+      { prefs: { referred_by: '' } },
+      { prefs: 'garbage' },
+      { prefs: { referred_by: a } },
+    ]);
+    expect([...counts.entries()]).toEqual([[a, 1]]);
   });
 });

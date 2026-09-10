@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sun, Inbox, Send, Cog, LogOut } from 'lucide-react';
+import { Sun, Inbox, Send, Users, Cog, LogOut } from 'lucide-react';
 import { logoutAction } from '@/app/auth-actions';
 import { Wordmark } from './Wordmark';
 
@@ -32,6 +32,7 @@ export function Sidebar({
     { label: 'Today', href: '/', icon: <Sun size={18} />, exact: true },
     { label: 'Review', href: '/queue', icon: <Inbox size={18} />, badge: toReview },
     { label: 'Live', href: '/published', icon: <Send size={18} />, badge: attention, alert: true },
+    { label: 'Subscribers', href: '/subscribers', icon: <Users size={18} /> },
     { label: 'Machine', href: '/machine', icon: <Cog size={18} /> },
   ];
 
