@@ -84,6 +84,14 @@ export const S = {
     'Nuoroda nebegalioja — gali būti, kad prenumeratos jau atsisakei. ' +
     'Jei laiškai vis tiek ateina, parašyk mums: hello@yip.lt.',
 
+  // "I booked it" (/uzsisakiau/<dealId>) — the one-button page behind the
+  // claim link in every deal mail. Counts are real deal_events rows only.
+  claimTitle: 'Užsisakei?',
+  claimBody: 'Paspausk — suskaičiuosim, kiek žmonių pasinaudojo radiniu.',
+  claimCta: 'Užsisakiau',
+  claimDone: 'Ačiū! Užrašėm.',
+  claimInvalid: 'Šio radinio neberodome.',
+
   // Nav & footer
   navHow: 'Kaip tai veikia',
   navDeals: 'Radiniai',

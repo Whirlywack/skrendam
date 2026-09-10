@@ -45,3 +45,7 @@ export class FixedWindowLimiter {
 // Shared instances for the public subscribe actions.
 export const subscribeIpLimiter = new FixedWindowLimiter(8, 10 * 60_000); // 8 / 10 min / IP
 export const subscribeEmailLimiter = new FixedWindowLimiter(3, 60 * 60_000); // 3 / hour / email
+
+// Public tracked-link endpoints (/go, /uzsisakiau): a bot loop must not turn
+// into a deal_events insert loop. Generous enough that a human never sees it.
+export const clickLimiter = new FixedWindowLimiter(60, 60_000); // 60 / min / IP
