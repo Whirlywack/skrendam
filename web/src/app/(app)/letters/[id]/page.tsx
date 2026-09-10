@@ -13,7 +13,7 @@ import {
   statsOf,
   type IssueKind,
 } from '@/lib/letters';
-import { bookedEvents, dealsById, getIssue } from '@/lib/letters-queries';
+import { bookedEvents, dealsById, getIssue, type Issue } from '@/lib/letters-queries';
 import type { Recipient } from '@/lib/subscribers';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,7 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
   if (!Number.isInteger(id) || id <= 0) notFound();
   const issue = await getIssue(id);
   if (!issue) notFound();
+  if (issue.kind === 'instant') return <InstantSummary issue={issue} />;
   const kind = issue.kind as IssueKind;
   if (kind !== 'paid_digest' && kind !== 'free_nurture') notFound();
 
@@ -134,6 +135,40 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
           style={{ width: '100%', height: 720, border: '1px solid var(--line)', background: '#FFFDF7' }}
         />
       </div>
+    </ConfigShell>
+  );
+}
+
+/** An instant-stream issue: written by the publish action, already sent (or
+ *  skipped for no key) — nothing to preview, nothing to send. Deal + stats. */
+async function InstantSummary({ issue }: { issue: Issue }) {
+  const deals = await dealsById(idList(issue.dealIds));
+  const stats = statsOf(issue.stats);
+  return (
+    <ConfigShell title={`Instant #${issue.id}`}>
+      <p style={{ fontSize: 13, margin: '0 0 6px' }}>
+        <Link href="/letters">← Letters</Link>
+      </p>
+      <p style={hint}>
+        went to plan = paid the minute the deal was published · created {when(issue.createdAt)} ·{' '}
+        {issue.sentAt ? `sent ${when(issue.sentAt)}` : 'not sent'}
+      </p>
+      <p style={hint}>deal · {deals.length}</p>
+      <ol style={{ fontSize: 13, paddingLeft: 20, margin: '0 0 16px' }}>
+        {deals.map((d) => (
+          <li key={d.id} style={{ marginBottom: 6, color: d.status === 'live' ? 'inherit' : 'var(--fg-3)' }}>
+            #{d.id} · {dealLine(d)}
+            {d.status !== 'live' && ' (expired)'}
+          </li>
+        ))}
+      </ol>
+      {stats && (
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-2)', margin: 0 }}>
+          {stats.skipped_no_key
+            ? 'not sent — RESEND_API_KEY missing at publish time'
+            : `${stats.attempted} attempted · ${stats.sent} sent · ${stats.failed} failed · ${stats.skipped_no_token} skipped (no unsubscribe token) · ${stats.skipped_origin ?? 0} skipped (origin)`}
+        </p>
+      )}
     </ConfigShell>
   );
 }

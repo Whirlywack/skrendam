@@ -6,6 +6,7 @@ import {
   missedFacts,
   pickDigest,
   pickNurture,
+  statsOf,
   type DealEvent,
 } from './letters';
 
@@ -172,5 +173,22 @@ describe('missedFacts (send-time re-read of an issue\'s expired ids)', () => {
       [3, 24, 1],
       [4, 72, 2],
     ]);
+  });
+});
+
+describe('statsOf', () => {
+  it('reads every counter incl. the instant stream\'s skipped_origin, zero when absent', () => {
+    expect(statsOf({ attempted: 3, sent: 2, failed: 1, skipped_no_token: 1, skipped_origin: 4 })).toEqual({
+      attempted: 3,
+      sent: 2,
+      failed: 1,
+      skipped_no_token: 1,
+      skipped_no_key: false,
+      skipped_origin: 4,
+      dropped_expired: 0,
+      errors: [],
+    });
+    expect(statsOf(null)).toBeNull();
+    expect(statsOf([1])).toBeNull();
   });
 });

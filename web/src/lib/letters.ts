@@ -107,7 +107,9 @@ export interface IssueStats {
   failed: number;
   skipped_no_token: number;
   skipped_no_key?: boolean;
-  /** Deals that had expired between assemble and send (digest only). */
+  /** Instant stream only: rows whose `prefs.origins` exclude the deal's origin. */
+  skipped_origin?: number;
+  /** Deals that had expired between assemble and send. */
   dropped_expired?: number;
   /** First few Resend errors, for the curator's eyes. */
   errors?: string[];
@@ -137,6 +139,7 @@ export function statsOf(v: unknown): IssueStats | null {
     failed: n('failed'),
     skipped_no_token: n('skipped_no_token'),
     skipped_no_key: s.skipped_no_key === true,
+    skipped_origin: n('skipped_origin'),
     dropped_expired: n('dropped_expired'),
     errors: Array.isArray(s.errors) ? s.errors.filter((e): e is string => typeof e === 'string') : [],
   };

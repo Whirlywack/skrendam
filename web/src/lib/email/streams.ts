@@ -24,6 +24,18 @@ export interface SendDeps {
   /** `sentAt` null = nothing went out (no key); a timestamp = the stream ran. */
   finishIssue: (id: number, stats: SendStats, sentAt: string | null) => Promise<void>;
   now: () => Date;
+  /** Awaited between two sends (never before the first). */
+  pace: () => Promise<void>;
+}
+
+/** ~8 req/s. Resend's limit is 10 req/s per team with no burst allowance
+ *  and the site's confirm mails share it; a 429 would be counted as `failed`
+ *  and silently strip a recipient from the issue. */
+export const SEND_PACE_MS = 120;
+
+// ponytail: fixed pacing under Resend's 10 req/s; switch to batch.send if lists grow
+export function sendPace(): Promise<void> {
+  return new Promise((r) => setTimeout(r, SEND_PACE_MS));
 }
 
 /** Stored as `issues.stats`. Counters only — real numbers, never estimates. */
@@ -65,6 +77,7 @@ export async function sendInstant(
       continue;
     }
     stats.attempted += 1;
+    if (stats.attempted > 1) await deps.pace();
     const { subject, html, text } = renderInstant(deal, r, issueId);
     const mail: OutgoingMail = {
       to: r.email,
@@ -113,6 +126,8 @@ export interface LetterDeps {
   send: (m: OutgoingMail) => Promise<{ ok: boolean; error?: string }>;
   writeStats: (id: number, stats: IssueStats) => Promise<void>;
   now: () => Date;
+  /** Awaited between two sends (never before the first). */
+  pace: () => Promise<void>;
 }
 
 /** The slice of an `issues` row `sendLetter` needs. */
@@ -164,6 +179,7 @@ export async function sendLetter(issue: LetterIssue, deps: LetterDeps): Promise<
       continue;
     }
     stats.attempted += 1;
+    if (stats.attempted > 1) await deps.pace();
     const rendered =
       issue.kind === 'paid_digest'
         ? renderDigest(deals, r, issue.id)
@@ -237,6 +253,7 @@ export const defaultDeps: SendDeps = {
       .where(eq(issues.id, id));
   },
   now: () => new Date(),
+  pace: sendPace,
 };
 
 /** Real db + Resend for the curator letters. */
@@ -257,4 +274,5 @@ export const defaultLetterDeps: LetterDeps = {
     await db.update(issues).set({ stats }).where(eq(issues.id, id));
   },
   now: () => new Date(),
+  pace: sendPace,
 };

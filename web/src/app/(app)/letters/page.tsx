@@ -12,7 +12,7 @@ import {
   statsOf,
   type IssueKind,
 } from '@/lib/letters';
-import { listIssues } from '@/lib/letters-queries';
+import { countInstantIssues, listLetters } from '@/lib/letters-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +63,7 @@ export default async function LettersPage({
   searchParams: Promise<{ empty?: string }>;
 }) {
   const { empty } = await searchParams;
-  const rows = await listIssues();
+  const [rows, instantCount] = await Promise.all([listLetters(), countInstantIssues()]);
   const emptyMessage =
     empty === 'paid_digest' || empty === 'free_nurture' ? EMPTY_MESSAGE[empty] : null;
 
@@ -103,6 +103,11 @@ export default async function LettersPage({
       {emptyMessage && (
         <p style={{ fontSize: 13, color: 'var(--coral-600)', margin: '0 0 16px' }}>{emptyMessage}</p>
       )}
+
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)', margin: '0 0 8px' }}>
+        {instantCount} instant {instantCount === 1 ? 'send' : 'sends'} · one per published deal, to plan = paid
+        — not listed here
+      </p>
 
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 720 }}>

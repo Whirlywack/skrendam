@@ -30,7 +30,7 @@ describe('trackedDealUrl', () => {
   it('carries deal id, issue id and the subscriber ref code', () => {
     expect(trackedDealUrl(42, 7, 5)).toMatch(new RegExp(`/go/42\\?i=7&s=${refCode(5)}$`));
   });
-  it('leaves i= empty for an instant send with no issue', () => {
+  it('leaves i= empty when there is no issue (a bare link; every stream passes its issue id)', () => {
     expect(trackedDealUrl(42, null, 5)).toMatch(new RegExp(`/go/42\\?i=&s=${refCode(5)}$`));
   });
   it('is rooted at siteUrl()', () => {

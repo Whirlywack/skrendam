@@ -137,26 +137,37 @@ The verify query at the bottom of the file prints the count.
 
 | `kind` | Written by | `issue_id` | `subscriber_id` | `source` |
 |---|---|---|---|---|
-| `click` | `site/go/<deal>` GET (one per hit; mail-scanner prefetches count — accepted noise) | the letter's `issues.id`, or NULL from the instant stream / a bare link | from `s=` ref code when valid, else NULL | `'email'` when `i` was present, else NULL |
-| `booked_claim` | `/uzsisakiau/<deal>` POST button | same | same — **one per (deal, subscriber)**; anonymous claims every time | same |
+| `click` | `site/go/<deal>` GET (one per hit; mail-scanner prefetches count — accepted noise) | the sending `issues.id` — every stream passes one (the instant stream inserts its `kind='instant'` row before rendering); NULL only from a bare link with no `i=` | from `s=` ref code when valid, else NULL | `'email'` when `i` was present, else NULL |
+| `booked_claim` | `/uzsisakiau/<deal>` POST button | same | same — **one per (deal, subscriber)**; anonymous claims (no valid `s=`) are recorded every time but **never counted** — the nurture's „{n} prenumeratorių užsisakė" reads only rows with `subscriber_id IS NOT NULL` | same |
 
 Joins: `deal_id → published_deals.id` (any status — expired deals still
 redirect), `issue_id → issues.id` (`kind` in `instant` / `paid_digest` /
 `free_nurture`, `deal_ids` json, `sent_at`, `stats`), `subscriber_id →
 subscribers.id` (**ON DELETE SET NULL** — a deleted subscriber's events
 survive anonymised). Per-deal "how many booked" for the nurture is already
-`count(*) where kind='booked_claim' group by deal_id` (`bookedEvents` in
-`web/src/lib/letters-queries.ts`, folded to `bookedCount` per deal in
-`web/src/lib/letters.ts`). Click-through per issue = clicks with that
+`count(*) where kind='booked_claim' and subscriber_id is not null group by
+deal_id` (`bookedEvents` in `web/src/lib/letters-queries.ts`, folded to
+`bookedCount` per deal in `web/src/lib/letters.ts`) — anonymous claims are
+unbounded per IP, so they stay in the table for WP8 to inspect but never
+reach a letter. Click-through per issue = clicks with that
 `issue_id` ÷ `issues.stats.sent`. Nothing is estimated anywhere; if a number
 is not in this table, the product does not show it.
 
 ## Gates run at handoff
 
-- `uv run pytest tests/skrendam -q` — green (incl. the `cities-lt.json` drift
-  guard added in this task: canonical `skrendam/cities-lt.json`, copies in
+Final fix wave (branch `feat/wp6-email-streams`, 2026-09-10):
+
+- `uv run pytest tests/skrendam -q` — 244 passed, 2 skipped (incl. the
+  `cities-lt.json` drift guard: canonical `skrendam/cities-lt.json`, copies in
   `site/src/lib/` and `web/src/lib/email/`).
-- `cd site && npx tsc --noEmit && npx vitest run` — green.
-- `cd web && npx vitest run src/lib/email/client.test.ts` — green (full
-  `web` tsc/vitest were mid-edit by Tasks 4/5 at handoff time; the controller
-  runs them once the branch settles).
+- `uv run ruff check` + `ruff format --check` (skrendam, tests/skrendam,
+  alembic) — clean, 39 files formatted. `uv run alembic heads` —
+  `0014_email_streams (head)`, single head.
+- `cd web && npx tsc --noEmit && npx vitest run && npx eslint src` — clean /
+  167 passed (15 files) / 0 errors (1 pre-existing warning in `Composer.tsx`,
+  untouched by this branch).
+- `cd site && npx tsc --noEmit && npx vitest run` — clean / 211 passed (site
+  was not touched by the final fix wave; numbers from the whole-branch review).
+- Playwright `web/e2e/journey.spec.ts` — not run locally (needs
+  `E2E_DATABASE_URL`); the no-key publish path is covered by
+  `streams.test.ts` (`recordSkippedNoKey`).

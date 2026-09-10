@@ -21,7 +21,9 @@ function tracked(path: string, issueId: number | null, subscriberId: number): st
 
 /** Click-tracked deal link: the site's `/go/<deal>` records a `deal_events`
  *  click (issue + subscriber via ref code) and redirects to the deal page.
- *  `issueId` is null for the instant stream, which has no digest issue. */
+ *  Every stream passes its `issues.id` — the instant stream inserts its row
+ *  before rendering — so `null` only means a link built outside a send
+ *  (the site parses an empty `i=` as no issue). */
 export function trackedDealUrl(dealId: number, issueId: number | null, subscriberId: number): string {
   return tracked(`/go/${dealId}`, issueId, subscriberId);
 }

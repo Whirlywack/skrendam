@@ -65,9 +65,10 @@ const recipients = vi.fn<SendDeps['recipients']>();
 const send = vi.fn<SendDeps['send']>();
 const insertIssue = vi.fn<SendDeps['insertIssue']>();
 const finishIssue = vi.fn<SendDeps['finishIssue']>();
+const pace = vi.fn<SendDeps['pace']>();
 
 function deps(): SendDeps {
-  return { recipients, send, insertIssue, finishIssue, now: () => NOW };
+  return { recipients, send, insertIssue, finishIssue, now: () => NOW, pace };
 }
 
 // Braces matter: a hook that *returns* the mock (chainable) would register it
@@ -81,6 +82,8 @@ beforeEach(() => {
   send.mockResolvedValue({ ok: true });
   insertIssue.mockResolvedValue(7);
   finishIssue.mockResolvedValue(undefined);
+  pace.mockReset();
+  pace.mockResolvedValue(undefined);
 });
 
 describe('zeroStats', () => {
@@ -219,6 +222,26 @@ describe('sendInstant', () => {
     const keys = send.mock.calls.map(([m]) => (m as OutgoingMail).idempotencyKey);
     expect(keys).toEqual(['issue-7-sub-5', 'issue-7-sub-6']);
   });
+
+  it('paces between sends (Resend 10 req/s): once per gap, never before the first or after the last', async () => {
+    recipients.mockResolvedValue([
+      recipient({ id: 1 }),
+      recipient({ id: 2, email: 'notoken@b.lt', unsubscribeToken: null }),
+      recipient({ id: 3, email: 'c@d.lt' }),
+      recipient({ id: 4, email: 'e@f.lt' }),
+    ]);
+    await sendInstant(deal(), deps());
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(pace).toHaveBeenCalledTimes(2);
+    expect(pace.mock.invocationCallOrder[0]).toBeGreaterThan(send.mock.invocationCallOrder[0]);
+    expect(pace.mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[1]);
+  });
+
+  it('does not pace a single send', async () => {
+    recipients.mockResolvedValue([recipient()]);
+    await sendInstant(deal(), deps());
+    expect(pace).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -230,7 +253,7 @@ const bookedEvents = vi.fn<LetterDeps['bookedEvents']>();
 const writeStats = vi.fn<LetterDeps['writeStats']>();
 
 function letterDeps(): LetterDeps {
-  return { claimIssue, dealsById, bookedEvents, recipients, send, writeStats, now: () => NOW };
+  return { claimIssue, dealsById, bookedEvents, recipients, send, writeStats, now: () => NOW, pace };
 }
 
 beforeEach(() => {
@@ -314,6 +337,19 @@ describe('sendLetter', () => {
       ok: true,
       stats: { attempted: 2, sent: 0, failed: 2, errors: ['fail@b.lt: boom', 'ok@b.lt: network'] },
     });
+  });
+
+  it('paces between sends, skipped rows excluded', async () => {
+    recipients.mockResolvedValue([
+      recipient({ id: 1 }),
+      recipient({ id: 2, email: 'notoken@b.lt', unsubscribeToken: null }),
+      recipient({ id: 3, email: 'c@d.lt' }),
+    ]);
+    await sendLetter(digest, letterDeps());
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(pace).toHaveBeenCalledTimes(1);
+    expect(pace.mock.invocationCallOrder[0]).toBeGreaterThan(send.mock.invocationCallOrder[0]);
+    expect(pace.mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[1]);
   });
 
   it('nurture: renders the missed block from the stored expired ids with real booked counts', async () => {
