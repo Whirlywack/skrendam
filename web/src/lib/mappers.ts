@@ -35,9 +35,14 @@ export function toCandidateView(r: QueueRow): CandidateView {
   // web's Tier is binary (great|maybe): both engine tiers map to 'great'. Use an
   // explicit allowlist (mirrors site/quality.ts) so an unexpected stored string
   // can't force 'great' and bypass the score-derived path.
+  // D6: quality_tier follows score_v2, so a NULL tier on a row that HAS a
+  // score_v2 means "the demand layer scored it below great" — deriving from the
+  // headline score would overrule the engine. Only legacy rows (score_v2 null)
+  // fall back to the displayed score.
+  const tierScore = r.scoreV2 != null ? Number(r.scoreV2) : score;
   const tier = r.qualityTier === 'rare' || r.qualityTier === 'great'
     ? ('great' as const)
-    : tierForScore(score);
+    : tierForScore(tierScore);
   return {
     id: `m${r.matchId}`, candidateId: c.id, templateId: r.templateId, matchId: r.matchId,
     score,

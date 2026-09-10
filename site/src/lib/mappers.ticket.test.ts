@@ -6,7 +6,8 @@ const row = (o: Record<string, unknown> = {}): Row => ({
     discountPct: 53, travelDate: '2026-09-12', returnDate: '2026-09-19', headline: "€140 return to Cyprus — sea's still 27°C.",
     publicLabel: 'September sun', bookingUrl: 'https://www.google.com/travel/flights?tfs=X',
     lastSeenAt: '2026-06-04T10:00:00', goingFast: false, status: 'live', ...(o.pd as object ?? {}) },
-  score: o.score ?? 0.96, snapshot: o.snapshot ?? { stops: 1, duration: 440, legs: [{ airline: { code: 'BT' } }] },
+  score: o.score ?? 0.96, score100: o.score100 ?? null, scoreV2: o.scoreV2 ?? null,
+  snapshot: o.snapshot ?? { stops: 1, duration: 440, legs: [{ airline: { code: 'BT' } }] },
   candLastSeen: '2026-06-04T10:00:00',
 } as unknown as Row);
 describe('toTicket', () => {
@@ -23,6 +24,10 @@ describe('toTicket', () => {
     const t = toTicket(row({ pd: { headline: null } }), new Date('2026-06-04T12:00:00Z'));
     expect(t.headline).toContain('į Larnaką');
     expect(t.headline).toContain('140');
+  });
+  it('score_v2 below GREAT keeps the published floor on the ticket', () => {
+    const t = toTicket(row({ score: 0.96, score100: 96, scoreV2: 64 }), new Date());
+    expect(t.quality).toBe('great');
   });
   it('direct flight → „Tiesioginis" chip', () => {
     const t = toTicket(row({ snapshot: { stops: 0, duration: 120, legs: [{ airline: { code: 'FR' } }] } }), new Date());

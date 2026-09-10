@@ -15,6 +15,7 @@ function queueBase() {
       matchId: candidateTemplateMatches.id,
       score: candidateTemplateMatches.matchScore,
       score100: candidateTemplateMatches.score0100,
+      scoreV2: candidateTemplateMatches.scoreV2,
       qualityTier: candidateTemplateMatches.qualityTier,
       reason: candidateTemplateMatches.reasonText,
       gates: candidateTemplateMatches.gateResults,

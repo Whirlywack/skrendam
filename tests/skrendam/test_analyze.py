@@ -93,6 +93,62 @@ def test_analyze_counts_quality_tier_over_score_fallback(session):
     assert rep.tier_preview.maybe == 0
 
 
+def _minimal_match_fixture(session):
+    session.add(models.Zone(zone="MED", haul_type="short"))
+    session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED"))
+    session.add(models.AudienceSegment(id=1, slug="c", name="C"))
+    session.add(models.TravelMoment(id=1, slug="s", name="S", moment_type="seasonal"))
+    session.add(
+        models.DealTemplate(id=1, slug="t", name="T", audience_segment_id=1, travel_moment_id=1)
+    )
+    session.add(
+        models.Candidate(
+            id=1,
+            route_id=1,
+            origin="VNO",
+            destination="BCN",
+            zone="MED",
+            trip_type="oneway",
+            travel_date=date(2026, 9, 10),
+            price=50.0,
+            deal_group_key="k",
+        )
+    )
+
+
+def test_score_fallback_applies_only_to_rows_with_no_score_v2(session):
+    """A NULL quality_tier means two different things (D6).
+
+    On a 0012+ row the demand layer ran and tiering legitimately said "not
+    great" — counting it great via the old match_score fallback double-counts a
+    fare the engine already rejected. Only un-backfilled pre-0012 rows (score_v2
+    IS NULL) may fall back.
+    """
+    _minimal_match_fixture(session)
+    session.add(
+        models.CandidateTemplateMatch(
+            candidate_id=1, deal_template_id=1, match_score=0.92, quality_tier=None, score_v2=64
+        )
+    )
+    session.commit()
+    rep = analyze.analyze(session)  # default great_threshold=0.88
+    assert rep.tier_preview.great == 0
+    assert rep.tier_preview.maybe == 1
+
+
+def test_pre_0012_row_without_score_v2_still_falls_back_to_match_score(session):
+    _minimal_match_fixture(session)
+    session.add(
+        models.CandidateTemplateMatch(
+            candidate_id=1, deal_template_id=1, match_score=0.92, quality_tier=None, score_v2=None
+        )
+    )
+    session.commit()
+    rep = analyze.analyze(session)
+    assert rep.tier_preview.great == 1
+    assert rep.tier_preview.maybe == 0
+
+
 def test_format_report_is_nonempty_string(session):
     _seed(session)
     rep = analyze.analyze(session, great_threshold=0.8)
