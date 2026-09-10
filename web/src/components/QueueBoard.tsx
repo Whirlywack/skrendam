@@ -446,7 +446,7 @@ export function QueueBoard({
         </p>
       )}
 
-      {selected && <Composer c={selected} onClose={() => setSelected(null)} />}
+      {selected && <Composer key={selected.matchId} c={selected} onClose={() => setSelected(null)} />}
     </>
   );
 }
