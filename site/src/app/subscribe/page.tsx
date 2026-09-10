@@ -1,21 +1,20 @@
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { TrackingFields } from '@/components/TrackingFields';
 import {
   subscribePageAction,
   savePreferencesAction,
   joinEarlyAlertsAction,
 } from '@/app/subscribe-action';
-import { PREF_ORIGINS, PREF_MOMENTS, TRACKING_KEYS } from '@/lib/subscribe-prefs';
+import { PREF_ORIGINS, PREF_MOMENTS } from '@/lib/subscribe-prefs';
 import { S } from '@/lib/lt';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type TrackingParams = Partial<Record<(typeof TRACKING_KEYS)[number], string>>;
-
 type PageProps = {
-  searchParams: Promise<{ state?: string } & TrackingParams>;
+  searchParams: Promise<{ state?: string }>;
 };
 
 // ---------------------------------------------------------------------------
@@ -43,7 +42,7 @@ function EnvelopeIcon() {
 // State: idle — standalone capture card (entry B)
 // ---------------------------------------------------------------------------
 
-function IdleState({ tracking }: { tracking: TrackingParams }) {
+function IdleState() {
   return (
     <div className="sub-card" style={{ textAlign: 'center' }}>
       <div className="sub-wm">yıp</div>
@@ -56,11 +55,7 @@ function IdleState({ tracking }: { tracking: TrackingParams }) {
       <form action={subscribePageAction}>
         <input type="hidden" name="source" value="subscribe" />
         <input type="hidden" name="mode" value="page" />
-        {TRACKING_KEYS.map((key) =>
-          tracking[key] ? (
-            <input key={key} type="hidden" name={key} value={tracking[key]} />
-          ) : null,
-        )}
+        <TrackingFields />
 
         <div className="sub-row">
           <input
@@ -288,11 +283,7 @@ export const metadata = {
 };
 
 export default async function SubscribePage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const { state } = params;
-  const tracking: TrackingParams = Object.fromEntries(
-    TRACKING_KEYS.filter((key) => params[key]).map((key) => [key, params[key]]),
-  );
+  const { state } = await searchParams;
 
   let content: React.ReactNode;
 
@@ -328,7 +319,7 @@ export default async function SubscribePage({ searchParams }: PageProps) {
       break;
 
     default:
-      content = <IdleState tracking={tracking} />;
+      content = <IdleState />;
   }
 
   return (
