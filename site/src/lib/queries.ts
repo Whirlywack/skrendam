@@ -23,6 +23,7 @@ function dealBase() {
     qualityTier: candidateTemplateMatches.qualityTier,
     snapshot: candidates.itinerarySnapshot,
     candLastSeen: candidates.lastSeenAt,
+    verifiedAt: candidates.verifiedAt,
   })
     .from(publishedDeals)
     .leftJoin(candidates, eq(publishedDeals.candidateId, candidates.id))

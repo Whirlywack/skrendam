@@ -29,4 +29,6 @@ export interface PublicDeal {
   status: { kind: StatusKind; label: string };
   booking: BookingCta;
   airline: string;
+  verifiedAt: string | null;  // candidates.verified_at passthrough; not rendered yet
+  groundHint: string | null;  // e.g. "Iš Vilniaus: 59 min traukiniu"; not rendered yet
 }
