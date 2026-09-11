@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { ConfigShell } from '@/components/ConfigShell';
+import { AssembleButton } from '@/components/AssembleButton';
 import { assembleIssue } from '@/app/letters-actions';
 import {
   DIGEST_DAY,
   DIGEST_TIME,
+  EMPTY_ASSEMBLY,
   FREE_LETTER_CADENCE_DAYS,
   FREE_LETTER_FRESH,
   FREE_LETTER_MISSED,
   ISSUE_LABEL,
+  emptyAssemblyKind,
   idList,
   statsOf,
   type IssueKind,
@@ -16,12 +19,6 @@ import { countInstantIssues, listLetters } from '@/lib/letters-queries';
 import { formatLocalTs } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
-
-
-const EMPTY_MESSAGE: Record<IssueKind, string> = {
-  paid_digest: 'Nothing to assemble: no live deals published since the last digest went out.',
-  free_nurture: 'Nothing to assemble: no live deals to lead the letter with.',
-};
 
 const th: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -59,12 +56,12 @@ function statsLine(v: unknown, sentAt: string | null): string {
 export default async function LettersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ empty?: string }>;
+  searchParams: Promise<{ empty?: string | string[] }>;
 }) {
   const { empty } = await searchParams;
   const [rows, instantCount] = await Promise.all([listLetters(), countInstantIssues()]);
-  const emptyMessage =
-    empty === 'paid_digest' || empty === 'free_nurture' ? EMPTY_MESSAGE[empty] : null;
+  // `assembleIssue` lands here with `?empty=<kind>` when its pick was empty.
+  const emptyKind = emptyAssemblyKind(empty);
 
   return (
     <ConfigShell title="Letters">
@@ -89,19 +86,18 @@ export default async function LettersPage({
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <form action={assembleIssue.bind(null, 'paid_digest')}>
-          <button type="submit" className="btn btn-outline" style={{ cursor: 'pointer' }}>
-            Assemble paid digest
-          </button>
+          <AssembleButton label="Assemble paid digest" />
         </form>
         <form action={assembleIssue.bind(null, 'free_nurture')}>
-          <button type="submit" className="btn btn-outline" style={{ cursor: 'pointer' }}>
-            Assemble free nurture
-          </button>
+          <AssembleButton label="Assemble free nurture" />
         </form>
       </div>
 
-      {emptyMessage && (
-        <p style={{ fontSize: 13, color: 'var(--coral-600)', margin: '0 0 16px' }}>{emptyMessage}</p>
+      {emptyKind && (
+        <div className="scan-health-banner" role="status" data-empty={emptyKind}>
+          <strong>{EMPTY_ASSEMBLY[emptyKind]}</strong>
+          <span> Nothing was saved — publish a deal, then assemble again.</span>
+        </div>
       )}
 
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)', margin: '0 0 8px' }}>

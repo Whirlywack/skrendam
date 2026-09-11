@@ -38,6 +38,21 @@ export const ISSUE_LABEL: Record<IssueKind, string> = {
   free_nurture: 'Free nurture',
 };
 
+/** What the Letters page says when an assemble found nothing to put in a
+ *  letter — `assembleIssue` redirects to `/letters?empty=<kind>` instead of
+ *  saving an empty draft. Names the letter and the one thing it needs. */
+export const EMPTY_ASSEMBLY: Record<IssueKind, string> = {
+  free_nurture: 'Nothing eligible for a free nurture right now — needs at least one fresh live deal.',
+  paid_digest:
+    'Nothing eligible for a paid digest right now — needs at least one live deal published since the last digest went out.',
+};
+
+/** The `?empty=` search param as a letter kind, or null for anything else
+ *  (absent, unknown, repeated). */
+export function emptyAssemblyKind(param: string | string[] | undefined): IssueKind | null {
+  return param === 'free_nurture' || param === 'paid_digest' ? param : null;
+}
+
 /** The slice of a `deal_events` row the pickers read. */
 export interface DealEvent {
   dealId: number;
