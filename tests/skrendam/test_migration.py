@@ -180,3 +180,76 @@ def test_0014_backfills_expired_at(tmp_path, monkeypatch):
         3: None,
     }
     assert plan == "free"
+
+
+def test_0015_adds_verification_fields_and_checks_table(tmp_path, monkeypatch):
+    """0015 adds verification fields (missed_checks=0 on old rows) + deal_price_checks."""
+    url = f"sqlite+pysqlite:///{tmp_path / 'm.db'}"
+    monkeypatch.setenv("SKRENDAM_DATABASE_URL", url)
+    assert _alembic("upgrade", "0014_email_streams").returncode == 0
+
+    eng = sa.create_engine(url)
+    with eng.begin() as c:
+        c.execute(
+            sa.text(
+                "INSERT INTO published_deals (id, candidate_id, deal_template_id, headline, "
+                "origin, destination, trip_type, price, tier, published_at, status) VALUES "
+                "(1, 1, 1, 'h', 'VNO', 'BCN', 'oneway', 30.0, 'free', "
+                "'2026-07-01 08:00:00', 'live')"
+            )
+        )
+
+    up = _alembic("upgrade", "head")
+    assert up.returncode == 0, up.stderr
+
+    insp = sa.inspect(eng)
+    deal_cols = {c["name"]: c for c in insp.get_columns("published_deals")}
+    for name in (
+        "current_price",
+        "current_price_at",
+        "window_min_price",
+        "window_min_date",
+        "verified_at",
+        "missed_checks",
+    ):
+        assert name in deal_cols, name
+    assert deal_cols["missed_checks"]["nullable"] is False
+    for name in ("current_price", "current_price_at", "window_min_price", "window_min_date"):
+        assert deal_cols[name]["nullable"] is True, name
+
+    assert "deal_price_checks" in insp.get_table_names()
+    check_cols = {c["name"] for c in insp.get_columns("deal_price_checks")}
+    assert check_cols == {
+        "id",
+        "deal_id",
+        "checked_at",
+        "source",
+        "available",
+        "price",
+        "window_min_price",
+        "window_min_date",
+        "run_id",
+    }
+    assert {i["name"] for i in insp.get_indexes("deal_price_checks")} == {
+        "ix_deal_price_checks_deal_id"
+    }
+    fks = {fk["referred_table"]: fk for fk in insp.get_foreign_keys("deal_price_checks")}
+    assert fks["published_deals"]["options"].get("ondelete") == "CASCADE"
+    assert "scan_runs" in fks
+
+    with eng.connect() as c:
+        row = c.execute(
+            sa.text(
+                "SELECT missed_checks, current_price, verified_at FROM published_deals WHERE id = 1"
+            )
+        ).one()
+    assert row == (0, None, None), "pre-existing row gets missed_checks=0, rest NULL"
+
+    chk = _alembic("check")
+    assert chk.returncode == 0, chk.stdout + chk.stderr
+
+    down = _alembic("downgrade", "0014_email_streams")
+    assert down.returncode == 0, down.stderr
+    insp = sa.inspect(eng)
+    assert "deal_price_checks" not in insp.get_table_names()
+    assert "missed_checks" not in {c["name"] for c in insp.get_columns("published_deals")}
