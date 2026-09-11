@@ -61,11 +61,10 @@ A deal with no baseline can only pass on the two thresholds.
   says `WARNING: scan DEGRADED` as before. A VPN-gated morning cannot expire anything.
 - **Watch for:** a deal whose candidate snapshot has no flight numbers (legacy or hand-inserted rows).
   `verify_deal` cannot identify its itinerary, so `price = None` and the first real answer flips it
-  to `changed` via the day minimum even when that minimum equals the published price. Every
+  to `changed` only when the day's cheapest fare on those dates is above the 10 % tolerance;
+  within tolerance the deal stays `live` (rule shipped in this branch, commit 483c9b7). Every
   scan-born candidate carries `fare.raw` with flight numbers, so the dev DB should be clean — but
-  glance at `candidates.itinerary_snapshot->'legs'` for any deal you publish by hand. (The Task 3
-  review ruling — "unidentifiable itinerary + window min within tolerance stays `live`" — may land
-  as a follow-up fix on this branch; check `git log` before relying on either behaviour.)
+  glance at `candidates.itinerary_snapshot->'legs'` for any deal you publish by hand.
 
 ## How to read the desk
 
