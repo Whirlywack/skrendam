@@ -148,6 +148,7 @@ _DOW = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 def in_template_scope(tpl, route, point, today) -> bool:
     """Destination + date-window scope check (re-homed from orchestrator)."""
     from skrendam.scanning.resolver import _destinations_ok, _window
+
     if not _destinations_ok(tpl, route):
         return False
     # Despite the "preferred" name this is a hard gate: last-minute-weekends

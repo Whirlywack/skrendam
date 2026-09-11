@@ -72,7 +72,8 @@ class WeightedScorer:
         pct = round(discount * 100)
         month_local = ctx.travel_date is not None and baseline.month_stats(ctx.travel_date)
         basis = (
-            f"its {ctx.travel_date:%B} median" if month_local
+            f"its {ctx.travel_date:%B} median"
+            if month_local
             else f"the {baseline.sample_size}-day median"
         )
         reason = (
