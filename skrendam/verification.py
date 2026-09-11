@@ -1,11 +1,21 @@
-"""Re-confirm a candidate is still live before publishing (spec §6 verification_checks).
+"""Re-confirm published deals and candidates against a fresh flights search.
 
-Empty search results never expire deals: during a gated fli window an empty result means the
-pipe is blocked, not that the fare is gone (fli-resilience spec). Deals leave the site only via
-the orchestrator date-sweep or a curator action.
+Two consumers share this module:
+
+* ``verify_deal`` + ``transition`` — the daily scan's live-deal verification step (WP9, spec
+  ``docs/plans/2026-09-11-live-deal-verification-spec.md`` §3–4). ``verify_deal`` prices the
+  deal's EXACT itinerary (matched by flight numbers) with one flights call; ``transition`` is
+  the pure state machine that decides ``live`` / ``changed`` / ``expired``.
+* ``recheck_candidate`` — the desk's manual recheck button (spec §6 verification_checks).
+
+Empty search results never expire deals on their own: during a gated fli window an empty result
+means the pipe is blocked, not that the fare is gone (fli-resilience spec). Only two consecutive
+empty answers on healthy runs, a real price that fails the deal gate, the date sweep, or a curator
+action take a deal off the site.
 """
 
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import date, datetime, time
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,24 +23,184 @@ from sqlalchemy.orm import Session
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
 from skrendam.fli_adapter.errors import ScanError
+from skrendam.scanning.scoring.eligibility import eff
 
 GOING_FAST_RISE = (
     0.05  # a recheck price >= published price * (1 + this) is an observed "going fast"
 )
 
+# WP9 verification constants (plan 2026-09-11, Global Constraints).
+PRICE_DRIFT_TOLERANCE_PCT = 10  # live while current <= published * 1.10
+MISSED_CHECKS_TO_EXPIRE = 2  # consecutive empty answers on HEALTHY runs before expiry
+EXACT_CHECK_MAX_AGE_DAYS = 3  # an exact check is due when verified_at is older than this
+VERIFY_CALLS_PER_DAY = 20  # cap on flights calls the verification step may spend
+# Statuses the site and the desk show as "on the site"; mirrored byte-for-byte in site + web.
+LIVE_STATUSES = ("live", "changed")
+
+
+@dataclass(frozen=True)
+class DealCheck:
+    """One answer from Google about a published deal.
+
+    ``available=False`` is an empty answer (every price None). ``available=True`` with
+    ``price=None`` means the day still had fares but the exact itinerary was not among them;
+    ``window_min_*`` is then the cheapest fare that day.
+    """
+
+    available: bool
+    price: float | None
+    window_min_price: float | None
+    window_min_date: date | None
+    source: str  # 'flights' | 'calendar' | 'manual'
+    checked_at: datetime
+
+
+@dataclass(frozen=True)
+class Gates:
+    """Effective "still a deal" gates; None means the gate is not set (passes)."""
+
+    min_discount_pct: float | None
+    min_abs_saving_eur: float | None
+    price_threshold_eur: float | None
+
+
+@dataclass(frozen=True)
+class Decision:
+    status: str
+    missed_checks: int
+    expired_at: datetime | None
+    reason: str
+
+
+def gates_for(template, zone) -> Gates:
+    """Build the deal gates from the template with the zone as fallback (``eligibility.eff``).
+
+    The price ceiling mirrors the discovery scorer (``scoring/weighted.py``): one-way templates
+    fall back to the zone ceiling, round trips must set their own ``max_price_eur``.
+    """
+    threshold = getattr(template, "max_price_eur", None)
+    if threshold is None and getattr(template, "trip_type", None) == "oneway":
+        threshold = getattr(zone, "threshold_price_eur", None)
+    return Gates(
+        min_discount_pct=eff(template, zone, "min_discount_pct"),
+        min_abs_saving_eur=eff(template, zone, "min_abs_savings_eur"),
+        price_threshold_eur=threshold,
+    )
+
+
+def clears_gates(price: float, baseline: float | None, gates: Gates) -> bool:
+    """True when ``price`` is still a deal against the frozen ``baseline``.
+
+    Without a baseline no discount can be certified either way, so only the price ceiling can
+    fail; a gate that is None always passes.
+    """
+    if gates.price_threshold_eur is not None and price > gates.price_threshold_eur:
+        return False
+    if baseline is None:
+        return True
+    if gates.min_discount_pct is not None:
+        if baseline <= 0 or (baseline - price) / baseline * 100 < gates.min_discount_pct:
+            return False
+    if gates.min_abs_saving_eur is not None and baseline - price < gates.min_abs_saving_eur:
+        return False
+    return True
+
+
+def _flight_numbers(legs) -> tuple[str, ...]:
+    out = []
+    for leg in legs or ():
+        number = leg.get("flight_number") if isinstance(leg, dict) else None
+        out.append("".join(str(number or "").split()).upper())
+    return tuple(out)
+
+
+def verify_deal(
+    deal: models.PublishedDeal,
+    adapter: FliAdapter,
+    *,
+    now: datetime,
+    snapshot: dict | None = None,
+    cabin: str = "ECONOMY",
+) -> DealCheck:
+    """Price a published deal's exact itinerary with ONE flights call.
+
+    ``snapshot`` is the candidate's ``itinerary_snapshot`` (``legs[].flight_number``); the exact
+    itinerary is the fare whose legs' flight numbers equal the snapshot's, in order. Without a
+    snapshot the itinerary cannot be identified, so ``price`` is None and only the day minimum
+    is reported. A ``ScanError`` propagates: an error is no evidence and must not count as an
+    empty answer.
+    """
+    fares = adapter.search_flights(
+        deal.origin, deal.destination, deal.travel_date, deal.return_date, cabin
+    )
+    if not fares:
+        return DealCheck(False, None, None, None, "flights", now)
+    wanted = _flight_numbers((snapshot or {}).get("legs"))
+    exact = None
+    if wanted:
+        exact = next((f for f in fares if _flight_numbers(f.legs) == wanted), None)
+    cheapest = min(fares, key=lambda f: f.price)
+    return DealCheck(
+        available=True,
+        price=exact.price if exact is not None else None,
+        window_min_price=cheapest.price,
+        window_min_date=deal.travel_date,
+        source="flights",
+        checked_at=now,
+    )
+
+
+def transition(
+    deal: models.PublishedDeal,
+    check: DealCheck,
+    *,
+    gates: Gates,
+    today: date,
+    run_healthy: bool,
+) -> Decision:
+    """Pure spec-§4 state machine; the caller persists the Decision.
+
+    The calendar rule (travel date passed) stays in the orchestrator's date sweep.
+    """
+    unchanged = Decision(deal.status, deal.missed_checks, None, "not_live")
+    if deal.status not in LIVE_STATUSES:
+        return unchanged
+    expired_at = datetime.combine(today, time.min)
+
+    if not check.available:
+        missed = deal.missed_checks + 1 if run_healthy else deal.missed_checks
+        if missed >= MISSED_CHECKS_TO_EXPIRE:
+            return Decision("expired", missed, expired_at, "missing_2_days")
+        return Decision(deal.status, missed, None, "empty")
+
+    if check.price is not None:
+        if check.price <= deal.price * (1 + PRICE_DRIFT_TOLERANCE_PCT / 100):
+            return Decision("live", 0, None, "within_tolerance")
+        if clears_gates(check.price, deal.baseline_price, gates):
+            return Decision("changed", 0, None, "price_drift")
+        return Decision("expired", 0, expired_at, "gate_failed")
+
+    if check.window_min_price is None:
+        return Decision(deal.status, deal.missed_checks, None, "no_price")
+    if clears_gates(check.window_min_price, deal.baseline_price, gates):
+        return Decision("changed", 0, None, "itinerary_gone")
+    return Decision("expired", 0, expired_at, "gate_failed")
+
 
 def _update_published_for_candidate(
     session: Session, candidate_id: int, available: bool, price: float | None, now: datetime
 ) -> None:
-    """Propagate a recheck result to the candidate's LIVE published deals.
+    """Propagate a manual recheck result to the candidate's visible published deals.
 
     An empty result NEVER expires a deal: during a gated fli window "no fares"
     usually means "blocked", not "gone" (spec: fli-resilience). Deals leave the
-    site via the date sweep (orchestrator) or the curator — never via emptiness.
+    site via the date sweep (orchestrator), the daily verification step, or the
+    curator — never via emptiness.
     """
     deals = session.scalars(
         select(models.PublishedDeal).where(
-            models.PublishedDeal.candidate_id == candidate_id, models.PublishedDeal.status == "live"
+            models.PublishedDeal.candidate_id == candidate_id,
+            models.PublishedDeal.status.in_(LIVE_STATUSES),
         )
     )
     for pd in deals:
@@ -47,11 +217,12 @@ def _update_published_for_candidate(
 def recheck_candidate(
     session: Session, candidate: models.Candidate, adapter: FliAdapter, now: datetime
 ) -> models.VerificationCheck:
-    """Re-verify a candidate and record a VerificationCheck row (always).
+    """Re-verify a candidate (desk button) and record a VerificationCheck row (always).
 
-    Mutates the candidate only on a verified success (available + price); never
-    writes PublishedDeal.status — deals leave the site only via the orchestrator
-    date-sweep or a curator action. Empty results stamp unverified_since instead.
+    Stamps ``verified_at``/``last_seen_at`` on a verified success but never rewrites
+    ``candidates.price`` — the discovery price is what the desk and the published deal were
+    built on; the observed price lives on the check row (and the request's result_summary).
+    Never writes PublishedDeal.status. Empty results stamp unverified_since instead.
     """
     available, price, currency, booking_url, notes, raw = False, None, None, None, None, None
     responded = False
@@ -88,7 +259,6 @@ def recheck_candidate(
     session.add(check)
     if available and price is not None:
         candidate.verified_at = now
-        candidate.price = price
         candidate.last_seen_at = now
     if responded:
         _update_published_for_candidate(session, candidate.id, available, price, now)
