@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTicket } from './mappers';
+import { rowMeta, toTicket } from './mappers';
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 const row = (o: Record<string, unknown> = {}): Row => ({
   pd: { id: 1, origin: 'VNO', destination: 'LCA', tripType: 'roundtrip', price: 140, baselinePrice: 301,
@@ -68,5 +68,24 @@ describe('toTicket', () => {
     expect(t.state).toBe('live');
     expect(t.price).toBe(140);
     expect(t.priceLines).toEqual([]);
+  });
+});
+
+describe('rowMeta — the index row line under the destination', () => {
+  it('a live deal: route · dates · stops chip', () => {
+    expect(rowMeta(toTicket(row(), new Date()))).toBe('VNO → LCA · rugs. 12–19 · 1 persėdimas');
+  });
+  it('a changed deal (WP9 N4) says what it was found at right after the stops chip', () => {
+    const t = toTicket(row({ pd: { status: 'changed', price: 140, currentPrice: 186 } }), new Date());
+    expect(rowMeta(t)).toBe('VNO → LCA · rugs. 12–19 · 1 persėdimas · radome už 140\u00a0€');
+  });
+  it('the going-fast chip closes the line, after the found-at note', () => {
+    const t = toTicket(row({ pd: { status: 'changed', price: 140, currentPrice: 186, goingFast: true } }), new Date());
+    expect(rowMeta(t).endsWith(' · radome už 140\u00a0€ · Tirpsta')).toBe(true);
+    expect(rowMeta(toTicket(row({ pd: { goingFast: true } }), new Date()))).toBe('VNO → LCA · rugs. 12–19 · 1 persėdimas · Tirpsta');
+  });
+  it('a changed row without a verified current price carries no found-at note', () => {
+    const t = toTicket(row({ pd: { status: 'changed', currentPrice: null } }), new Date());
+    expect(rowMeta(t)).not.toContain('radome už');
   });
 });

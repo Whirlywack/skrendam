@@ -89,6 +89,18 @@ function priceState(pd: Row['pd']): {
   };
 }
 
+/** The index row's meta line (home, collection pages, similar-deals lists):
+ *  route · dates · stops chip. A `changed` deal adds „radome už 93 €" right
+ *  after — spec §5 wants the found-at context wherever the changed price
+ *  appears, and the two full rows under the poster are the second-most-seen
+ *  surface (final review N4). The going-fast chip closes the line. */
+export function rowMeta(t: TicketView): string {
+  const parts = [t.route, t.dates, t.catchChip];
+  if (t.state === 'changed') parts.push(`${S.foundAt} ${eur(t.foundPrice)}`);
+  if (t.goingFast) parts.push(S.chipGoingFast);
+  return parts.join(' · ');
+}
+
 /** The timestamp the freshness label speaks about: the verification step's
  *  `verified_at` first (WP9), then the scan's `last_seen_at`, then the
  *  candidate's. Shared by the mapper and the two pages that label freshness

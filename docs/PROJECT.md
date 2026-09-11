@@ -207,8 +207,13 @@ fli (Google Flights RPC)
     calendar price moved beyond the tolerance, or whose last real answer is
     older than `EXACT_CHECK_MAX_AGE_DAYS = 3` — priority public → mailed in
     the last 48 h (`issues.deal_ids`) → newest `published_at`, until the cap
-    is spent. Deals beyond the cap keep their state. Every check writes one
-    `deal_price_checks` row (`source ∈ calendar | flights | manual`,
+    is spent. Deals beyond the cap keep their state. The exact loop stops on
+    the first 429 or when the run's circuit breaker opens (BotGuard punishes
+    repetition; skipped deals are `deals_verify_aborted` in the health JSON),
+    and the calendar path applies to economy candidates only — `price_log`
+    has no cabin column. Every check writes one `deal_price_checks` row
+    (`source ∈ calendar | flights | manual` — `manual` is the desk's Recheck
+    button, which writes the same fields through the same `record_check`;
     `available`, `price`, `window_min_*`, `run_id`) — the price history the
     desk's Live board counts.
   - **Transitions** (`transition()`, pure, tested per rule): real price within

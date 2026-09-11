@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur, ltPlural } from '@/lib/format';
+import { rowMeta } from '@/lib/mappers';
 
 /** One live-deal index row — the single source for home, collection pages and
  *  similar-deals lists (review 08-28: three drifting copies collapsed here). */
@@ -11,7 +12,7 @@ export function DealRow({ t, no }: { t: TicketView; no: string }) {
       <span className="no">{no}</span>
       <span className="v2-row-name">{t.destination}</span>
       <span className={`v2-row-meta${t.goingFast ? ' v2-row-meta--flag' : ''}`}>
-        {t.route} · {t.dates} · {t.catchChip}{t.goingFast ? ` · ${S.chipGoingFast}` : ''}
+        {rowMeta(t)}
       </span>
       <span className="v2-row-price">{eur(t.price)}</span>
       <span className="go" aria-hidden="true" />

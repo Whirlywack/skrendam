@@ -19,11 +19,11 @@ itself and the site says so honestly.
 | Migration `0015_deal_verification` | `alembic/versions/0015_deal_verification.py`, `skrendam/db/models.py` | `published_deals.current_price / current_price_at / window_min_price / window_min_date / verified_at` (nullable), `missed_checks` (NOT NULL, default 0); new `deal_price_checks` (deal_id FK CASCADE, checked_at, source, available, price, window_min_*, run_id). **Applied to Neon dev**; drizzle schemas re-pulled in `site/` and `web/` (c308fd2). |
 | `verify_deal` + `transition` (pure) | `skrendam/verification.py` | One flights call on the candidate's exact itinerary (flight numbers from `itinerary_snapshot.legs`, order-sensitive, airline code ignored); the day's cheapest fare becomes `window_min_*`. `transition()` is pure and tested per rule (`tests/skrendam/test_deal_transition.py`). |
 | Shared price gate | `skrendam/scanning/scoring/eligibility.py` `price_anomaly_ok` | Discovery (`weighted.py` gate 1) and verification use the same predicate — parity-tested on a 2,496-combo grid and 1.1 M combos in review. |
-| Orchestrator step | `skrendam/scanning/orchestrator.py` `_verify_live_deals` | After the route pass and sweeps; health verdict computed **before** the step; `run_healthy = not aborted and not degraded`; cap counted as `adapter.api_calls` deltas (a date pair discovery already fetched is a cache hit and costs nothing). Summary + health JSON: `deals_verified / deals_changed / deals_expired / verify_calls`. |
+| Orchestrator step | `skrendam/scanning/orchestrator.py` `_verify_live_deals` | After the route pass and sweeps; health verdict computed **before** the step; `run_healthy = not aborted and not degraded`; cap counted as `adapter.api_calls` deltas (a date pair discovery already fetched is a cache hit and costs nothing); the exact loop stops on the first 429 or when the run's circuit breaker opens (`deals_verify_aborted`); the free calendar path applies to economy candidates only (`price_log` has no cabin column). Summary + health JSON: `deals_verified / deals_changed / deals_expired / verify_calls / deals_verify_aborted`. |
 | Site | `site/src/lib/statuses.ts`, `queries.ts`, `mappers.ts`, `types.ts`, `lt.ts`, `Poster.tsx`, `deal/[id]/page.tsx`, `uzsisakiau/[dealId]` | `changed` deals render `current_price` with two lines „Dabar nuo €124" / „radome už €93"; `drop` recomputed against the shown price (0 without a baseline — no invented discount); freshness label reads `published_deals.verified_at` first; reader button „Kaina pasikeitė" → `deal_events.kind='price_changed'` (one per subscriber per deal, anonymous allowed). |
 | Desk + letters | `web/src/lib/statuses.ts`, `verification.ts`, `PublishedBoard.tsx`, `published/page.tsx`, `(app)/page.tsx`, `letters*.ts`, `email/render.ts`, `copy.ts`, `actions.ts` | Live board shows state / current vs published / window min / missed checks / last check / check count; Today shows one summary line instead of the stale block; digest + nurture cards render „nuo €current · radome už €published" on `changed`; instant mail unchanged. |
 
-Tests at HEAD: `uv run pytest tests/skrendam -q` 303 passed / 2 skipped; `site/` vitest 229;
+Tests at HEAD: `uv run pytest tests/skrendam -q` 321 passed / 2 skipped; `site/` vitest 233;
 `web/` vitest 224 (+ the Task 6 tweak below). No scanner, no `tests/search`, no Google call was made
 while building this — everything runs on `FakeBackend`.
 
@@ -54,7 +54,10 @@ A deal with no baseline can only pass on the two thresholds.
 - **To whatever is `live`/`changed` at 06:00:** each deal gets one `deal_price_checks` row (a free
   `calendar` row when discovery already fetched that exact date pair today, else one exact `flights`
   call within the cap of 20, public deals first). Expect `deals_verified` = the number of live deals
-  (up to the cap), `verify_calls` ≤ 20, `api_calls` up by ≤ 20 over the day's discovery figure.
+  (calendar hits are free, so this can exceed 20); exact checks `verify_calls` ≤ 20 (the cap), and
+  `api_calls` up by ≤ 20 over the day's discovery figure. A 429 mid-step stops the loop at once:
+  `deals_verify_aborted` > 0 in the health JSON and a `verification stopped: rate limited after N
+  calls` line in the log; the skipped deals keep their state and are tried next morning.
 - **A deal published from the desk today** is checked the next morning; `verified_at` is NULL until
   then, so the desk's Today shows it under Recheck only once it is older than 3 days (see below).
 - **Degraded / aborted run:** `deals_verified = 0`, no writes, statuses untouched — the run summary
@@ -85,10 +88,16 @@ rows remain for live/changed deals whose last real answer is older than `RECHECK
 (falls back to `last_seen_at`, then `published_at`, for never-verified deals) with honest copy:
 last real answer / never checked / N empty answers in a row. The sidebar badge next to Live =
 `changed` deals + deals due a recheck, each counted once. The manual Recheck button still exists —
-it is the only thing that sets „going fast" — and it no longer overwrites `candidates.price`.
+it is the only thing that sets „going fast" — and it no longer overwrites `candidates.price`. Since
+the final fix wave a real answer from Recheck writes the same fields as the daily step through the
+shared `record_check` (a `deal_price_checks` row with `source='manual'`, `current_price*`,
+`window_min_*`, `verified_at`, and the `transition`), so a hand recheck clears its own Recheck row
+and can move a deal to `changed` / `expired` exactly as the 06:00 step would; an empty answer still
+only stamps `unverified_since`.
 
 **Machine → scan health.** The health JSON carries `deals_verified`, `deals_changed`,
-`deals_expired`, `verify_calls`; the CLI's end-of-run line prints the same three counters next to
+`deals_expired`, `verify_calls`, `deals_verify_aborted`; the CLI's end-of-run line prints the first
+three counters next to
 candidates / matches / errors.
 
 ## Site and letters
