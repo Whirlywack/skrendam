@@ -1,5 +1,6 @@
 """run_scan: the 11-step pass that wires resolver -> adapter -> baseline -> matching -> DB (spec §7)."""
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 
@@ -29,9 +30,11 @@ from skrendam.verification import (
     VERIFY_CALLS_PER_DAY,
     DealCheck,
     gates_for,
-    transition,
+    record_check,
     verify_deal,
 )
+
+_log = logging.getLogger(__name__)
 
 CANDIDATE_TTL_DAYS = 14
 NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
@@ -102,6 +105,7 @@ class ScanSummary:
     deals_changed: int = 0
     deals_expired: int = 0
     verify_calls: int = 0
+    deals_verify_aborted: int = 0  # due exact checks skipped because the step stopped early
 
 
 def _flagged(points, baseline, _zone):
@@ -332,13 +336,21 @@ def run_scan(
     # scan_runs write below carries the full metrics plus the step's counters.
     run_healthy = not aborted and not verdict.degraded
     vstats = _verify_live_deals(
-        session, adapter, today=today, now=now, run=run, run_healthy=run_healthy
+        session,
+        adapter,
+        today=today,
+        now=now,
+        run=run,
+        run_healthy=run_healthy,
+        breaker=breaker,  # the run's own consecutive-failure count carries over
     )
     summary.deals_verified = vstats.deals_verified
     summary.deals_changed = vstats.deals_changed
     summary.deals_expired = vstats.deals_expired
     summary.verify_calls = vstats.verify_calls
+    summary.deals_verify_aborted = vstats.deals_verify_aborted
     summary.errors += vstats.errors
+    summary.http_429s += vstats.http_429s
     verdict = HealthVerdict(
         status=verdict.status,
         reasons=verdict.reasons,
@@ -607,6 +619,8 @@ class VerifyStats:
     deals_expired: int = 0  # deals whose status flipped to 'expired' in this step
     verify_calls: int = 0  # network flights calls spent (adapter cache hits are free)
     errors: int = 0  # ScanErrors from exact checks (no evidence: no row, no transition)
+    http_429s: int = 0  # RateLimitedErrors among those (folded into the run's counter)
+    deals_verify_aborted: int = 0  # due exact checks left unchecked when the loop stopped
 
     def as_metrics(self) -> dict:
         """Return the counters persisted into ``scan_runs.health.metrics``."""
@@ -615,6 +629,7 @@ class VerifyStats:
             "deals_changed": self.deals_changed,
             "deals_expired": self.deals_expired,
             "verify_calls": self.verify_calls,
+            "deals_verify_aborted": self.deals_verify_aborted,
         }
 
 
@@ -627,6 +642,7 @@ def _verify_live_deals(
     run,
     run_healthy: bool,
     cap: int = VERIFY_CALLS_PER_DAY,
+    breaker: CircuitBreaker | None = None,
 ) -> VerifyStats:
     """Daily re-check of every live/changed deal (WP9 spec §3–4), after the route pass.
 
@@ -646,10 +662,16 @@ def _verify_live_deals(
     Every check writes a ``deal_price_checks`` row and applies ``transition``; deals
     already checked today (``verified_at`` or a check row today) and dateless deals
     (curator-managed) are skipped. Deals beyond the cap keep their state.
+
+    The exact loop stops early on the run's gating signals (final review N3): the first
+    ``RateLimitedError`` (BotGuard punishes repetition on the same session) or the
+    ``breaker`` opening on consecutive errors. Due deals left unchecked keep their state
+    and are counted in ``deals_verify_aborted``.
     """
     stats = VerifyStats()
     if not run_healthy:
         return stats
+    breaker = breaker if breaker is not None else CircuitBreaker(5)
     day_start = datetime.combine(today, time.min)
     deals = session.scalars(
         select(models.PublishedDeal)
@@ -682,41 +704,21 @@ def _verify_live_deals(
     verified_ids: set[int] = set()
 
     def apply(deal, check, gates):
-        decision = transition(deal, check, gates=gates, today=today, run_healthy=run_healthy)
-        session.add(
-            models.DealPriceCheck(
-                deal_id=deal.id,
-                checked_at=check.checked_at,
-                source=check.source,
-                available=check.available,
-                price=check.price,
-                window_min_price=check.window_min_price,
-                window_min_date=check.window_min_date,
-                run_id=run.id,
-            )
+        # record_check writes the row + fields + transition (shared with the desk's
+        # manual Recheck); expired_at is the run's wall clock, not midnight.
+        record_check(
+            session,
+            deal,
+            check,
+            gates=gates,
+            today=today,
+            run_healthy=run_healthy,
+            now=now,
+            run_id=run.id,
         )
-        if check.available:
-            # A real answer. When the exact itinerary is gone (price None) the day's
-            # cheapest fare is the current price: the site and the desk render a
-            # `changed` deal with a NULL current_price at the published price.
-            deal.current_price = (
-                check.price if check.price is not None else check.window_min_price
-            )
-            deal.current_price_at = now
-            deal.window_min_price = check.window_min_price
-            deal.window_min_date = check.window_min_date
-            deal.verified_at = now
-            deal.last_seen_at = now
-            deal.unverified_since = None
-        elif deal.unverified_since is None:
-            deal.unverified_since = now  # same semantics as the manual recheck
-        deal.status = decision.status
-        deal.missed_checks = decision.missed_checks
-        if decision.expired_at is not None:
-            deal.expired_at = now  # the run's wall clock, not midnight
         verified_ids.add(deal.id)
 
-    exact_due = []  # (deal, candidate, gates)
+    exact_due = []  # (deal, candidate, gates, cabin)
     for deal in deals:
         if deal.id in checked_today or deal.travel_date is None:
             continue
@@ -724,6 +726,7 @@ def _verify_live_deals(
         route = session.get(models.Route, cand.route_id) if cand is not None else None
         tpl = session.get(models.DealTemplate, deal.deal_template_id)
         gates = gates_for(tpl, zones.get(route.zone) if route is not None else None)
+        cabin = ((cand.search_params if cand is not None else None) or {}).get("cabin") or "ECONOMY"
         # Age is judged on the last real answer BEFORE today's calendar stamp: the
         # calendar sees the day's cheapest fare, not the sample itinerary, so an
         # exact check is still due every EXACT_CHECK_MAX_AGE_DAYS (never verified
@@ -731,14 +734,22 @@ def _verify_live_deals(
         stale = deal.verified_at is None or deal.verified_at < now - timedelta(
             days=EXACT_CHECK_MAX_AGE_DAYS
         )
-        cal = _calendar_price(session, cand, deal, day_start) if cand is not None else None
+        # price_log has no cabin column: the calendar is the pair's cheapest ECONOMY
+        # fare (every template resolves to economy today), so it bounds an economy
+        # itinerary from below but says nothing about a business-class one. A
+        # non-economy candidate therefore gets the exact check only (final review N2).
+        cal = (
+            _calendar_price(session, cand, deal, day_start)
+            if cand is not None and cabin == "ECONOMY"
+            else None
+        )
         due = deal.id in public_ids or stale or cal is None
         if cal is not None:
             apply(deal, DealCheck(True, cal, cal, deal.travel_date, "calendar", now), gates)
             if abs(cal - deal.price) > deal.price * PRICE_DRIFT_TOLERANCE_PCT / 100:
                 due = True
         if due and deal.status in LIVE_STATUSES:
-            exact_due.append((deal, cand, gates))
+            exact_due.append((deal, cand, gates, cabin))
 
     # Stable sort: within a tier the newest-first order from the query is kept.
     def tier(item):
@@ -746,19 +757,51 @@ def _verify_live_deals(
         return 0 if deal_id in public_ids else 1 if deal_id in mailed_ids else 2
 
     exact_due.sort(key=tier)
-    for deal, cand, gates in exact_due:
+    for index, (deal, cand, gates, cabin) in enumerate(exact_due):
         if stats.verify_calls >= cap:
             break
         snapshot = cand.itinerary_snapshot if cand is not None else None
-        cabin = ((cand.search_params if cand is not None else None) or {}).get("cabin", "ECONOMY")
         before = adapter.api_calls
         try:
             check = verify_deal(deal, adapter, now=now, snapshot=snapshot, cabin=cabin)
-        except ScanError:
-            stats.errors += 1  # no evidence: no row, no transition, but the call was spent
-            continue
-        finally:
+        except ScanError as exc:
+            # No evidence: no row, no transition, but the call was spent.
+            stats.errors += 1
             stats.verify_calls += adapter.api_calls - before
+            breaker.record_failure()
+            if isinstance(exc, RateLimitedError):
+                # The route pass's gating signal: one 429 means the session is being
+                # throttled, and repeating the same call up to the cap is exactly
+                # what BotGuard punishes. Stop now; the deals left keep their state.
+                stats.http_429s += 1
+                stats.deals_verify_aborted = len(exact_due) - index - 1
+                _log.warning(
+                    "verification stopped: rate limited after %d calls (deal %d %s->%s: %s)",
+                    stats.verify_calls,
+                    deal.id,
+                    deal.origin,
+                    deal.destination,
+                    exc,
+                )
+                break
+            _log.warning(
+                "verification: exact check failed for deal %d %s->%s: %s",
+                deal.id,
+                deal.origin,
+                deal.destination,
+                exc,
+            )
+            if breaker.is_open():
+                stats.deals_verify_aborted = len(exact_due) - index - 1
+                _log.warning(
+                    "verification stopped: %d consecutive errors after %d calls",
+                    breaker.threshold,
+                    stats.verify_calls,
+                )
+                break
+            continue
+        stats.verify_calls += adapter.api_calls - before
+        breaker.record_success()
         apply(deal, check, gates)
 
     session.flush()

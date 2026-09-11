@@ -25,7 +25,23 @@ from skrendam.fli_adapter.adapter import FliAdapter
 from skrendam.fli_adapter.errors import ScanError
 from skrendam.scanning.scoring.eligibility import Gates, gates_for, price_anomaly_ok
 
-__all__ = ["DealCheck", "Decision", "Gates", "gates_for", "price_anomaly_ok"]
+__all__ = [
+    "EXACT_CHECK_MAX_AGE_DAYS",
+    "GOING_FAST_RISE",
+    "LIVE_STATUSES",
+    "MISSED_CHECKS_TO_EXPIRE",
+    "PRICE_DRIFT_TOLERANCE_PCT",
+    "VERIFY_CALLS_PER_DAY",
+    "DealCheck",
+    "Decision",
+    "Gates",
+    "gates_for",
+    "price_anomaly_ok",
+    "recheck_candidate",
+    "record_check",
+    "transition",
+    "verify_deal",
+]
 
 GOING_FAST_RISE = (
     0.05  # a recheck price >= published price * (1 + this) is an observed "going fast"
@@ -99,8 +115,15 @@ def verify_deal(
     fares = adapter.search_flights(
         deal.origin, deal.destination, deal.travel_date, deal.return_date, cabin
     )
+    return _check_from_fares(
+        fares, snapshot=snapshot, travel_date=deal.travel_date, source="flights", now=now
+    )
+
+
+def _check_from_fares(fares, *, snapshot: dict | None, travel_date, source: str, now) -> DealCheck:
+    """Turn one flights answer into a ``DealCheck`` (shared by the scan and the desk Recheck)."""
     if not fares:
-        return DealCheck(False, None, None, None, "flights", now)
+        return DealCheck(False, None, None, None, source, now)
     wanted = _flight_numbers((snapshot or {}).get("legs"))
     exact = None
     if wanted and all(wanted):
@@ -110,8 +133,8 @@ def verify_deal(
         available=True,
         price=exact.price if exact is not None else None,
         window_min_price=cheapest.price,
-        window_min_date=deal.travel_date,
-        source="flights",
+        window_min_date=travel_date,
+        source=source,
         checked_at=now,
     )
 
@@ -161,31 +184,100 @@ def transition(
     return Decision("expired", 0, expired_at, "gate_failed")
 
 
-def _update_published_for_candidate(
-    session: Session, candidate_id: int, available: bool, price: float | None, now: datetime
-) -> None:
-    """Propagate a manual recheck result to the candidate's visible published deals.
+def record_check(
+    session: Session,
+    deal: models.PublishedDeal,
+    check: DealCheck,
+    *,
+    gates: Gates,
+    today: date,
+    run_healthy: bool,
+    now: datetime,
+    run_id: int | None,
+) -> Decision:
+    """Persist one check: the ``deal_price_checks`` row, the verification fields, the transition.
 
-    An empty result NEVER expires a deal: during a gated fli window "no fares"
-    usually means "blocked", not "gone" (spec: fli-resilience). Deals leave the
-    site via the date sweep (orchestrator), the daily verification step, or the
-    curator — never via emptiness.
+    The single writer for both the daily step (``run_id`` set) and the desk's Recheck
+    (``source='manual'``, ``run_id`` None), so the two never drift. A real answer stamps
+    ``current_price`` (the exact itinerary, else the day's cheapest fare — a ``changed``
+    deal must never carry a NULL current price), ``window_min_*``, ``verified_at`` and
+    ``last_seen_at``; an empty one only marks ``unverified_since``. ``expired_at`` is the
+    caller's wall clock, not midnight.
+    """
+    decision = transition(deal, check, gates=gates, today=today, run_healthy=run_healthy)
+    session.add(
+        models.DealPriceCheck(
+            deal_id=deal.id,
+            checked_at=check.checked_at,
+            source=check.source,
+            available=check.available,
+            price=check.price,
+            window_min_price=check.window_min_price,
+            window_min_date=check.window_min_date,
+            run_id=run_id,
+        )
+    )
+    if check.available:
+        deal.current_price = check.price if check.price is not None else check.window_min_price
+        deal.current_price_at = now
+        deal.window_min_price = check.window_min_price
+        deal.window_min_date = check.window_min_date
+        deal.verified_at = now
+        deal.last_seen_at = now
+        deal.unverified_since = None
+    elif deal.unverified_since is None:
+        deal.unverified_since = now
+    deal.status = decision.status
+    deal.missed_checks = decision.missed_checks
+    if decision.expired_at is not None:
+        deal.expired_at = now
+    return decision
+
+
+def _update_published_for_candidate(
+    session: Session, candidate: models.Candidate, fares, now: datetime
+) -> None:
+    """Propagate a manual recheck answer to the candidate's visible published deals.
+
+    A real answer is the same evidence as the daily step's (final review N1): each live
+    deal gets a ``manual`` check row, the verification fields and the ``transition`` —
+    so the desk's Recheck can move a deal to ``changed`` / ``expired`` exactly as the
+    06:00 step would, and clears its own "recheck due" nag. An empty answer only stamps
+    ``unverified_since`` (no row, no missed day): during a gated fli window "no fares"
+    usually means "blocked", not "gone" (spec: fli-resilience).
     """
     deals = session.scalars(
         select(models.PublishedDeal).where(
-            models.PublishedDeal.candidate_id == candidate_id,
+            models.PublishedDeal.candidate_id == candidate.id,
             models.PublishedDeal.status.in_(LIVE_STATUSES),
         )
-    )
-    for pd in deals:
-        if not available:
+    ).all()
+    if not fares:
+        for pd in deals:
             if pd.unverified_since is None:
                 pd.unverified_since = now
-            continue
-        pd.unverified_since = None
-        pd.last_seen_at = now
-        if price is not None:
-            pd.going_fast = price >= pd.price * (1 + GOING_FAST_RISE)
+        return
+    zone = session.get(models.Zone, candidate.zone) if candidate.zone else None
+    for pd in deals:
+        check = _check_from_fares(
+            fares,
+            snapshot=candidate.itinerary_snapshot,
+            travel_date=candidate.travel_date,
+            source="manual",
+            now=now,
+        )
+        tpl = session.get(models.DealTemplate, pd.deal_template_id)
+        record_check(
+            session,
+            pd,
+            check,
+            gates=gates_for(tpl, zone),
+            today=now.date(),
+            run_healthy=True,  # a hand recheck is a real answer, never a gated pass
+            now=now,
+            run_id=None,
+        )
+        pd.going_fast = pd.current_price >= pd.price * (1 + GOING_FAST_RISE)
 
 
 def recheck_candidate(
@@ -196,10 +288,12 @@ def recheck_candidate(
     Stamps ``verified_at``/``last_seen_at`` on a verified success but never rewrites
     ``candidates.price`` — the discovery price is what the desk and the published deal were
     built on; the observed price lives on the check row (and the request's result_summary).
-    Never writes PublishedDeal.status. Empty results stamp unverified_since instead.
+    The candidate's live published deals get the same treatment as in the daily step
+    (``record_check``); empty results stamp ``unverified_since`` instead.
     """
     available, price, currency, booking_url, notes, raw = False, None, None, None, None, None
     responded = False
+    fares = []
     cabin = (candidate.search_params or {}).get("cabin", "ECONOMY")
     try:
         fares = adapter.search_flights(
@@ -235,6 +329,6 @@ def recheck_candidate(
         candidate.verified_at = now
         candidate.last_seen_at = now
     if responded:
-        _update_published_for_candidate(session, candidate.id, available, price, now)
+        _update_published_for_candidate(session, candidate, fares, now)
     session.commit()
     return check

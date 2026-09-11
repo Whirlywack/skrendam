@@ -1,8 +1,9 @@
+import logging
 from datetime import date, datetime, timedelta
 
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
-from skrendam.fli_adapter.errors import ScanError
+from skrendam.fli_adapter.errors import RateLimitedError, ScanError
 from skrendam.scanning.orchestrator import _verify_live_deals, run_scan
 
 
@@ -839,8 +840,12 @@ def _seed_live_deal(
     status="live",
     missed_checks=0,
     snapshot=SNAPSHOT,
+    cabin="ECONOMY",
 ):
-    """Seed a live published deal on route 1 with its candidate (snapshot + cabin)."""
+    """Seed a live published deal on route 1 with its candidate (snapshot + cabin).
+
+    ``cabin=None`` seeds a candidate without ``search_params`` (legacy rows).
+    """
     session.add(
         models.Candidate(
             id=100 + deal_id,
@@ -855,7 +860,7 @@ def _seed_live_deal(
             baseline_price=baseline,
             deal_group_key=f"k{deal_id}",
             itinerary_snapshot=snapshot,
-            search_params={"cabin": "ECONOMY"},
+            search_params={"cabin": cabin} if cabin is not None else None,
             status="approved",
         )
     )
@@ -1251,3 +1256,140 @@ def test_verify_skips_dateless_deals(session):
     assert _checks(session, 91) == []
     assert summary.deals_verified == 0 and summary.verify_calls == 0
     assert session.get(models.PublishedDeal, 91).status == "live"
+
+
+# --- circuit breaker in the exact-check loop (final review N3) ----------------------
+
+
+def _seed_due_deals(session, deal_ids):
+    """Newest-first deals on non-calendar dates: each needs one exact call."""
+    dates = {}
+    for i, deal_id in enumerate(deal_ids):
+        dates[deal_id] = date(2026, 8, 10 + i)
+        _seed_live_deal(
+            session, deal_id, travel_date=dates[deal_id], published_at=NOW - timedelta(days=1 + i)
+        )
+    return dates
+
+
+def test_verify_stops_on_the_first_rate_limit_and_leaves_the_rest_untouched(session, caplog):
+    """A 429 mid-loop is the BotGuard signal: stop at once instead of spending the cap."""
+    _seed(session)
+    dates = _seed_due_deals(session, (201, 202, 203, 204))
+    backend = VerifyBackend({dates[202]: RateLimitedError("429 Too Many Requests")})
+    with caplog.at_level(logging.WARNING, logger="skrendam.scanning.orchestrator"):
+        stats = _verify_directly(session, backend, cap=20)
+
+    assert [c[2] for c in backend.flights_calls] == [dates[201], dates[202]]
+    assert stats.verify_calls == 2 and stats.errors == 1 and stats.http_429s == 1
+    assert stats.deals_verify_aborted == 2  # 203 and 204 were due and never checked
+    assert stats.as_metrics()["deals_verify_aborted"] == 2
+    assert session.get(models.PublishedDeal, 201).verified_at == NOW
+    for deal_id in (202, 203, 204):
+        deal = session.get(models.PublishedDeal, deal_id)
+        assert deal.status == "live" and deal.verified_at is None and deal.missed_checks == 0
+        assert _checks(session, deal_id) == []
+    assert "verification stopped: rate limited after 2 calls" in caplog.text
+    assert "deal 202" in caplog.text  # the failing deal is named
+
+
+def test_verify_rate_limit_counts_into_the_run_and_keeps_it_completed(session):
+    """The step's 429 lands in the run's own 429 counter.
+
+    Discovery was healthy, so the run is still ``completed``; the aborted count in the
+    health JSON says what was skipped.
+    """
+    _seed(session)
+    dates = _seed_due_deals(session, (205, 206))
+    summary = _run(session, VerifyBackend({dates[205]: RateLimitedError("429")}))
+
+    run = session.query(models.ScanRun).one()
+    assert run.status == "completed"
+    assert summary.http_429s == 1 and run.http_429s == 1
+    assert summary.deals_verify_aborted == 1
+    assert run.health["metrics"]["deals_verify_aborted"] == 1
+    assert session.get(models.PublishedDeal, 206).verified_at is None
+
+
+def test_verify_stops_after_the_breaker_threshold_of_consecutive_errors(session, caplog):
+    """Five timeouts in a row (the run's breaker threshold) stop the step."""
+    _seed(session)
+    dates = _seed_due_deals(session, (211, 212, 213, 214, 215, 216))
+    failing = (211, 212, 213, 214, 215)
+    backend = VerifyBackend({dates[i]: ScanError("timeout") for i in failing})
+    with caplog.at_level(logging.WARNING, logger="skrendam.scanning.orchestrator"):
+        stats = _verify_directly(session, backend, cap=20)
+
+    assert [c[2] for c in backend.flights_calls] == [dates[i] for i in failing]
+    assert stats.errors == 5 and stats.http_429s == 0 and stats.deals_verify_aborted == 1
+    assert "verification stopped: 5 consecutive errors after 5 calls" in caplog.text
+    assert "deal 211" in caplog.text
+
+
+def test_verify_a_success_resets_the_consecutive_error_count(session):
+    _seed(session)
+    dates = _seed_due_deals(session, (221, 222, 223, 224, 225, 226, 227))
+    # 4 errors, one answer, 2 errors: never five in a row, so every deal is tried.
+    scripted = {dates[i]: ScanError("timeout") for i in (221, 222, 223, 224, 226, 227)}
+    backend = VerifyBackend(scripted)
+    stats = _verify_directly(session, backend, cap=20)
+
+    assert len(backend.flights_calls) == 7
+    assert stats.errors == 6 and stats.deals_verify_aborted == 0
+    assert session.get(models.PublishedDeal, 225).verified_at == NOW
+
+
+# --- cabin guard on the calendar path (final review N2) -----------------------------
+
+
+def _seed_calendar_deal(session, deal_id, *, cabin):
+    """Seed three free-window fillers plus ``deal_id`` on the calendar's 2026-07-30 point.
+
+    ``deal_id`` was verified yesterday, so only the calendar path applies to it.
+    """
+    for i, filler in enumerate(range(deal_id - 3, deal_id)):
+        _seed_live_deal(
+            session,
+            filler,
+            travel_date=date(2026, 8, 10 + i),
+            published_at=NOW - timedelta(days=1 + i),
+        )
+    _seed_live_deal(
+        session,
+        deal_id,
+        travel_date=date(2026, 7, 30),
+        price=90.0,
+        baseline=200.0,
+        published_at=NOW - timedelta(days=10),
+        verified_at=NOW - timedelta(days=1),
+        cabin=cabin,
+    )
+
+
+def test_verify_non_economy_deal_skips_the_calendar_and_prices_its_own_cabin(session):
+    """price_log has no cabin column: the calendar is no evidence for a business deal.
+
+    An economy calendar price says nothing about a business-class itinerary, so the
+    deal gets an exact check in its own cabin instead of the free path.
+    """
+    _seed(session)
+    _seed_calendar_deal(session, 234, cabin="BUSINESS")
+    backend = VerifyBackend({date(2026, 7, 30): [_fare(90.0)]})
+    summary = _run(session, backend)
+
+    assert [r.source for r in _checks(session, 234)] == ["flights"]
+    assert ("VNO", "BCN", date(2026, 7, 30), None, "BUSINESS") in backend.flights_calls
+    assert session.get(models.PublishedDeal, 234).status == "live"
+    assert summary.verify_calls == 4  # three free-window deals + the business deal
+
+
+def test_verify_candidate_without_a_cabin_takes_the_calendar_path(session):
+    """No ``search_params`` (legacy rows) means economy: the free calendar check applies."""
+    _seed(session)
+    _seed_calendar_deal(session, 244, cabin=None)
+    backend = VerifyBackend()
+    summary = _run(session, backend)
+
+    assert [r.source for r in _checks(session, 244)] == ["calendar"]
+    assert date(2026, 7, 30) not in [c[2] for c in backend.flights_calls]
+    assert summary.verify_calls == 3

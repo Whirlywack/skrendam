@@ -344,10 +344,11 @@ class PublishedDeal(Base):
 
 class DealPriceCheck(Base):
     """One verification answer for a published deal (WP9). source is 'flights'
-    (an exact-itinerary search), 'calendar' (free — this run's price_log already
-    had the deal's date pair) or 'manual' (desk recheck). available=False with
-    price NULL is an empty answer (BotGuard); available=True with price NULL
-    means the exact itinerary is gone but the day still had fares."""
+    (the daily step's exact-itinerary search), 'calendar' (free — this run's
+    price_log already had the deal's date pair) or 'manual' (the desk's Recheck
+    button, via verification.recheck_candidate; run_id NULL). available=False
+    with price NULL is an empty answer (BotGuard); available=True with price
+    NULL means the exact itinerary is gone but the day still had fares."""
 
     __tablename__ = "deal_price_checks"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

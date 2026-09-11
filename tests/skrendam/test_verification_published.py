@@ -8,7 +8,8 @@ from skrendam.fli_adapter.errors import ScanError
 from skrendam.verification import DealCheck, recheck_candidate, verify_deal
 
 
-def _seed(session, price=96.0):
+def _seed(session, price=96.0, *, baseline=275.0, snapshot=None, missed_checks=0):
+    """Seed a live EUR96 one-way deal (EUR275 baseline: a +25 % recheck still clears the gate)."""
     session.add(models.Route(id=1, origin="VNO", destination="BCN", zone="MED"))
     cand = models.Candidate(
         id=1,
@@ -19,9 +20,11 @@ def _seed(session, price=96.0):
         trip_type="oneway",
         travel_date=date(2026, 9, 12),
         price=price,
+        baseline_price=baseline,
         deal_group_key="k",
         first_seen_at=datetime(2026, 6, 2),
         last_seen_at=datetime(2026, 6, 2),
+        itinerary_snapshot=snapshot,
     )
     session.add(cand)
     session.add(
@@ -33,14 +36,26 @@ def _seed(session, price=96.0):
             origin="VNO",
             destination="BCN",
             trip_type="oneway",
+            travel_date=date(2026, 9, 12),
             price=price,
+            baseline_price=baseline,
             status="live",
             tier="free",
             published_at=datetime(2026, 6, 2),
+            missed_checks=missed_checks,
         )
     )
     session.commit()
     return cand
+
+
+def _deal_checks(session, deal_id=1):
+    return (
+        session.query(models.DealPriceCheck)
+        .filter_by(deal_id=deal_id)
+        .order_by(models.DealPriceCheck.id)
+        .all()
+    )
 
 
 class _Backend:
@@ -70,7 +85,9 @@ def test_recheck_marks_going_fast_when_price_rises(session):
     recheck_candidate(session, cand, adapter, now=datetime(2026, 6, 3))
     pd = session.get(models.PublishedDeal, 1)
     assert pd.going_fast is True
-    assert pd.status == "live"
+    # +25 % is beyond the drift tolerance but still clears the gate (56 % off the EUR275
+    # baseline): a hand recheck moves the deal exactly as the daily step would (N1).
+    assert pd.status == "changed"
     assert pd.last_seen_at == datetime(2026, 6, 3)
 
 
@@ -94,6 +111,9 @@ def test_recheck_empty_keeps_deal_live_and_marks_unverified(session):
     assert pd.status == "live"
     assert pd.unverified_since == datetime(2026, 6, 3)
     assert pd.last_seen_at is None  # an unverifiable check is not a sighting
+    # An empty hand recheck is not the daily step's "missed day": no row, no miss, no stamp.
+    assert pd.missed_checks == 0 and pd.verified_at is None and pd.current_price is None
+    assert _deal_checks(session) == []
 
 
 def test_second_empty_recheck_keeps_first_unverified_timestamp(session):
@@ -137,6 +157,7 @@ def test_recheck_scan_error_leaves_published_deal_live(session):
     assert pd.status == "live", "ScanError must not expire a live published deal"
     assert pd.going_fast is False  # unchanged from seed default
     assert pd.unverified_since is None  # errors are no evidence; only emptiness stamps the marker
+    assert pd.verified_at is None and _deal_checks(session) == []
 
 
 def test_recheck_resets_going_fast_when_price_falls(session):
@@ -186,6 +207,106 @@ def test_manual_recheck_flags_going_fast_on_changed_deals_too(session):
     session.expire_all()
     pd = session.get(models.PublishedDeal, 1)
     assert pd.status == "changed" and pd.going_fast is True
+
+
+# --- manual Recheck stamps the verification fields (final review N1) ----------------
+
+
+def test_manual_recheck_stamps_verification_fields_and_writes_a_manual_row(session):
+    """A real answer from the desk's Recheck is the same evidence as the daily step's."""
+    cand = _seed(session, price=96.0, snapshot={"legs": [_leg("1913")]})
+    fares = [_itin(90.0, [_leg("777", "FR")]), _itin(100.0, [_leg("1913")])]
+    now = datetime(2026, 6, 3, 9, 30)
+    recheck_candidate(session, cand, _adapter(fares), now=now)
+    session.expire_all()
+    pd = session.get(models.PublishedDeal, 1)
+    assert pd.status == "live"  # EUR100 against EUR96 is within the 10 % tolerance
+    # The exact itinerary's price (flight-number match), not the day's cheapest fare.
+    assert pd.current_price == 100.0 and pd.current_price_at == now
+    assert pd.window_min_price == 90.0 and pd.window_min_date == date(2026, 9, 12)
+    assert pd.verified_at == now and pd.last_seen_at == now
+    assert pd.missed_checks == 0 and pd.unverified_since is None
+    (row,) = _deal_checks(session)
+    assert (row.source, row.available, row.price, row.window_min_price) == (
+        "manual",
+        True,
+        100.0,
+        90.0,
+    )
+    assert row.window_min_date == date(2026, 9, 12) and row.checked_at == now
+    assert row.run_id is None  # no scan run behind a hand recheck
+
+
+def test_manual_recheck_without_flight_numbers_uses_the_day_min(session):
+    cand = _seed(session, price=96.0)  # snapshot None: the itinerary cannot be identified
+    recheck_candidate(session, cand, _adapter(_fare(98.0)), now=datetime(2026, 6, 3))
+    session.expire_all()
+    pd = session.get(models.PublishedDeal, 1)
+    assert pd.status == "live" and pd.current_price == 98.0 and pd.window_min_price == 98.0
+    (row,) = _deal_checks(session)
+    assert row.price is None and row.window_min_price == 98.0  # same shape as verify_deal
+
+
+def test_manual_recheck_moves_a_deal_to_changed_like_the_scan(session):
+    cand = _seed(session, price=96.0)  # EUR275 baseline: EUR124 is still 55 % off
+    recheck_candidate(session, cand, _adapter(_fare(124.0)), now=datetime(2026, 6, 3))
+    session.expire_all()
+    pd = session.get(models.PublishedDeal, 1)
+    assert pd.status == "changed" and pd.current_price == 124.0
+    assert pd.expired_at is None and pd.missed_checks == 0
+
+
+def test_manual_recheck_expires_a_deal_that_fails_the_gate(session):
+    """No baseline, no template, no zone: EUR124 clears nothing -> expired, like the scan."""
+    cand = _seed(session, price=96.0, baseline=None)
+    now = datetime(2026, 6, 3, 9, 30)
+    recheck_candidate(session, cand, _adapter(_fare(124.0)), now=now)
+    session.expire_all()
+    pd = session.get(models.PublishedDeal, 1)
+    assert pd.status == "expired" and pd.expired_at == now
+    assert pd.current_price == 124.0 and pd.verified_at == now
+
+
+def test_manual_recheck_uses_the_template_gates(session):
+    """The template's ceiling keeps EUR124 a deal even without a baseline (shared gate)."""
+    cand = _seed(session, price=96.0, baseline=None)
+    session.add(
+        models.DealTemplate(
+            id=1,
+            slug="t",
+            name="t",
+            enabled=True,
+            audience_segment_id=1,
+            travel_moment_id=1,
+            trip_type="oneway",
+            date_window_type="relative",
+            included_zones=["MED"],
+            max_price_eur=150,
+        )
+    )
+    session.commit()
+    recheck_candidate(session, cand, _adapter(_fare(124.0)), now=datetime(2026, 6, 3))
+    session.expire_all()
+    assert session.get(models.PublishedDeal, 1).status == "changed"
+
+
+def test_manual_recheck_resets_missed_checks_on_a_real_answer(session):
+    cand = _seed(session, price=96.0, missed_checks=1)
+    recheck_candidate(session, cand, _adapter(_fare(96.0)), now=datetime(2026, 6, 3))
+    session.expire_all()
+    pd = session.get(models.PublishedDeal, 1)
+    assert pd.missed_checks == 0 and pd.status == "live"
+
+
+def test_manual_recheck_leaves_deals_off_the_site_alone(session):
+    cand = _seed(session, price=96.0)
+    pd = session.get(models.PublishedDeal, 1)
+    pd.status = "expired"
+    session.commit()
+    recheck_candidate(session, cand, _adapter(_fare(96.0)), now=datetime(2026, 6, 3))
+    session.expire_all()
+    pd = session.get(models.PublishedDeal, 1)
+    assert pd.status == "expired" and pd.verified_at is None and _deal_checks(session) == []
 
 
 # --- verify_deal: the exact itinerary check (WP9) -----------------------------------
