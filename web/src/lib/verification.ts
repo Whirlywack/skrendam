@@ -39,8 +39,11 @@ export function priceDriftPct(published: number, current: number | null): number
 /** A deal whose last REAL answer (`verified_at`) is older than this many days
  *  gets the manual Recheck button on Today. Deals the scan has never verified
  *  fall back to `last_seen_at`, then `published_at` — a deal published an
- *  hour ago is not an emergency, one published a week ago and never checked is. */
-export const RECHECK_AFTER_DAYS = 2;
+ *  hour ago is not an emergency, one published a week ago and never checked is.
+ *  Aligned with the scan's `EXACT_CHECK_MAX_AGE_DAYS` (skrendam/verification.py):
+ *  the daily step spends an exact call on a deal at this age, so Today only
+ *  nags about deals the scan itself has already fallen behind on. */
+export const RECHECK_AFTER_DAYS = 3;
 
 /** The window Today's „since yesterday" summary looks back over. */
 export const SUMMARY_WINDOW_HOURS = 24;

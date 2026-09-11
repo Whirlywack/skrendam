@@ -63,9 +63,11 @@ describe('priceDriftPct', () => {
 });
 
 describe('needsRecheck', () => {
-  it('flags a live deal whose verified_at is older than RECHECK_AFTER_DAYS', () => {
-    expect(RECHECK_AFTER_DAYS).toBe(2);
+  it('flags a live deal whose verified_at is older than RECHECK_AFTER_DAYS (= the scan\'s EXACT_CHECK_MAX_AGE_DAYS)', () => {
+    expect(RECHECK_AFTER_DAYS).toBe(3);
     expect(needsRecheck(row({ verifiedAt: '2026-09-08 07:00:00' }), NOW)).toBe(true);
+    // Two days old is the scan's business (it rechecks at three), not Today's.
+    expect(needsRecheck(row({ verifiedAt: '2026-09-09 07:00:00' }), NOW)).toBe(false);
     expect(needsRecheck(row({ verifiedAt: '2026-09-10 07:00:00' }), NOW)).toBe(false);
   });
 

@@ -240,6 +240,7 @@ export async function updateLiveDealFromCandidate(input: {
     headline = headline.replace(bounded(oldB), `$1${newB}`);
   }
 
+  const now = new Date().toISOString();
   await db
     .update(publishedDeals)
     .set({
@@ -256,11 +257,16 @@ export async function updateLiveDealFromCandidate(input: {
       candidateId: cand.id,
       goingFast: false,
       unverifiedSince: null,
-      lastSeenAt: new Date().toISOString(),
-      // A fresh sample fare: the verification state restarts from `live`.
+      lastSeenAt: now,
+      // A fresh sample fare: the verification state restarts from `live`, and
+      // the candidate's fare IS the current price — discovery just saw it — so
+      // the board never reads "no current price" after a supersede, and
+      // `verified_at` points at this itinerary's last real answer, not the
+      // previous one's (task-5 review).
       status: 'live',
-      currentPrice: null,
-      currentPriceAt: null,
+      currentPrice: cand.price,
+      currentPriceAt: cand.lastSeenAt ?? now,
+      verifiedAt: cand.verifiedAt ?? cand.lastSeenAt ?? null,
       windowMinPrice: null,
       windowMinDate: null,
       missedChecks: 0,

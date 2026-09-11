@@ -426,7 +426,7 @@ class DealEvent(Base):
     subscriber_id: Mapped[int | None] = mapped_column(
         ForeignKey("subscribers.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    kind: Mapped[str] = mapped_column(String)  # 'click' | 'booked_claim'
+    kind: Mapped[str] = mapped_column(String)  # 'click' | 'booked_claim' | 'price_changed'
     source: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 

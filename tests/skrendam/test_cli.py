@@ -94,9 +94,12 @@ def test_analyze_labels_cli_prints_curator_label_table(monkeypatch, capsys, sess
 def test_run_scan_cli_exits_normally_when_healthy(monkeypatch, capsys):
     import skrendam.cli as cli
 
-    summary = ScanSummary()
+    summary = ScanSummary(deals_verified=4, deals_changed=1, deals_expired=2)
     summary.health = HealthVerdict(status="healthy", reasons=[], metrics={})
     monkeypatch.setattr(cli, "run_scan_command", lambda seed=False, all_routes=False: summary)
     monkeypatch.setattr("sys.argv", ["skrendam", "run-scan"])
     cli.main()  # must not raise SystemExit
-    assert "scan complete" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "scan complete" in out
+    # The verification counters (WP9) print next to candidates/matches/errors.
+    assert "deals: 4 verified, 1 changed, 2 expired" in out
