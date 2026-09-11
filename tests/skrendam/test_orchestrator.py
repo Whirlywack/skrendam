@@ -1217,6 +1217,31 @@ def test_verify_stale_verified_at_forces_an_exact_check_despite_calendar_hit(ses
     assert [r.source for r in _checks(session, 84)] == ["calendar", "flights"]
 
 
+def test_verify_itinerary_gone_sets_current_price_to_the_window_min(session):
+    """Snapshot without flight numbers: the day's cheapest fare is the current price."""
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 92, travel_date=d, snapshot={"legs": [{"airline": {"code": "W6"}}]})
+    _run(session, VerifyBackend({d: [_fare(30.0)]}))
+
+    deal = session.get(models.PublishedDeal, 92)
+    assert deal.status == "live"  # EUR30 == published: nothing changed for the reader
+    assert deal.current_price == 30.0 and deal.window_min_price == 30.0
+    (row,) = _checks(session, 92)
+    assert row.available is True and row.price is None and row.window_min_price == 30.0
+
+
+def test_verify_itinerary_gone_above_tolerance_is_changed_at_the_window_min(session):
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 93, travel_date=d, snapshot={"legs": [{"airline": {"code": "W6"}}]})
+    _run(session, VerifyBackend({d: [_fare(36.0)]}))
+
+    deal = session.get(models.PublishedDeal, 93)
+    assert deal.status == "changed"
+    assert deal.current_price == 36.0  # never NULL on a real answer
+
+
 def test_verify_skips_dateless_deals(session):
     """A deal without a travel date is curator-managed; nothing to price."""
     _seed(session)

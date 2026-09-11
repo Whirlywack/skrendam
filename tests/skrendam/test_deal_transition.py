@@ -152,7 +152,14 @@ def test_psychological_price_keeps_a_small_discount_alive():
     """Review case A: €39 vs €50 (22 % < 25 %) is a deal because it is under the €40 psych price."""
     deal = _deal(price=39.0, baseline=50.0)
     assert _run(deal, _check(price=39.0), gates=LAST_MINUTE).status == "live"
-    assert _run(deal, _check(price=None, window_min=39.0), gates=LAST_MINUTE).status == "changed"
+    # Itinerary gone but the day's cheapest is the published price: nothing changed.
+    assert _run(deal, _check(price=None, window_min=39.0), gates=LAST_MINUTE).status == "live"
+    # Itinerary gone, window min €39.5 vs €30 published (+32 %, 21 % discount): the
+    # psych price alone keeps it a deal -> changed, not expired.
+    d = _run(
+        _deal(price=30.0, baseline=50.0), _check(price=None, window_min=39.5), gates=LAST_MINUTE
+    )
+    assert d.status == "changed" and d.reason == "itinerary_gone"
 
 
 def test_drift_under_the_zone_ceiling_is_changed_not_expired():
@@ -174,6 +181,22 @@ def test_missing_baseline_certifies_nothing_but_the_thresholds():
 
 
 # --- exact itinerary gone, other fares that day ---------------------------------
+
+
+def test_itinerary_gone_but_window_min_at_published_price_stays_live():
+    """Fix round 1: an unidentifiable itinerary at the published price changed nothing."""
+    d = _run(_deal(missed=1), _check(price=None, window_min=93.0))
+    assert d.status == "live" and d.missed_checks == 0 and d.reason == "within_tolerance"
+
+
+def test_itinerary_gone_but_window_min_within_tolerance_stays_live():
+    d = _run(_deal(status="changed"), _check(price=None, window_min=93.0 * 1.05))
+    assert d.status == "live" and d.reason == "within_tolerance"
+
+
+def test_itinerary_gone_and_window_min_above_tolerance_that_clears_gate_is_changed():
+    d = _run(_deal(), _check(price=None, window_min=93.0 * 1.2))  # 40 % under EUR275
+    assert d.status == "changed" and d.reason == "itinerary_gone"
 
 
 def test_itinerary_gone_but_window_min_still_a_deal_is_changed():

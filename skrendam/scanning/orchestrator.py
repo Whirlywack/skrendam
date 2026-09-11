@@ -609,7 +609,7 @@ class VerifyStats:
     errors: int = 0  # ScanErrors from exact checks (no evidence: no row, no transition)
 
     def as_metrics(self) -> dict:
-        """The counters persisted into ``scan_runs.health.metrics``."""
+        """Return the counters persisted into ``scan_runs.health.metrics``."""
         return {
             "deals_verified": self.deals_verified,
             "deals_changed": self.deals_changed,
@@ -696,8 +696,12 @@ def _verify_live_deals(
             )
         )
         if check.available:
-            # A real answer, even one where the exact itinerary is gone (price None).
-            deal.current_price = check.price
+            # A real answer. When the exact itinerary is gone (price None) the day's
+            # cheapest fare is the current price: the site and the desk render a
+            # `changed` deal with a NULL current_price at the published price.
+            deal.current_price = (
+                check.price if check.price is not None else check.window_min_price
+            )
             deal.current_price_at = now
             deal.window_min_price = check.window_min_price
             deal.window_min_date = check.window_min_date

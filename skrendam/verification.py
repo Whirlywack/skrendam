@@ -150,6 +150,12 @@ def transition(
 
     if check.window_min_price is None:
         return Decision(deal.status, deal.missed_checks, None, "no_price")
+    # The exact itinerary could not be identified, but the day's cheapest fare on
+    # those dates is within tolerance of the published price: nothing changed for
+    # the reader (review fix round 1 — a snapshot without flight numbers, or an
+    # itinerary that merely dropped out of the list, must not flip a deal).
+    if check.window_min_price <= deal.price * (1 + PRICE_DRIFT_TOLERANCE_PCT / 100):
+        return Decision("live", 0, None, "within_tolerance")
     if price_anomaly_ok(check.window_min_price, deal.baseline_price, gates):
         return Decision("changed", 0, None, "itinerary_gone")
     return Decision("expired", 0, expired_at, "gate_failed")
