@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import type { publishedDeals } from '@/db/generated/schema';
 import { expireDeal, republishDeal, markPosted } from '@/app/actions';
 import { timeAgo } from '@/lib/format';
+import { localToday, republishBlock, REPUBLISH_BLOCK_TEXT } from '@/lib/publishGuard';
 import { Icon } from '@/components/Icon';
 
 // Manual "I posted this" toggle — one tap after posting the deal by hand.
@@ -76,6 +77,9 @@ function statusStyle(status: string): React.CSSProperties {
 
 function DealRow({ deal }: { deal: Deal }) {
   const [isPending, startTransition] = useTransition();
+  // UX half of the republish guard; `republishDeal` refuses the same case.
+  const block = republishBlock(deal, localToday());
+  const blockText = block ? REPUBLISH_BLOCK_TEXT[block] : null;
 
   function handleExpire() {
     startTransition(() => expireDeal(deal.id));
@@ -172,14 +176,18 @@ function DealRow({ deal }: { deal: Deal }) {
           </button>
         )}
         {deal.status !== 'live' && (
-          <button
-            className="btn btn-outline"
-            style={{ fontSize: 12, padding: '6px 10px' }}
-            onClick={handleRepublish}
-            disabled={isPending}
-          >
-            <Icon name="RefreshCw" size={14} /> Republish
-          </button>
+          <span title={blockText ?? undefined} style={{ display: 'inline-flex' }}>
+            <button
+              className="btn btn-outline"
+              style={{ fontSize: 12, padding: '6px 10px', ...(blockText ? { opacity: 0.5, cursor: 'not-allowed' } : {}) }}
+              onClick={handleRepublish}
+              disabled={isPending || blockText != null}
+              aria-disabled={blockText != null || undefined}
+              title={blockText ?? undefined}
+            >
+              <Icon name="RefreshCw" size={14} /> Republish
+            </button>
+          </span>
         )}
       </div>
     </div>

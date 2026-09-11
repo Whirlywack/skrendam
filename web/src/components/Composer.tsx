@@ -7,6 +7,7 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { StatusPill } from '@/components/StatusPill';
 import { CopyDrafter } from '@/components/CopyDrafter';
 import { timeAgo } from '@/lib/format';
+import { localToday, publishBlock, PUBLISH_BLOCK_TEXT } from '@/lib/publishGuard';
 import {
   setCandidateStatus,
   publishDeal,
@@ -29,6 +30,9 @@ export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerPr
   const [recheckQueued, setRecheckQueued] = useState(false);
   // Lifted from CopyDrafter so publish sends the edited text, not c.copy.
   const [copy, setCopy] = useState(c.copy);
+  // UX half of the publish guard; the server action refuses the same cases.
+  const block = publishBlock(c, localToday());
+  const blockText = block ? PUBLISH_BLOCK_TEXT[block] : null;
 
   function showToast(msg: string) {
     setToast(msg);
@@ -58,6 +62,10 @@ export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerPr
   }
 
   function handlePublish() {
+    if (blockText) {
+      showToast(blockText);
+      return;
+    }
     startTransition(async () => {
       try {
         await publishDeal({
@@ -208,14 +216,19 @@ export function Composer({ c, onClose: onCloseProp, inline = false }: ComposerPr
         >
           <Icon name="Clock" size={16} /> Schedule
         </button>
-        <button
-          className="btn btn-primary"
-          onClick={handlePublish}
-          disabled={isPending}
-          style={isPending ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <Icon name="Check" size={16} /> Approve &amp; publish
-        </button>
+        {/* A disabled button swallows hover, so the reason sits on a wrapper. */}
+        <span title={blockText ?? undefined} style={{ display: 'inline-flex' }}>
+          <button
+            className="btn btn-primary"
+            onClick={handlePublish}
+            disabled={isPending || blockText != null}
+            aria-disabled={blockText != null || undefined}
+            title={blockText ?? undefined}
+            style={isPending || blockText ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          >
+            <Icon name="Check" size={16} /> Approve &amp; publish
+          </button>
+        </span>
         <button
           className="btn btn-outline"
           onClick={handleRecheck}
