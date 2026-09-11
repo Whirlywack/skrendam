@@ -2,7 +2,8 @@ from datetime import date, datetime, timedelta
 
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
-from skrendam.scanning.orchestrator import run_scan
+from skrendam.fli_adapter.errors import ScanError
+from skrendam.scanning.orchestrator import _verify_live_deals, run_scan
 
 
 def _seed(session):
@@ -50,13 +51,15 @@ class FakeBackend:
         ]
 
     def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        # The leg carries a flight number so a published deal's itinerary_snapshot
+        # can name the exact itinerary (verify_deal matches on flight numbers).
         return [
             {
                 "price": 30.0,
                 "currency": "EUR",
                 "stops": 0,
                 "duration": 215,
-                "legs": [{"airline": {"code": "W6"}}],
+                "legs": [{"airline": {"code": "W6"}, "flight_number": "W6 100"}],
                 "self_transfer": False,
                 "mixed_cabin": False,
                 "booking_url": "https://x",
@@ -246,6 +249,10 @@ def test_expiry_sweep_expires_past_dates(session):
             travel_date=date(2026, 5, 1),
             price=30.0,
             deal_group_key="k50",
+            # Deal 13 is live with a future date, so the verification step prices
+            # it: the snapshot names FakeBackend's itinerary and the EUR30 answer
+            # equals the published price, so the sweep matrix is unchanged.
+            itinerary_snapshot=SNAPSHOT,
         )
     )
     common = {
@@ -775,3 +782,447 @@ def test_orphaned_running_runs_are_failed_at_scan_start(session):
     assert orphan.health == {"reasons": ["orphaned: never finished"]}
     assert session.get(models.ScanRun, 91).status == "running"
     assert session.get(models.ScanRun, 92).status == "completed"
+
+
+# --- live-deal verification step (WP9) ---------------------------------------------
+
+SNAPSHOT = {"price": 30.0, "legs": [{"airline": {"code": "W6"}, "flight_number": "W6100"}]}
+NOW = datetime(2026, 6, 2, 6, 30)
+TODAY = NOW.date()
+
+
+def _fare(price, flight_number="W6 100"):
+    return {
+        "price": price,
+        "currency": "EUR",
+        "stops": 0,
+        "duration": 215,
+        "legs": [{"airline": {"code": "W6"}, "flight_number": flight_number}],
+        "self_transfer": False,
+        "mixed_cabin": False,
+        "booking_url": "https://x",
+    }
+
+
+class VerifyBackend(FakeBackend):
+    """FakeBackend whose flights answers are scripted per travel date.
+
+    ``by_date[travel_date]`` is the fare list for that date ([] = empty answer);
+    unscripted dates fall back to FakeBackend's EUR30 fare. ``flights_calls`` records
+    every flights request the adapter actually forwarded (cache misses).
+    """
+
+    def __init__(self, by_date=None):
+        """Script ``by_date`` ({travel_date: fares | [] | ScanError}); start with no calls."""
+        self.by_date = by_date or {}
+        self.flights_calls = []
+
+    def search_flights(self, origin, destination, travel_date, return_date, cabin):
+        self.flights_calls.append((origin, destination, travel_date, return_date, cabin))
+        if travel_date in self.by_date:
+            answer = self.by_date[travel_date]
+            if isinstance(answer, Exception):
+                raise answer
+            return list(answer)
+        return super().search_flights(origin, destination, travel_date, return_date, cabin)
+
+
+def _seed_live_deal(
+    session,
+    deal_id,
+    *,
+    travel_date,
+    price=30.0,
+    baseline=90.0,
+    published_at=NOW - timedelta(days=1),
+    verified_at=None,
+    status="live",
+    missed_checks=0,
+    snapshot=SNAPSHOT,
+):
+    """Seed a live published deal on route 1 with its candidate (snapshot + cabin)."""
+    session.add(
+        models.Candidate(
+            id=100 + deal_id,
+            route_id=1,
+            origin="VNO",
+            destination="BCN",
+            zone="MED",
+            trip_type="oneway",
+            # candidates.travel_date is NOT NULL; only the deal may be dateless
+            travel_date=travel_date or date(2026, 8, 1),
+            price=price,
+            baseline_price=baseline,
+            deal_group_key=f"k{deal_id}",
+            itinerary_snapshot=snapshot,
+            search_params={"cabin": "ECONOMY"},
+            status="approved",
+        )
+    )
+    deal = models.PublishedDeal(
+        id=deal_id,
+        candidate_id=100 + deal_id,
+        deal_template_id=1,
+        headline=f"deal {deal_id}",
+        origin="VNO",
+        destination="BCN",
+        zone="MED",
+        trip_type="oneway",
+        travel_date=travel_date,
+        price=price,
+        baseline_price=baseline,
+        status=status,
+        published_at=published_at,
+        verified_at=verified_at,
+        missed_checks=missed_checks,
+    )
+    session.add(deal)
+    session.commit()
+    return deal
+
+
+def _checks(session, deal_id):
+    return (
+        session.query(models.DealPriceCheck)
+        .filter_by(deal_id=deal_id)
+        .order_by(models.DealPriceCheck.id)
+        .all()
+    )
+
+
+def _run(session, backend, *, today=TODAY, now=NOW):
+    adapter = FliAdapter(backend, pace=lambda: None)
+    return run_scan(session, today=today, adapter=adapter, scanner_version="t", now=now)
+
+
+def test_verify_live_deal_at_published_price_stays_live_and_writes_check(session):
+    """An exact answer at the published price: live, current_price stamped, one row."""
+    _seed(session)
+    d = date(2026, 8, 10)  # not a calendar date -> no free check -> exact flights call
+    _seed_live_deal(session, 31, travel_date=d)
+    backend = VerifyBackend({d: [_fare(30.0)]})
+    summary = _run(session, backend)
+
+    deal = session.get(models.PublishedDeal, 31)
+    assert deal.status == "live"
+    assert deal.current_price == 30.0 and deal.current_price_at == NOW
+    assert deal.window_min_price == 30.0 and deal.window_min_date == d
+    assert deal.verified_at == NOW and deal.missed_checks == 0
+    assert deal.unverified_since is None and deal.expired_at is None
+    (row,) = _checks(session, 31)
+    run = session.query(models.ScanRun).one()
+    assert (row.source, row.available, row.price, row.window_min_price, row.run_id) == (
+        "flights",
+        True,
+        30.0,
+        30.0,
+        run.id,
+    )
+    assert row.checked_at == NOW
+    assert summary.deals_verified == 1 and summary.deals_changed == 0
+    assert summary.deals_expired == 0 and summary.verify_calls == 1
+    assert run.health["metrics"]["deals_verified"] == 1
+    assert run.health["metrics"]["verify_calls"] == 1
+    # 1 calendar + 1 discovery flights + 1 verification flights; nothing double counted.
+    assert run.api_calls == 3
+    assert [c[2] for c in backend.flights_calls] == [date(2026, 7, 29), d]
+
+
+def test_verify_price_up_20pct_marks_deal_changed_with_current_price(session):
+    """EUR36 against EUR30 published is beyond the 10% tolerance but still a deal."""
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 32, travel_date=d)
+    summary = _run(session, VerifyBackend({d: [_fare(36.0)]}))
+
+    deal = session.get(models.PublishedDeal, 32)
+    assert deal.status == "changed"
+    assert deal.price == 30.0  # the published price never moves
+    assert deal.current_price == 36.0 and deal.verified_at == NOW
+    assert deal.expired_at is None
+    assert summary.deals_changed == 1 and summary.deals_expired == 0
+    assert session.query(models.ScanRun).one().health["metrics"]["deals_changed"] == 1
+
+
+def test_verify_real_price_failing_the_gate_expires_the_deal(session):
+    """A real EUR100 (above the zone ceiling, no discount vs EUR90) is no longer a deal."""
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 33, travel_date=d)
+    summary = _run(session, VerifyBackend({d: [_fare(100.0)]}))
+
+    deal = session.get(models.PublishedDeal, 33)
+    assert deal.status == "expired"
+    assert deal.expired_at == NOW  # the run's wall clock, not midnight
+    assert deal.current_price == 100.0
+    assert summary.deals_expired == 1 and summary.deals_changed == 0
+
+
+def test_verify_one_empty_answer_only_counts_a_miss(session):
+    """Empty answer on a healthy run: status untouched, missed=1, unverified_since set."""
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 34, travel_date=d)
+    summary = _run(session, VerifyBackend({d: []}))
+
+    deal = session.get(models.PublishedDeal, 34)
+    assert deal.status == "live"
+    assert deal.missed_checks == 1
+    assert deal.unverified_since == NOW
+    assert deal.verified_at is None and deal.current_price is None
+    assert deal.expired_at is None
+    (row,) = _checks(session, 34)
+    assert row.available is False and row.price is None and row.source == "flights"
+    assert summary.deals_verified == 1 and summary.deals_expired == 0
+
+
+def test_verify_two_empty_answers_across_two_runs_expire_missing_2_days(session):
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 35, travel_date=d)
+    _run(session, VerifyBackend({d: []}))
+    deal = session.get(models.PublishedDeal, 35)
+    assert deal.status == "live" and deal.missed_checks == 1
+    first_unverified = deal.unverified_since
+
+    day2 = NOW + timedelta(days=1)
+    _run(session, VerifyBackend({d: []}), today=day2.date(), now=day2)
+    deal = session.get(models.PublishedDeal, 35)
+    assert deal.status == "expired"
+    assert deal.missed_checks == 2
+    assert deal.expired_at == day2
+    assert deal.unverified_since == first_unverified  # first empty stamp kept
+    assert len(_checks(session, 35)) == 2
+    runs = session.query(models.ScanRun).order_by(models.ScanRun.id).all()
+    assert runs[-1].health["metrics"]["deals_expired"] == 1
+
+
+def test_verify_skips_deals_already_checked_today(session):
+    """A second run on the same day (never intended, but possible) spends nothing."""
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 36, travel_date=d)
+    _run(session, VerifyBackend({d: []}))
+    later = NOW + timedelta(hours=2)
+    backend = VerifyBackend({d: []})
+    summary = _run(session, backend, now=later)
+
+    deal = session.get(models.PublishedDeal, 36)
+    assert deal.missed_checks == 1  # not 2: the day's answer already counted
+    assert len(_checks(session, 36)) == 1
+    assert summary.deals_verified == 0 and summary.verify_calls == 0
+    assert d not in [c[2] for c in backend.flights_calls]
+
+
+def test_verify_degraded_run_makes_no_calls_and_changes_nothing(session):
+    """A gated pipe (all calendars empty) must not touch live deals at all."""
+    _seed_many_routes(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 37, travel_date=d)
+    _seed_live_deal(session, 38, travel_date=date(2026, 8, 11), published_at=NOW)
+
+    class GatedBackend(EmptyBackend):
+        def __init__(self):
+            self.flights_calls = []
+
+        def search_flights(self, origin, destination, travel_date, *a, **k):
+            self.flights_calls.append(travel_date)
+            return []
+
+    backend = GatedBackend()
+    summary = _run(session, backend)
+
+    run = session.query(models.ScanRun).one()
+    assert run.status == "degraded"
+    assert backend.flights_calls == []
+    assert session.query(models.DealPriceCheck).count() == 0
+    for deal_id in (37, 38):
+        deal = session.get(models.PublishedDeal, deal_id)
+        assert deal.status == "live" and deal.missed_checks == 0
+        assert deal.unverified_since is None and deal.verified_at is None
+    assert summary.deals_verified == 0 and summary.verify_calls == 0
+    assert run.health["metrics"]["deals_verified"] == 0
+
+
+def test_verify_scan_error_is_no_evidence_but_spends_the_call(session):
+    _seed(session)
+    d = date(2026, 8, 10)
+    _seed_live_deal(session, 39, travel_date=d)
+    summary = _run(session, VerifyBackend({d: ScanError("boom")}))
+
+    deal = session.get(models.PublishedDeal, 39)
+    assert deal.status == "live" and deal.missed_checks == 0
+    assert deal.unverified_since is None and _checks(session, 39) == []
+    assert summary.verify_calls == 1 and summary.errors == 1
+    assert session.query(models.ScanRun).one().status == "completed"
+
+
+def _verify_directly(session, backend, *, cap):
+    """Call the step itself (the cap is its keyword; run_scan uses the module default)."""
+    run = models.ScanRun(scanner_version="t", status="running", started_at=NOW)
+    session.add(run)
+    session.flush()
+    adapter = FliAdapter(backend, pace=lambda: None)
+    stats = _verify_live_deals(
+        session, adapter, today=TODAY, now=NOW, run=run, run_healthy=True, cap=cap
+    )
+    session.commit()
+    return stats
+
+
+def test_verify_cap_checks_public_deals_first(session):
+    """3 deals, cap 2: the two newest (the site's free window) are checked, the oldest waits."""
+    _seed(session)
+    dates = {}
+    for i, deal_id in enumerate((41, 42, 43)):
+        dates[deal_id] = date(2026, 8, 10 + i)
+        # 43 is newest, 41 oldest -> free-window order 43, 42, 41
+        _seed_live_deal(
+            session, deal_id, travel_date=dates[deal_id], published_at=NOW - timedelta(days=3 - i)
+        )
+    backend = VerifyBackend()
+    stats = _verify_directly(session, backend, cap=2)
+
+    assert stats.verify_calls == 2 and stats.deals_verified == 2
+    assert [c[2] for c in backend.flights_calls] == [dates[43], dates[42]]
+    assert session.get(models.PublishedDeal, 43).verified_at == NOW
+    assert session.get(models.PublishedDeal, 42).verified_at == NOW
+    unchecked = session.get(models.PublishedDeal, 41)
+    assert unchecked.verified_at is None and unchecked.status == "live"
+    assert _checks(session, 41) == []
+
+
+def test_verify_priority_public_then_mailed_then_newest(session):
+    """Beyond the free window a deal mailed in the last 48 h outranks a newer unmailed one."""
+    _seed(session)
+    # published_at newest first: 51 > 52 > 53 > 54 > 55; free window = 51, 52, 53.
+    dates = {}
+    for i, deal_id in enumerate((51, 52, 53, 54, 55)):
+        dates[deal_id] = date(2026, 8, 10 + i)
+        _seed_live_deal(
+            session, deal_id, travel_date=dates[deal_id], published_at=NOW - timedelta(days=1 + i)
+        )
+    session.add(
+        models.Issue(
+            kind="paid_digest",
+            sent_at=NOW - timedelta(hours=20),
+            deal_ids=[55],
+            expired_deal_ids=[],
+        )
+    )
+    session.add(  # too old to count as "mailed recently"
+        models.Issue(
+            kind="paid_digest",
+            sent_at=NOW - timedelta(hours=60),
+            deal_ids=[54],
+            expired_deal_ids=[],
+        )
+    )
+    session.commit()
+    backend = VerifyBackend()
+    stats = _verify_directly(session, backend, cap=4)
+
+    assert stats.verify_calls == 4
+    assert [c[2] for c in backend.flights_calls] == [dates[51], dates[52], dates[53], dates[55]]
+    assert _checks(session, 54) == []
+
+
+def test_verify_calendar_hit_is_a_free_check(session):
+    """A deal whose date pair is in today's price_log is verified from the calendar, 0 calls."""
+    _seed(session)
+    # Three newer deals fill the free window (each costs one exact call); the fourth,
+    # older deal sits on the calendar's 2026-07-30 / EUR90 point and was verified
+    # yesterday, so no exact check is due for it.
+    for i, deal_id in enumerate((61, 62, 63)):
+        _seed_live_deal(
+            session,
+            deal_id,
+            travel_date=date(2026, 8, 10 + i),
+            published_at=NOW - timedelta(days=1 + i),
+        )
+    _seed_live_deal(
+        session,
+        64,
+        travel_date=date(2026, 7, 30),
+        price=90.0,
+        baseline=200.0,
+        published_at=NOW - timedelta(days=10),
+        verified_at=NOW - timedelta(days=1),
+    )
+    backend = VerifyBackend()
+    summary = _run(session, backend)
+
+    deal = session.get(models.PublishedDeal, 64)
+    assert deal.status == "live"
+    assert deal.current_price == 90.0 and deal.window_min_price == 90.0
+    assert deal.window_min_date == date(2026, 7, 30)
+    assert deal.verified_at == NOW
+    (row,) = _checks(session, 64)
+    assert row.source == "calendar" and row.available is True and row.price == 90.0
+    assert date(2026, 7, 30) not in [c[2] for c in backend.flights_calls]
+    assert summary.deals_verified == 4 and summary.verify_calls == 3
+
+
+def test_verify_calendar_price_beyond_tolerance_triggers_exact_check(session):
+    """Calendar says EUR90 for a EUR60 deal: record the free check, then spend one exact call."""
+    _seed(session)
+    for i, deal_id in enumerate((71, 72, 73)):
+        _seed_live_deal(
+            session,
+            deal_id,
+            travel_date=date(2026, 8, 10 + i),
+            published_at=NOW - timedelta(days=1 + i),
+        )
+    _seed_live_deal(
+        session,
+        74,
+        travel_date=date(2026, 7, 30),
+        price=60.0,
+        baseline=200.0,
+        published_at=NOW - timedelta(days=10),
+        verified_at=NOW - timedelta(days=1),
+    )
+    backend = VerifyBackend({date(2026, 7, 30): [_fare(66.0)]})
+    _run(session, backend)
+
+    rows = _checks(session, 74)
+    assert [r.source for r in rows] == ["calendar", "flights"]
+    deal = session.get(models.PublishedDeal, 74)
+    # The calendar's EUR90 flipped it to changed; the exact itinerary at EUR66 is
+    # within tolerance, so the deal ends the run live at its true current price.
+    assert deal.status == "live" and deal.current_price == 66.0
+    assert date(2026, 7, 30) in [c[2] for c in backend.flights_calls]
+
+
+def test_verify_stale_verified_at_forces_an_exact_check_despite_calendar_hit(session):
+    _seed(session)
+    for i, deal_id in enumerate((81, 82, 83)):
+        _seed_live_deal(
+            session,
+            deal_id,
+            travel_date=date(2026, 8, 10 + i),
+            published_at=NOW - timedelta(days=1 + i),
+        )
+    _seed_live_deal(
+        session,
+        84,
+        travel_date=date(2026, 7, 30),
+        price=90.0,
+        baseline=200.0,
+        published_at=NOW - timedelta(days=10),
+        verified_at=NOW - timedelta(days=4),  # older than EXACT_CHECK_MAX_AGE_DAYS
+    )
+    backend = VerifyBackend({date(2026, 7, 30): [_fare(90.0)]})
+    _run(session, backend)
+    assert [r.source for r in _checks(session, 84)] == ["calendar", "flights"]
+
+
+def test_verify_skips_dateless_deals(session):
+    """A deal without a travel date is curator-managed; nothing to price."""
+    _seed(session)
+    _seed_live_deal(session, 91, travel_date=None)
+    backend = VerifyBackend()
+    summary = _run(session, backend)
+    assert _checks(session, 91) == []
+    assert summary.deals_verified == 0 and summary.verify_calls == 0
+    assert session.get(models.PublishedDeal, 91).status == "live"
