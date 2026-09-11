@@ -10,6 +10,8 @@ import {
   ISSUE_LABEL,
   idList,
   missedFacts,
+  PREVIEW_PANE_PX,
+  previewHeightPx,
   statsOf,
   type IssueKind,
 } from '@/lib/letters';
@@ -133,12 +135,53 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
           <p style={{ ...hint, marginTop: 20 }}>subject</p>
           <p style={{ fontSize: 13, margin: 0 }}>{rendered.subject}</p>
         </div>
-        <iframe
-          title="Letter preview"
-          srcDoc={rendered.html}
-          sandbox=""
-          style={{ width: '100%', height: 720, border: '1px solid var(--line)', background: '#FFFDF7' }}
-        />
+        {deals.length === 0 && missed.length === 0 ? (
+          <div
+            style={{
+              height: PREVIEW_PANE_PX,
+              border: '1px solid var(--line)',
+              background: 'var(--bg-surface)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              textAlign: 'center',
+              color: 'var(--fg-3)',
+              fontSize: 13,
+            }}
+          >
+            Nothing to preview — no eligible deals in this letter.
+          </div>
+        ) : (
+          /* A scrollable pane around a tall iframe. The sandboxed (opaque-origin)
+             srcdoc is an out-of-process frame in Chrome: wheel events over it
+             stayed inside a 720px iframe whose own scrolling automation could
+             not drive, so the footer was unreachable (review 2026-09-11,
+             blocker 2). Sizing the iframe to the letter and scrolling the
+             wrapper keeps the scroll in the desk's own document. `sandbox=""`
+             stays: no allow-same-origin, no scripts. */
+          <div
+            style={{
+              height: PREVIEW_PANE_PX,
+              overflowY: 'auto',
+              border: '1px solid var(--line)',
+              background: '#FFFDF7',
+            }}
+          >
+            <iframe
+              title="Letter preview"
+              srcDoc={rendered.html}
+              sandbox=""
+              style={{
+                display: 'block',
+                width: '100%',
+                height: previewHeightPx(deals.length, missed.length),
+                border: 0,
+                background: '#FFFDF7',
+              }}
+            />
+          </div>
+        )}
       </div>
     </ConfigShell>
   );

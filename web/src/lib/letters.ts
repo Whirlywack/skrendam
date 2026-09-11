@@ -11,6 +11,20 @@ export const FREE_LETTER_FRESH = 2;
 /** Expired deals shown under „Ką praleidai" in a free letter. */
 export const FREE_LETTER_MISSED = 3;
 
+/** Height of the letter preview pane on `/letters/[id]` — the pane scrolls,
+ *  the iframe inside is sized to the whole letter. */
+export const PREVIEW_PANE_PX = 720;
+
+/** How tall to draw the preview iframe so the scrollable pane around it can
+ *  reach the footer. The iframe is `sandbox=""` (opaque origin) so the desk
+ *  cannot measure the rendered letter; this is a generous estimate from the
+ *  520px email column — measured 2 cards → 752px, 3 cards → 1022px, bodies
+ *  add up to ~100px per card. Falling short only means the iframe scrolls the
+ *  last few pixels itself; never shorter than the pane. */
+export function previewHeightPx(fresh: number, missed: number): number {
+  return Math.max(PREVIEW_PANE_PX, 260 + 360 * fresh + 220 * missed);
+}
+
 /** Paid digest send slot, Europe/Vilnius — a label, not a trigger. */
 export const DIGEST_DAY = 'Thursday';
 export const DIGEST_TIME = '07:00';

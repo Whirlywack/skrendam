@@ -6,6 +6,8 @@ import {
   missedFacts,
   pickDigest,
   pickNurture,
+  PREVIEW_PANE_PX,
+  previewHeightPx,
   statsOf,
   type DealEvent,
 } from './letters';
@@ -190,5 +192,18 @@ describe('statsOf', () => {
     });
     expect(statsOf(null)).toBeNull();
     expect(statsOf([1])).toBeNull();
+  });
+});
+
+describe('previewHeightPx', () => {
+  it('is never shorter than the preview pane, so an empty or one-deal letter still fills it', () => {
+    expect(previewHeightPx(0, 0)).toBe(PREVIEW_PANE_PX);
+    expect(previewHeightPx(1, 0)).toBe(PREVIEW_PANE_PX);
+  });
+
+  it('grows past the pane with the cards, generously (measured: 2 cards 752px, 3 cards 1022px)', () => {
+    expect(previewHeightPx(2, 0)).toBeGreaterThanOrEqual(752);
+    expect(previewHeightPx(3, 0)).toBeGreaterThanOrEqual(1022);
+    expect(previewHeightPx(2, 3)).toBeGreaterThan(previewHeightPx(2, 0));
   });
 });
