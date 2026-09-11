@@ -67,6 +67,10 @@ export function Poster({
               {showWas && save != null && (
                 <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
               )}
+              {/* Changed deal (WP9): „Dabar nuo 124 €" / „radome už 93 €" */}
+              {t.priceLines.map((line) => (
+                <div key={line} className="mono save">{line}</div>
+              ))}
             </div>
             <Link href={`/deal/${t.id}`} className="cta">
               {S.ctaSeeDealHero} <span className="bead" aria-hidden="true" />

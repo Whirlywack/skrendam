@@ -91,6 +91,15 @@ export const S = {
   claimCta: 'Užsisakiau',
   claimDone: 'Ačiū! Užrašėm.',
   claimInvalid: 'Šio radinio neberodome.',
+  // Reader signal beside „Užsisakiau" (WP9): the price is not what the letter
+  // said. Same page, same done state — one deal_events row of kind price_changed.
+  priceChangedCta: 'Kaina pasikeitė',
+
+  // Changed deals (WP9, spec §2): still a deal, but the daily check found it
+  // above the published price. Both numbers are shown, never just the new one:
+  // „Dabar nuo 124 €" / „radome už 93 €".
+  nowFrom: 'Dabar nuo',
+  foundAt: 'radome už',
 
   // Nav & footer
   navHow: 'Kaip tai veikia',

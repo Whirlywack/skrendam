@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { getDeal, getFreeWindowIds, getSimilarDeals } from '@/lib/queries';
-import { toPublicDeal, toTicket } from '@/lib/mappers';
+import { freshSource, toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
 import { dealWhyAndCatch, ltDealHeadline } from '@/lib/dealDetail';
@@ -11,6 +11,7 @@ import { eur, freshnessLabel } from '@/lib/format';
 import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
 import { destinationsCollection, originCollection, zoneCollection } from '@/lib/collections';
 import { S, curator } from '@/lib/lt';
+import { LIVE_STATUSES } from '@/lib/statuses';
 import { Masthead } from '@/components/v2/Masthead';
 import { Crumb } from '@/components/v2/Crumb';
 import { POSTER } from '@/components/v2/Poster';
@@ -25,6 +26,10 @@ import { breadcrumbJsonLd, dealArticleJsonLd } from '@/lib/seo';
 
 export const revalidate = 300;
 
+/** live OR changed (WP9) — never a literal 'live' comparison; a changed deal
+ *  locks, ranks and indexes exactly like a live one. */
+const isLive = (status: string) => (LIVE_STATUSES as readonly string[]).includes(status);
+
 export default async function DealPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const numId = Number(id);
@@ -36,16 +41,21 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   // Locked deals (live but past the free window) exist only as homepage
   // teasers — their detail lives in the letter. Expired deals keep rendering.
   const freeIds = await getFreeWindowIds();
-  if (row.pd.status === 'live' && !freeIds.has(row.pd.id)) redirect('/#kapote');
+  if (isLive(row.pd.status) && !freeIds.has(row.pd.id)) redirect('/#kapote');
 
   const now = new Date();
   const pd = row.pd;
   const deal = toPublicDeal(row, now);
   const t = toTicket(row, now);
-  const headline = ltDealHeadline(pd.headline, Number(pd.price), pd.destination);
+  // A changed deal's curator headline may quote the found price („€140 return…")
+  // — that number is no longer the one on the poster, so the verdict line takes
+  // the blurb slot (the rule Poster.tsx already applies to price-shaped hooks).
+  const rawHeadline = ltDealHeadline(pd.headline, deal.price, pd.destination);
+  const headline = deal.state === 'changed' && /\d+\s?€|€\s?\d+/.test(rawHeadline)
+    ? deal.verdict : rawHeadline;
 
   // Free-window rank — the poster kicker's honest "Nr. 0X" (Set keeps order).
-  const rank = pd.status === 'live' ? [...freeIds].indexOf(pd.id) + 1 : 0;
+  const rank = isLive(pd.status) ? [...freeIds].indexOf(pd.id) + 1 : 0;
 
   // Price context (real data — no fake sparklines)
   const stats = await priceContext(pd.origin, pd.destination, pd.tripType, deal.price, now);
@@ -73,11 +83,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   // Validated booking CTA (re-uses booking lib — never unvalidated href)
   const booking = bookingCta(pd.bookingUrl ?? null);
 
-  // Freshness label
-  const fresh = pd.lastSeenAt ?? row.candLastSeen ?? null;
+  // Freshness label — verified_at first (WP9), then last_seen_at (see freshSource)
   const freshLabel = pd.goingFast
     ? S.chipGoingFast
-    : freshnessLabel(fresh ? String(fresh) : null);
+    : freshnessLabel(freshSource(row));
 
   // Quality chip (words only — score stays internal)
   const qualityLabel = deal.quality === 'rare' ? S.badgeRare : S.badgeGreat;
@@ -157,6 +166,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                 {showWas && save != null && (
                   <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
                 )}
+                {/* Changed deal (WP9): „Dabar nuo 124 €" / „radome už 93 €" */}
+                {t.priceLines.map((line) => (
+                  <div key={line} className="mono save">{line}</div>
+                ))}
               </div>
               <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">
                 {booking.button} <span className="bead" aria-hidden="true" />
@@ -260,7 +273,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   // Locked deals: the page 307s to signup, but metadata must not carry the
   // price either — mirror the page guard (review 08-28).
-  if (row.pd.status === 'live') {
+  if (isLive(row.pd.status)) {
     const freeIds = await getFreeWindowIds();
     if (!freeIds.has(row.pd.id)) {
       return { title: 'Radinys — Yip', robots: { index: false, follow: true } };
@@ -269,8 +282,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const d = toPublicDeal(row, new Date());
 
-  // Expired deals: preserved noindex logic from prior task
-  const noindex = row.pd.status !== 'live';
+  // Expired deals: preserved noindex logic from prior task (changed indexes like live)
+  const noindex = !isLive(row.pd.status);
 
   const tripLabel = d.tripType === 'roundtrip' ? S.retRoundTrip : S.retOneWay;
   // Sentence position after „į" declines the destination (spec §4 — never nominative after „į").

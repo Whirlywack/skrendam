@@ -50,4 +50,23 @@ describe('toTicket', () => {
     }), new Date());
     expect(ow.legs).toBe('1 persėdimas · 3 val.');
   });
+  it('a changed deal (WP9) tickets the current price, keeps the found one, carries both lines', () => {
+    const t = toTicket(row({ pd: { status: 'changed', price: 140, currentPrice: 186, headline: null } }), new Date());
+    expect(t.state).toBe('changed');
+    expect(t.price).toBe(186);
+    expect(t.foundPrice).toBe(140);
+    expect(t.currentPrice).toBe(186);
+    expect(t.priceLines).toEqual(['Dabar nuo 186\u00a0€', 'radome už 140\u00a0€']);
+    // baseline 301: 1 − 186/301 → 38 % (published 53 % would overstate)
+    expect(t.drop).toBe(38);
+    // the generated headline quotes the price a reader can actually book at
+    expect(t.headline).toContain('186');
+    expect(t.headline).not.toContain('140');
+  });
+  it('a live deal tickets the published price with no lines', () => {
+    const t = toTicket(row(), new Date());
+    expect(t.state).toBe('live');
+    expect(t.price).toBe(140);
+    expect(t.priceLines).toEqual([]);
+  });
 });

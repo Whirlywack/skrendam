@@ -1,9 +1,9 @@
-import type { PublicDeal, TicketView } from './types';
+import type { DealState, PublicDeal, TicketView } from './types';
 import { qualityTag } from './quality';
 import { bookingCta } from './booking';
 import { ltCity } from './cities-lt';
 import { ltDealHeadline, stopsChip } from './dealDetail';
-import { formatDates, freshnessLabel, ltMonthNom } from './format';
+import { eur, formatDates, freshnessLabel, ltMonthNom } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
 import { groundHint } from './ground';
@@ -51,6 +51,49 @@ function demand(r: { archetype?: string | null; demandSignals?: unknown }): {
   };
 }
 
+/** WP9 price state. A `changed` row is still a deal, but the daily check found
+ *  it above the published price: the site shows `current_price` and says what
+ *  it was found at. `drop` is recomputed against the shown price so „−36 %"
+ *  and „sutaupai X €" stay true numbers. Anything that is not `changed` (or is
+ *  changed without a verified current price — should not happen, but a stale
+ *  row must never render a null €) reads as the published price. */
+function priceState(pd: Row['pd']): {
+  state: DealState;
+  price: number;
+  foundPrice: number;
+  currentPrice: number | null;
+  drop: number;
+  priceLines: string[];
+} {
+  const foundPrice = Number(pd.price);
+  const currentPrice = pd.currentPrice == null ? null : Number(pd.currentPrice);
+  const publishedDrop = Math.round(Number(pd.discountPct ?? 0));
+  if (pd.status !== 'changed' || currentPrice === null) {
+    return { state: 'live', price: foundPrice, foundPrice, currentPrice, drop: publishedDrop, priceLines: [] };
+  }
+  const baseline = pd.baselinePrice == null ? null : Number(pd.baselinePrice);
+  const drop = baseline != null && baseline > 0
+    ? Math.max(0, Math.round((1 - currentPrice / baseline) * 100))
+    : publishedDrop;
+  return {
+    state: 'changed',
+    price: currentPrice,
+    foundPrice,
+    currentPrice,
+    drop,
+    priceLines: [`${S.nowFrom} ${eur(currentPrice)}`, `${S.foundAt} ${eur(foundPrice)}`],
+  };
+}
+
+/** The timestamp the freshness label speaks about: the verification step's
+ *  `verified_at` first (WP9), then the scan's `last_seen_at`, then the
+ *  candidate's. Shared by the mapper and the two pages that label freshness
+ *  outside it, so the three never drift. */
+export function freshSource(r: Pick<Row, 'pd' | 'candLastSeen'>): string | null {
+  const v = r.pd.verifiedAt ?? r.pd.lastSeenAt ?? r.candLastSeen ?? null;
+  return v ? String(v) : null;
+}
+
 function legs(snapshot: unknown): { stops: number; airline: string } {
   const s = (snapshot ?? {}) as Record<string, unknown>;
   const legsArr = s.legs as Array<{ airline?: { code?: string } }> | undefined;
@@ -72,7 +115,7 @@ export function toTicket(r: Row, now: Date): TicketView {
   // segments, so a one-way with a connection also has 2+ entries.
   const dur =
     s.duration && pd.tripType !== 'roundtrip' ? `${Math.round(Number(s.duration) / 60)} val.` : '';
-  const drop = Math.round(Number(pd.discountPct ?? 0));
+  const ps = priceState(pd);
   // Prefer the engine-written normalized score + tier; fall back for un-backfilled rows.
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
   const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
@@ -86,11 +129,15 @@ export function toTicket(r: Row, now: Date): TicketView {
     dates: formatDates(String(pd.travelDate), pd.returnDate ? String(pd.returnDate) : null),
     month: ltMonthNom(String(pd.travelDate)),
     legs: `${stopsChip(stops)}${dur ? ` · ${dur}` : ''}`,
-    price: Number(pd.price),
+    price: ps.price,
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
-    drop,
+    drop: ps.drop,
+    state: ps.state,
+    foundPrice: ps.foundPrice,
+    currentPrice: ps.currentPrice,
+    priceLines: ps.priceLines,
     quality,
-    headline: ltDealHeadline(pd.headline, Number(pd.price), pd.destination),
+    headline: ltDealHeadline(pd.headline, ps.price, pd.destination),
     eyebrow: pd.publicLabel ?? S.foundByHand,
     catchChip: stopsChip(stops),
     scene: sceneClass(pd.destination),
@@ -105,11 +152,11 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
   const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
     ? r.qualityTier : (qualityTag(tierScore(r, score)) ?? 'great');
-  const drop = Math.round(Number(pd.discountPct ?? 0));
-  const fresh = pd.lastSeenAt ?? r.candLastSeen ?? null;
+  const ps = priceState(pd);
+  const drop = ps.drop;
   const status = pd.goingFast
     ? { kind: 'going_fast' as const, label: S.chipGoingFast }
-    : { kind: 'fresh' as const, label: freshnessLabel(fresh ? String(fresh) : null) };
+    : { kind: 'fresh' as const, label: freshnessLabel(freshSource(r)) };
 
   // reserved for Task 8 — will be threaded into timeAgo() for the detail page's relative time
   void now;
@@ -123,9 +170,13 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     dates: formatDates(String(pd.travelDate), pd.returnDate ? String(pd.returnDate) : null),
     stops,
     airline,
-    price: Number(pd.price),
+    price: ps.price,
     baseline: pd.baselinePrice == null ? null : Number(pd.baselinePrice),
     drop,
+    state: ps.state,
+    foundPrice: ps.foundPrice,
+    currentPrice: ps.currentPrice,
+    priceLines: ps.priceLines,
     quality,
     // The rarity claim is earned, not decoration: only 'rare'-tier deals say it
     // (review 08-28 — a 'great' deal beside a rarity line reads as fake urgency).
@@ -136,7 +187,8 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     catchLine: stops >= 1 ? `Kabliukas: ${stopsChip(stops)}` : null,
     status,
     booking: bookingCta(pd.bookingUrl ?? null),
-    verifiedAt: r.verifiedAt ? String(r.verifiedAt) : null,
+    // The deal's own verification stamp (WP9) first; the candidate's recheck stamp as before.
+    verifiedAt: pd.verifiedAt ? String(pd.verifiedAt) : r.verifiedAt ? String(r.verifiedAt) : null,
     groundHint: groundHint(pd.origin),
     ...demand(r),
   };
