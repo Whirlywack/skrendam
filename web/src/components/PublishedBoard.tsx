@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react';
 import type { publishedDeals } from '@/db/generated/schema';
 import { expireDeal, republishDeal, markPosted } from '@/app/actions';
-import { timeAgo } from '@/lib/format';
+import { formatLocalTs, timeAgo } from '@/lib/format';
 import { localToday, republishBlock, REPUBLISH_BLOCK_TEXT } from '@/lib/publishGuard';
+import { dealState, isLiveStatus, priceDriftPct, STATE_LABEL } from '@/lib/verification';
 import { Icon } from '@/components/Icon';
 
 // Manual "I posted this" toggle — one tap after posting the deal by hand.
@@ -47,11 +48,19 @@ function PostedChip({
 
 type Deal = typeof publishedDeals.$inferSelect;
 
+// The Live tab is the site's visible set (`LIVE_STATUSES`: live + changed);
+// each row carries its own state pill.
 const TABS = ['live', 'draft', 'expired'] as const;
 type TabVal = (typeof TABS)[number];
 
+function inTab(deal: Deal, tab: TabVal): boolean {
+  return tab === 'live' ? isLiveStatus(deal.status) : deal.status === tab;
+}
+
 interface Props {
   deals: Deal[];
+  /** `deal_price_checks` rows per deal id (grouped query; absent = 0). */
+  checkCounts: Record<number, number>;
 }
 
 const PILL: React.CSSProperties = {
@@ -70,12 +79,61 @@ const PILL: React.CSSProperties = {
 function statusStyle(status: string): React.CSSProperties {
   if (status === 'live')
     return { ...PILL, background: 'var(--sea-100)', color: 'var(--sea-700)' };
+  if (status === 'changed')
+    return { ...PILL, background: 'var(--amber-100)', color: 'var(--amber-700)' };
   if (status === 'expired')
     return { ...PILL, background: 'var(--coral-50)', color: 'var(--coral-700)' };
   return { ...PILL, background: 'var(--sand-100)', color: 'var(--fg-3)' };
 }
 
-function DealRow({ deal }: { deal: Deal }) {
+const FACT: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg-3)' };
+
+/** The verification line under a deal (WP9): published vs current price,
+ *  the window minimum, missed checks, the last real answer and how many
+ *  checks the scan has recorded. Every fact is a real column or a count —
+ *  nothing here is estimated. */
+function VerificationFacts({ deal, checkCount }: { deal: Deal; checkCount: number }) {
+  const drift = priceDriftPct(deal.price, deal.currentPrice);
+  const driftTone =
+    drift == null ? 'var(--fg-3)' : drift > 0 ? 'var(--amber-700)' : 'var(--sea-600)';
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>
+      {deal.currentPrice != null ? (
+        <span
+          style={{ ...FACT, color: driftTone, fontWeight: 700 }}
+          title={deal.currentPriceAt ? `current price as of ${formatLocalTs(deal.currentPriceAt)}` : undefined}
+        >
+          now €{Math.round(deal.currentPrice)}
+          {drift != null && drift !== 0 && ` (${drift > 0 ? '+' : ''}${drift}%)`}
+          {deal.currentPriceAt && ` · ${timeAgo(deal.currentPriceAt)}`}
+        </span>
+      ) : (
+        <span style={FACT}>no current price</span>
+      )}
+      {deal.windowMinPrice != null && (
+        <span style={FACT}>
+          window min €{Math.round(deal.windowMinPrice)}
+          {deal.windowMinDate && ` on ${deal.windowMinDate}`}
+        </span>
+      )}
+      {deal.missedChecks > 0 && (
+        <span style={{ ...FACT, color: 'var(--coral-600)', fontWeight: 700 }}>
+          missed {deal.missedChecks} {deal.missedChecks === 1 ? 'check' : 'checks'}
+        </span>
+      )}
+      <span style={FACT} title={deal.verifiedAt ? formatLocalTs(deal.verifiedAt) : undefined}>
+        {deal.verifiedAt ? `last check ${timeAgo(deal.verifiedAt)}` : 'never checked'}
+      </span>
+      <span style={FACT}>
+        {checkCount} {checkCount === 1 ? 'check' : 'checks'}
+      </span>
+    </div>
+  );
+}
+
+function DealRow({ deal, checkCount }: { deal: Deal; checkCount: number }) {
+  const live = isLiveStatus(deal.status);
+  const state = dealState(deal.status);
   const [isPending, startTransition] = useTransition();
   // UX half of the republish guard; `republishDeal` refuses the same case.
   const block = republishBlock(deal, localToday());
@@ -141,17 +199,18 @@ function DealRow({ deal }: { deal: Deal }) {
               {deal.publicLabel}
             </span>
           )}
-          {deal.status === 'live' && (
+          {live && (
             <>
               <PostedChip dealId={deal.id} platform="tiktok" postedAt={deal.postedTiktokAt} />
               <PostedChip dealId={deal.id} platform="instagram" postedAt={deal.postedInstagramAt} />
             </>
           )}
         </div>
+        <VerificationFacts deal={deal} checkCount={checkCount} />
       </div>
 
-      {/* Status pill */}
-      <span style={statusStyle(deal.status)}>{deal.status}</span>
+      {/* State pill: live / changed / expired (anything else as stored) */}
+      <span style={statusStyle(deal.status)}>{state === 'other' ? deal.status : STATE_LABEL[state]}</span>
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: 6 }}>
@@ -165,7 +224,7 @@ function DealRow({ deal }: { deal: Deal }) {
             <Icon name="Copy" size={14} /> Hook
           </button>
         )}
-        {deal.status === 'live' && (
+        {live && (
           <button
             className="btn btn-ghost"
             style={{ fontSize: 12, padding: '6px 10px' }}
@@ -175,7 +234,7 @@ function DealRow({ deal }: { deal: Deal }) {
             <Icon name="Archive" size={14} /> Expire
           </button>
         )}
-        {deal.status !== 'live' && (
+        {!live && (
           <span title={blockText ?? undefined} style={{ display: 'inline-flex' }}>
             <button
               className="btn btn-outline"
@@ -194,10 +253,10 @@ function DealRow({ deal }: { deal: Deal }) {
   );
 }
 
-export function PublishedBoard({ deals }: Props) {
+export function PublishedBoard({ deals, checkCounts }: Props) {
   const [tab, setTab] = useState<TabVal>('live');
 
-  const filtered = deals.filter((d) => d.status === tab);
+  const filtered = deals.filter((d) => inTab(d, tab));
 
   return (
     <div className="topbar" style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
@@ -217,7 +276,7 @@ export function PublishedBoard({ deals }: Props) {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 2, marginBottom: 20 }}>
         {TABS.map((t) => {
-          const count = deals.filter((d) => d.status === t).length;
+          const count = deals.filter((d) => inTab(d, t)).length;
           return (
             <button
               key={t}
@@ -259,7 +318,7 @@ export function PublishedBoard({ deals }: Props) {
             No {tab} deals.
           </p>
         ) : (
-          filtered.map((d) => <DealRow key={d.id} deal={d} />)
+          filtered.map((d) => <DealRow key={d.id} deal={d} checkCount={checkCounts[d.id] ?? 0} />)
         )}
       </div>
     </div>

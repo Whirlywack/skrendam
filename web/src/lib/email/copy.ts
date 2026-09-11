@@ -29,6 +29,10 @@ export const L = {
         : 'Ką praleidai',
   lasted: (h: number) => (h < 48 ? `išbuvo ${h} val.` : `išbuvo ${Math.round(h / 24)} d.`),
   usually: (b: number) => `įprastai ${eur(b)}`,
+  /** A `changed` deal: the fare is still there, above the published price —
+   *  the card reads „nuo 124 € · radome už 93 €". Real numbers, both of them. */
+  from: (current: number) => `nuo ${eur(current)}`,
+  foundAt: (published: number) => `radome už ${eur(published)}`,
   unsub: 'Atsisakyti laiškų',
   bookDirect: 'Į bilietus →',
 } as const;

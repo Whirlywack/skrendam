@@ -159,6 +159,29 @@ describe('dealCard', () => {
     expect(html).not.toContain('<b>');
     expect(html).toContain('Pigu &lt;b&gt;labai&lt;/b&gt; &amp; greitai');
   });
+  it('changed deal: leads with „nuo €current" and „radome už €published" instead of „įprastai"', () => {
+    const { html, text } = dealCard(deal({ status: 'changed', currentPrice: 124, currentPriceAt: '2026-09-11 06:10:00' }), recipient(), 3);
+    expect(html).toContain(`>${L.from(124)}<span`.replace('<span', ' <span'));
+    expect(html).toContain(L.foundAt(93));
+    expect(html).not.toContain(L.usually(275));
+    expect(text).toContain(`${L.from(124)} · ${L.foundAt(93)}`);
+    expect(L.from(124)).toBe(`nuo ${eur(124)}`);
+    expect(L.foundAt(93)).toBe(`radome už ${eur(93)}`);
+  });
+
+  it('changed deal whose exact itinerary is gone prices from the window minimum', () => {
+    const { text } = dealCard(deal({ status: 'changed', currentPrice: null, windowMinPrice: 110, windowMinDate: '2026-12-23' }), recipient(), 3);
+    expect(text).toContain(`${L.from(110)} · ${L.foundAt(93)}`);
+  });
+
+  it('changed deal with neither price recorded, and a live deal with a current price, both show the published price', () => {
+    expect(dealCard(deal({ status: 'changed' }), recipient(), 3).text).toContain(`${eur(93)} · ${L.usually(275)}`);
+    expect(dealCard(deal({ status: 'changed' }), recipient(), 3).text).not.toContain('nuo ');
+    const live = dealCard(deal({ status: 'live', currentPrice: 90 }), recipient(), 3).text;
+    expect(live).toContain(`${eur(93)} · ${L.usually(275)}`);
+    expect(live).not.toContain('radome už');
+  });
+
   it('renders a one-way date, a cross-month range, and survives a null travel date', () => {
     expect(dealCard(deal({ returnDate: null }), recipient(), 9).html).toContain('gruod. 22');
     expect(dealCard(deal({ travelDate: '2026-09-29', returnDate: '2026-10-02' }), recipient(), 9).html)

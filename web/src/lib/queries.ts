@@ -1,10 +1,11 @@
 import { cache } from 'react';
-import { and, desc, eq, gte, inArray, ne } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import {
-  candidates, candidateTemplateMatches, dealTemplates, contentDrafts,
+  candidates, candidateTemplateMatches, dealPriceChecks, dealTemplates, contentDrafts,
   publishedDeals, routes, scanRuns, scanRequests,
 } from '@/db/generated/schema';
+import { LIVE_STATUSES } from './statuses';
 
 // ---------------------------------------------------------------------------
 // Private base builder — select + joins shared by queue and point-lookup.
@@ -110,6 +111,16 @@ export const getPublishedDeals = cache(async () => {
   return db.select().from(publishedDeals).orderBy(desc(publishedDeals.publishedAt));
 })
 
+/** How many `deal_price_checks` rows each deal has — one grouped query for
+ *  the Live board's "N checks" fact. Deals with no row are simply absent. */
+export const getDealCheckCounts = cache(async (): Promise<Record<number, number>> => {
+  const rows = await db
+    .select({ dealId: dealPriceChecks.dealId, n: count() })
+    .from(dealPriceChecks)
+    .groupBy(dealPriceChecks.dealId);
+  return Object.fromEntries(rows.map((r) => [r.dealId, r.n]));
+})
+
 export async function getRecentScanRuns(limit = 20) {
   return db.select().from(scanRuns).orderBy(desc(scanRuns.startedAt)).limit(limit);
 }
@@ -140,7 +151,7 @@ export const getRouteSignals = cache(async () => {
         headline: publishedDeals.headline,
       })
       .from(publishedDeals)
-      .where(eq(publishedDeals.status, 'live')),
+      .where(inArray(publishedDeals.status, [...LIVE_STATUSES])),
     db
       .select({
         origin: candidates.origin,

@@ -10,7 +10,7 @@ import {
   getPendingScanRequests,
 } from '@/lib/queries';
 import { toCandidateView, toScanView } from '@/lib/mappers';
-import { parseEngineTs } from '@/lib/format';
+import { attentionCount } from '@/lib/verification';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Second auth layer behind proxy.ts: data-bearing pages must not depend on a
@@ -31,14 +31,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const toReview = new Set(
     rows.map(toCandidateView).filter((v) => v.status === 'suggested').map((v) => v.candidateId),
   ).size;
-  const now = new Date();
-  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-  const attention = published.filter(
-    (d) =>
-      d.status === 'live' &&
-      (d.unverifiedSince ||
-        now.getTime() - parseEngineTs(d.lastSeenAt ?? d.publishedAt).getTime() > sevenDaysMs),
-  ).length;
+  // Changed deals + live deals due a manual recheck (WP9), same rule as Today.
+  const attention = attentionCount(published, new Date());
 
   return (
     <div className="app">

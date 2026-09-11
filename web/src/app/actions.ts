@@ -15,6 +15,8 @@ import {
 } from '@/db/generated/schema';
 import { emailEnabled } from '@/lib/email/client';
 import { defaultDeps, recordSkippedNoKey, sendInstant } from '@/lib/email/streams';
+import { LIVE_STATUSES } from '@/lib/statuses';
+import { isLiveStatus } from '@/lib/verification';
 import {
   localToday,
   publishBlock,
@@ -212,7 +214,7 @@ export async function updateLiveDealFromCandidate(input: {
   // Server-side re-validation: the chip's invariants were computed at page
   // render; a stale tab must not write a higher price, revive an expired deal,
   // or cross trip types (review 08-25). MIN_SAVING_EUR mirrors routeContext.
-  if (deal.status !== 'live') throw new Error('deal is no longer live');
+  if (!isLiveStatus(deal.status)) throw new Error('deal is no longer live');
   if (deal.origin !== cand.origin || deal.destination !== cand.destination) {
     throw new Error('candidate and live deal are on different routes');
   }
@@ -255,6 +257,13 @@ export async function updateLiveDealFromCandidate(input: {
       goingFast: false,
       unverifiedSince: null,
       lastSeenAt: new Date().toISOString(),
+      // A fresh sample fare: the verification state restarts from `live`.
+      status: 'live',
+      currentPrice: null,
+      currentPriceAt: null,
+      windowMinPrice: null,
+      windowMinDate: null,
+      missedChecks: 0,
     })
     .where(eq(publishedDeals.id, input.publishedId));
 
@@ -289,7 +298,9 @@ export async function republishDeal(id: number): Promise<void> {
   if (block) throw new Error(`${REPUBLISH_BLOCK_TEXT[block]} (deal ${id})`);
   await db
     .update(publishedDeals)
-    .set({ status: 'live', unverifiedSince: null, expiredAt: null })
+    // `missed_checks` restarts too — otherwise one more empty answer would
+    // expire the deal again the next morning.
+    .set({ status: 'live', unverifiedSince: null, expiredAt: null, missedChecks: 0 })
     .where(eq(publishedDeals.id, id));
   revalidatePath('/published');
 }
@@ -356,7 +367,7 @@ export async function enqueueRecheckLive(): Promise<void> {
   const live = await db
     .select({ candidateId: publishedDeals.candidateId })
     .from(publishedDeals)
-    .where(eq(publishedDeals.status, 'live'));
+    .where(inArray(publishedDeals.status, [...LIVE_STATUSES]));
   if (live.length > 0) {
     await db.insert(scanRequests).values(
       live.map((d) => ({ kind: 'recheck', candidateId: d.candidateId, status: 'queued', requestedBy: 'curator' })),

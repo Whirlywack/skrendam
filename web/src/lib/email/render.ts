@@ -116,12 +116,29 @@ ${inner.html}    <p style="${S.footer}"><a href="${escapeHtml(unsub)}" style="${
 // ---------------------------------------------------------------------------
 // Cards
 
+/** The price a `changed` deal is really at now: `current_price` (the exact
+ *  itinerary, re-priced), else `window_min_price` (the itinerary is gone, a
+ *  cheaper date in the window is not). Null for any other state, or when
+ *  the scan recorded neither — then the card falls back to the published
+ *  price like a live one. */
+function currentPriceOf(deal: Deal): number | null {
+  if (deal.status !== 'changed') return null;
+  return num(deal.currentPrice) ?? num(deal.windowMinPrice);
+}
+
 /** One live deal: headline, route + dates, price (+ „įprastai" when the drop
  *  clears the gate), body as-is, CTA to the tracked deal link, „Užsisakiau"
- *  claim link. Both twins carry the same two URLs. */
+ *  claim link. Both twins carry the same two URLs.
+ *
+ *  A `changed` deal (digest/nurture only — instant mail is sent from
+ *  `publishDeal` with the fresh row) leads with the current price: „nuo
+ *  124 €" and „radome už 93 €" in place of „įprastai" — the published price
+ *  is the honest reference now, not the baseline. */
 export function dealCard(deal: Deal, r: Recipient, issueId: number | null): { html: string; text: string } {
-  const price = eur(num(deal.price) ?? 0);
-  const was = usually(deal);
+  const published = num(deal.price) ?? 0;
+  const current = currentPriceOf(deal);
+  const price = current == null ? eur(published) : L.from(current);
+  const was = current == null ? usually(deal) : L.foundAt(published);
   const go = trackedDealUrl(deal.id, issueId, r.id);
   const claim = claimUrl(deal.id, issueId, r.id);
   const meta = [route(deal), dates(deal)].filter(Boolean).join(' · ');

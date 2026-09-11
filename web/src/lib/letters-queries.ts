@@ -2,6 +2,7 @@ import { and, count, desc, eq, inArray, isNotNull, ne } from 'drizzle-orm';
 import { db, dealEvents, issues, publishedDeals } from '@/db';
 import type { Deal } from './email/render';
 import type { DealEvent, IssueKind } from './letters';
+import { LIVE_STATUSES } from './statuses';
 
 export type Issue = typeof issues.$inferSelect;
 
@@ -40,12 +41,12 @@ export async function lastIssueOf(kind: IssueKind): Promise<Issue | null> {
   return rows[0] ?? null;
 }
 
-/** Live deals, newest first. */
+/** Deals on the site (`LIVE_STATUSES`: live or changed), newest first. */
 export async function liveDeals(): Promise<Deal[]> {
   return db
     .select()
     .from(publishedDeals)
-    .where(eq(publishedDeals.status, 'live'))
+    .where(inArray(publishedDeals.status, [...LIVE_STATUSES]))
     .orderBy(desc(publishedDeals.publishedAt), desc(publishedDeals.id));
 }
 

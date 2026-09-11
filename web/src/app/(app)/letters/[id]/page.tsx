@@ -18,6 +18,7 @@ import {
 import { bookedEvents, dealsById, getIssue, type Issue } from '@/lib/letters-queries';
 import type { Recipient } from '@/lib/subscribers';
 import { formatLocalTs } from '@/lib/format';
+import { isLiveStatus } from '@/lib/verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,7 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
     kind === 'paid_digest' ? renderDigest(deals, sample, id) : renderNurture(deals, missed, sample, id);
 
   const stats = statsOf(issue.stats);
-  const dead = deals.filter((d) => d.status !== 'live').length;
+  const dead = deals.filter((d) => !isLiveStatus(d.status)).length;
 
   return (
     <ConfigShell title={`${ISSUE_LABEL[kind]} #${id}`}>
@@ -114,9 +115,10 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
           <p style={hint}>{kind === 'paid_digest' ? 'deals' : 'fresh'} · {deals.length}</p>
           <ol style={{ fontSize: 13, paddingLeft: 20, margin: '0 0 20px' }}>
             {deals.map((d) => (
-              <li key={d.id} style={{ marginBottom: 6, color: d.status === 'live' ? 'inherit' : 'var(--fg-3)' }}>
+              <li key={d.id} style={{ marginBottom: 6, color: isLiveStatus(d.status) ? 'inherit' : 'var(--fg-3)' }}>
                 {dealLine(d)}
-                {d.status !== 'live' && ' (expired)'}
+                {d.status === 'changed' && ' (changed)'}
+                {!isLiveStatus(d.status) && ' (expired)'}
               </li>
             ))}
           </ol>
@@ -210,9 +212,10 @@ async function InstantSummary({ issue }: { issue: Issue }) {
       <p style={hint}>deal · {deals.length}</p>
       <ol style={{ fontSize: 13, paddingLeft: 20, margin: '0 0 16px' }}>
         {deals.map((d) => (
-          <li key={d.id} style={{ marginBottom: 6, color: d.status === 'live' ? 'inherit' : 'var(--fg-3)' }}>
+          <li key={d.id} style={{ marginBottom: 6, color: isLiveStatus(d.status) ? 'inherit' : 'var(--fg-3)' }}>
             #{d.id} · {dealLine(d)}
-            {d.status !== 'live' && ' (expired)'}
+            {d.status === 'changed' && ' (changed)'}
+            {!isLiveStatus(d.status) && ' (expired)'}
           </li>
         ))}
       </ol>
