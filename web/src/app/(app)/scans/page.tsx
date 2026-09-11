@@ -1,4 +1,5 @@
-import { getRecentScanRuns, getPendingScanRequests } from '@/lib/queries';
+import { getRecentScanRuns, getPendingScanRequests, getLatestFinishedScanRun, getRunningScanRun } from '@/lib/queries';
+import { runningSince } from '@/lib/mappers';
 import { parseEngineTs, timeAgo } from '@/lib/format';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -188,10 +189,15 @@ function ScanRunCard({ run }: { run: ScanRunRow }) {
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export default async function ScansPage() {
-  const [runs, pending] = await Promise.all([
+  const [runs, pending, finished, running] = await Promise.all([
     getRecentScanRuns(20),
     getPendingScanRequests(),
+    getLatestFinishedScanRun(),
+    getRunningScanRun(),
   ]);
+  // Same rule as Today/Review: a "running" row counts as in progress only when
+  // it is newer than the last finished run and younger than the orphan cutoff.
+  const inProgress = runningSince(finished, running);
 
   return (
     <div className="topbar" style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
@@ -217,7 +223,8 @@ export default async function ScansPage() {
           letterSpacing: '0.04em',
         }}
       >
-        Last {runs.length} scan runs · {pending.length} queued / running
+        Last {runs.length} scan runs · {inProgress ? `scan running since ${inProgress}` : 'no scan in progress'} ·{' '}
+        {pending.length} {pending.length === 1 ? 'request' : 'requests'} queued
       </p>
 
       {/* pending requests */}

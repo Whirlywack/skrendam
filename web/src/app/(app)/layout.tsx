@@ -4,12 +4,13 @@ import { Sidebar } from '@/components/Sidebar';
 import { PulseBar } from '@/components/PulseBar';
 import {
   getQueueRows,
-  getLatestScanRun,
+  getLatestFinishedScanRun,
+  getRunningScanRun,
   getPublishedDeals,
   getPendingScanRequests,
 } from '@/lib/queries';
-import { toCandidateView } from '@/lib/mappers';
-import { parseEngineTs, timeAgo } from '@/lib/format';
+import { toCandidateView, toScanView } from '@/lib/mappers';
+import { parseEngineTs } from '@/lib/format';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Second auth layer behind proxy.ts: data-bearing pages must not depend on a
@@ -17,12 +18,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth();
   if (!session?.user) redirect('/login');
 
-  const [rows, run, published, pending] = await Promise.all([
+  const [rows, finished, running, published, pending] = await Promise.all([
     getQueueRows(),
-    getLatestScanRun(),
+    getLatestFinishedScanRun(),
+    getRunningScanRun(),
     getPublishedDeals(),
     getPendingScanRequests(),
   ]);
+  const scan = toScanView(finished, running);
 
   // Sidebar badges: distinct fresh candidates + live deals needing attention.
   const toReview = new Set(
@@ -42,8 +45,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar toReview={toReview} attention={attention} />
       <main className="main" style={{ display: 'flex', flexDirection: 'column' }}>
         <PulseBar
-          scanAgo={run ? timeAgo(String(run.startedAt)) : 'never'}
-          scanHealthy={run?.status === 'completed'}
+          scanAgo={finished ? scan.ago : 'never'}
+          scanHealthy={scan.status === 'completed'}
+          runningSince={scan.runningSince}
           queued={pending.length}
         />
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{children}</div>

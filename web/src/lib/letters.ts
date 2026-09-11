@@ -11,6 +11,20 @@ export const FREE_LETTER_FRESH = 2;
 /** Expired deals shown under „Ką praleidai" in a free letter. */
 export const FREE_LETTER_MISSED = 3;
 
+/** Height of the letter preview pane on `/letters/[id]` — the pane scrolls,
+ *  the iframe inside is sized to the whole letter. */
+export const PREVIEW_PANE_PX = 720;
+
+/** How tall to draw the preview iframe so the scrollable pane around it can
+ *  reach the footer. The iframe is `sandbox=""` (opaque origin) so the desk
+ *  cannot measure the rendered letter; this is a generous estimate from the
+ *  520px email column — measured 2 cards → 752px, 3 cards → 1022px, bodies
+ *  add up to ~100px per card. Falling short only means the iframe scrolls the
+ *  last few pixels itself; never shorter than the pane. */
+export function previewHeightPx(fresh: number, missed: number): number {
+  return Math.max(PREVIEW_PANE_PX, 260 + 360 * fresh + 220 * missed);
+}
+
 /** Paid digest send slot, Europe/Vilnius — a label, not a trigger. */
 export const DIGEST_DAY = 'Thursday';
 export const DIGEST_TIME = '07:00';
@@ -23,6 +37,21 @@ export const ISSUE_LABEL: Record<IssueKind, string> = {
   paid_digest: 'Paid digest',
   free_nurture: 'Free nurture',
 };
+
+/** What the Letters page says when an assemble found nothing to put in a
+ *  letter — `assembleIssue` redirects to `/letters?empty=<kind>` instead of
+ *  saving an empty draft. Names the letter and the one thing it needs. */
+export const EMPTY_ASSEMBLY: Record<IssueKind, string> = {
+  free_nurture: 'Nothing eligible for a free nurture right now — needs at least one fresh live deal.',
+  paid_digest:
+    'Nothing eligible for a paid digest right now — needs at least one live deal published since the last digest went out.',
+};
+
+/** The `?empty=` search param as a letter kind, or null for anything else
+ *  (absent, unknown, repeated). */
+export function emptyAssemblyKind(param: string | string[] | undefined): IssueKind | null {
+  return param === 'free_nurture' || param === 'paid_digest' ? param : null;
+}
 
 /** The slice of a `deal_events` row the pickers read. */
 export interface DealEvent {

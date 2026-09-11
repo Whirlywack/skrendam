@@ -15,6 +15,13 @@ import {
 } from '@/db/generated/schema';
 import { emailEnabled } from '@/lib/email/client';
 import { defaultDeps, recordSkippedNoKey, sendInstant } from '@/lib/email/streams';
+import {
+  localToday,
+  publishBlock,
+  PUBLISH_BLOCK_TEXT,
+  republishBlock,
+  REPUBLISH_BLOCK_TEXT,
+} from '@/lib/publishGuard';
 
 // ---------------------------------------------------------------------------
 // Auth guard — re-checked inside EVERY action (proxy can skip middleware on
@@ -120,6 +127,10 @@ export async function publishDeal(input: {
     .from(candidates)
     .where(eq(candidates.id, input.candidateId));
   if (!cand) throw new Error(`candidate ${input.candidateId} not found`);
+  // The guard: the Composer disables the button for the same cases, but a
+  // stale drawer or a direct call must not put a dead fare on the site.
+  const block = publishBlock(cand, localToday());
+  if (block) throw new Error(`${PUBLISH_BLOCK_TEXT[block]} (candidate ${cand.id})`);
 
   const [tmpl] = await db
     .select()
@@ -271,6 +282,11 @@ export async function expireDeal(id: number): Promise<void> {
 
 export async function republishDeal(id: number): Promise<void> {
   await requireAdmin();
+  const [deal] = await db.select().from(publishedDeals).where(eq(publishedDeals.id, id));
+  if (!deal) throw new Error(`published deal ${id} not found`);
+  // The guard: a deal whose departure has passed cannot come back to life.
+  const block = republishBlock(deal, localToday());
+  if (block) throw new Error(`${REPUBLISH_BLOCK_TEXT[block]} (deal ${id})`);
   await db
     .update(publishedDeals)
     .set({ status: 'live', unverifiedSince: null, expiredAt: null })

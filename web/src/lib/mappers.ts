@@ -1,7 +1,7 @@
 import type { CandidateView, ScanView, TemplateGroup } from './types';
 import { city, country } from './airports';
 import { airlineName } from './airlines';
-import { formatDates, timeAgo } from './format';
+import { formatClock, formatDates, parseEngineTs, timeAgo } from './format';
 import { gradientForZone } from './gradients';
 import { toDisplayStatus } from './status';
 import { tierForScore } from './tiers';
@@ -100,13 +100,45 @@ type ScanRunish = {
   health?: unknown;
 };
 
-export function toScanView(run: ScanRunish | null): ScanView {
-  if (!run) return { fares: '0', airports: 0, ago: '—', newToday: 0, status: 'never run', healthReasons: [] };
-  const reasons = (run.health as { reasons?: unknown } | null | undefined)?.reasons;
+// A run still "running" this long after it started never finished (laptop
+// slept, process died). Mirrors ORPHAN_RUN_AFTER in skrendam/scanning/
+// orchestrator.py, which reconciles such rows to "failed" on the next run; until
+// then the desk must not report them as in progress.
+export const SCAN_ORPHAN_AFTER_MS = 6 * 60 * 60 * 1000;
+
+/** Local HH:MM a scan has been running since — only for a run that started
+ *  after the latest finished one and within the orphan cutoff. */
+export function runningSince(
+  finished: ScanRunish | null,
+  running: ScanRunish | null,
+  now: Date = new Date(),
+): string | null {
+  if (!running?.startedAt) return null;
+  const started = parseEngineTs(String(running.startedAt));
+  if (finished?.startedAt && started.getTime() <= parseEngineTs(String(finished.startedAt)).getTime()) return null;
+  if (now.getTime() - started.getTime() > SCAN_ORPHAN_AFTER_MS) return null;
+  return formatClock(started);
+}
+
+/** Counts, age and health come from the latest FINISHED run; `running` only
+ *  adds the "running since" clause. Reading the newest row regardless of
+ *  status made every orphaned run a phantom "running.. checked 0 fares"
+ *  scan (desk journey review 2026-09-11, blocker 1). */
+export function toScanView(
+  finished: ScanRunish | null,
+  running: ScanRunish | null = null,
+  now: Date = new Date(),
+): ScanView {
+  const since = runningSince(finished, running, now);
+  if (!finished) {
+    return { fares: '0', airports: 0, ago: '—', newToday: 0, status: 'never run', healthReasons: [], runningSince: since };
+  }
+  const reasons = (finished.health as { reasons?: unknown } | null | undefined)?.reasons;
   return {
-    fares: String(run.apiCalls ?? 0), airports: run.routesScanned ?? 0,
-    ago: timeAgo(run.startedAt ? String(run.startedAt) : null),
-    newToday: run.candidatesFound ?? 0, status: run.status ?? 'unknown',
+    fares: String(finished.apiCalls ?? 0), airports: finished.routesScanned ?? 0,
+    ago: timeAgo(finished.startedAt ? String(finished.startedAt) : null),
+    newToday: finished.candidatesFound ?? 0, status: finished.status ?? 'unknown',
     healthReasons: Array.isArray(reasons) ? reasons.map(String) : [],
+    runningSince: since,
   };
 }

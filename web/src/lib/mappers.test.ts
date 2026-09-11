@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { toCandidateView, groupByTemplate, toScanView } from './mappers';
+import { formatClock, parseEngineTs } from './format';
 
 // Minimal mock for the QueueRow shape returned by getQueueRows().
 // Cast via `as unknown as QueueRow` so we don't need a full Drizzle schema import.
@@ -244,5 +245,39 @@ describe('groupByTemplate', () => {
     expect(groups).toHaveLength(2);
     const ids = groups.map((g) => g.templateId).sort();
     expect(ids).toEqual([10, 20]);
+  });
+});
+
+describe('toScanView with a finished and a running run', () => {
+  const finished = { status: 'completed', apiCalls: 833, routesScanned: 120, candidatesFound: 152, startedAt: '2026-09-11 03:15:00' };
+  const now = new Date('2026-09-11T07:30:00Z');
+
+  it('takes counts and status from the finished run, never from the running one', () => {
+    const v = toScanView(finished, { status: 'running', apiCalls: 0, routesScanned: 0, candidatesFound: 0, startedAt: '2026-09-11 06:25:00' }, now);
+    expect(v.fares).toBe('833');
+    expect(v.airports).toBe(120);
+    expect(v.newToday).toBe(152);
+    expect(v.status).toBe('completed');
+  });
+
+  it('reports a newer in-progress run as running since its local start time', () => {
+    const v = toScanView(finished, { status: 'running', startedAt: '2026-09-11 06:25:00' }, now);
+    expect(v.runningSince).toBe(formatClock(parseEngineTs('2026-09-11 06:25:00')));
+  });
+
+  it('ignores a running row older than the finished run (an orphan awaiting reconcile)', () => {
+    const v = toScanView(finished, { status: 'running', startedAt: '2026-09-02 06:13:00' }, now);
+    expect(v.runningSince).toBeNull();
+  });
+
+  it('ignores a running row older than the orphan cutoff even with no finished run', () => {
+    expect(toScanView(null, { status: 'running', startedAt: '2026-09-10 06:13:00' }, now).runningSince).toBeNull();
+    expect(toScanView(null, { status: 'running', startedAt: '2026-09-11 06:25:00' }, now).runningSince).not.toBeNull();
+  });
+
+  it('has no running clause without a running row', () => {
+    expect(toScanView(finished, null, now).runningSince).toBeNull();
+    expect(toScanView(finished).runningSince).toBeNull();
+    expect(toScanView(null).runningSince).toBeNull();
   });
 });

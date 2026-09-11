@@ -1,4 +1,10 @@
-import { getQueueRows, getLatestScanRun, getRouteOrigins, getRouteSignals } from '@/lib/queries';
+import {
+  getQueueRows,
+  getLatestFinishedScanRun,
+  getRunningScanRun,
+  getRouteOrigins,
+  getRouteSignals,
+} from '@/lib/queries';
 import { groupByTemplate, toScanView } from '@/lib/mappers';
 import { attachRouteContext } from '@/lib/routeContext';
 import { QueueBoard } from '@/components/QueueBoard';
@@ -11,9 +17,10 @@ export default async function QueuePage({
 }) {
   const { origin } = await searchParams;
   // includeExpired: the "History" scope shows engine history; default scopes hide it.
-  const [rows, run, originCodes, signals] = await Promise.all([
+  const [rows, finished, running, originCodes, signals] = await Promise.all([
     getQueueRows(true),
-    getLatestScanRun(),
+    getLatestFinishedScanRun(),
+    getRunningScanRun(),
     getRouteOrigins(),
     getRouteSignals(),
   ]);
@@ -40,7 +47,7 @@ export default async function QueuePage({
   return (
     <QueueBoard
       groups={attachRouteContext(groupByTemplate(visible), signals)}
-      scan={toScanView(run)}
+      scan={toScanView(finished, running)}
       origins={originCodes.map((code) => ({
         code,
         label: labels.get(code) ?? code,

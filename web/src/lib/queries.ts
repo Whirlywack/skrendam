@@ -82,8 +82,27 @@ export async function getRouteOrigins(): Promise<string[]> {
   return rows.map((r) => r.origin);
 }
 
-export const getLatestScanRun = cache(async () => {
-  const [run] = await db.select().from(scanRuns).orderBy(desc(scanRuns.startedAt)).limit(1);
+// Two readers, never one: the newest row regardless of status turned every
+// orphaned "running" row into a phantom scan on Today, Review and Scan health
+// (desk journey review 2026-09-11, blocker 1). Counts and health come from the
+// latest FINISHED run; the running row only says "since HH:MM".
+export const getLatestFinishedScanRun = cache(async () => {
+  const [run] = await db
+    .select()
+    .from(scanRuns)
+    .where(ne(scanRuns.status, 'running'))
+    .orderBy(desc(scanRuns.startedAt))
+    .limit(1);
+  return run ?? null;
+})
+
+export const getRunningScanRun = cache(async () => {
+  const [run] = await db
+    .select()
+    .from(scanRuns)
+    .where(eq(scanRuns.status, 'running'))
+    .orderBy(desc(scanRuns.startedAt))
+    .limit(1);
   return run ?? null;
 })
 

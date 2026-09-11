@@ -58,6 +58,8 @@ export async function assembleIssue(kind: IssueKind): Promise<void> {
     expiredDealIds = missed.map((d) => d.id);
   }
 
+  // Nothing to put in the letter: no draft, back to the list with a banner
+  // (`EMPTY_ASSEMBLY[kind]`) so the click is never a silent no-op.
   if (dealIds.length === 0) redirect(`/letters?empty=${kind}`);
 
   const [row] = await db

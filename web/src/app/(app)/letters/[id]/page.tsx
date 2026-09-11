@@ -10,15 +10,17 @@ import {
   ISSUE_LABEL,
   idList,
   missedFacts,
+  PREVIEW_PANE_PX,
+  previewHeightPx,
   statsOf,
   type IssueKind,
 } from '@/lib/letters';
 import { bookedEvents, dealsById, getIssue, type Issue } from '@/lib/letters-queries';
 import type { Recipient } from '@/lib/subscribers';
+import { formatLocalTs } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-const when = (ts: string | null) => (ts ? ts.replace('T', ' ').slice(0, 16) : '—');
 
 const hint: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -70,13 +72,13 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
         {kind === 'paid_digest'
           ? `goes to plan = paid · slot ${DIGEST_DAY} ${DIGEST_TIME}`
           : `goes to plan = free · every ${FREE_LETTER_CADENCE_DAYS} days`}{' '}
-        · send by hand — no scheduler · assembled {when(issue.createdAt)}
+        · send by hand — no scheduler · assembled {formatLocalTs(issue.createdAt)}
       </p>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
         {issue.sentAt ? (
           <>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Sent {when(issue.sentAt)}</span>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Sent {formatLocalTs(issue.sentAt)}</span>
             <Link href={`/letters/${id}/stats`} style={{ fontSize: 13 }}>
               stats →
             </Link>
@@ -133,12 +135,53 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
           <p style={{ ...hint, marginTop: 20 }}>subject</p>
           <p style={{ fontSize: 13, margin: 0 }}>{rendered.subject}</p>
         </div>
-        <iframe
-          title="Letter preview"
-          srcDoc={rendered.html}
-          sandbox=""
-          style={{ width: '100%', height: 720, border: '1px solid var(--line)', background: '#FFFDF7' }}
-        />
+        {deals.length === 0 && missed.length === 0 ? (
+          <div
+            style={{
+              height: PREVIEW_PANE_PX,
+              border: '1px solid var(--line)',
+              background: 'var(--bg-surface)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              textAlign: 'center',
+              color: 'var(--fg-3)',
+              fontSize: 13,
+            }}
+          >
+            Nothing to preview — no eligible deals in this letter.
+          </div>
+        ) : (
+          /* A scrollable pane around a tall iframe. The sandboxed (opaque-origin)
+             srcdoc is an out-of-process frame in Chrome: wheel events over it
+             stayed inside a 720px iframe whose own scrolling automation could
+             not drive, so the footer was unreachable (review 2026-09-11,
+             blocker 2). Sizing the iframe to the letter and scrolling the
+             wrapper keeps the scroll in the desk's own document. `sandbox=""`
+             stays: no allow-same-origin, no scripts. */
+          <div
+            style={{
+              height: PREVIEW_PANE_PX,
+              overflowY: 'auto',
+              border: '1px solid var(--line)',
+              background: '#FFFDF7',
+            }}
+          >
+            <iframe
+              title="Letter preview"
+              srcDoc={rendered.html}
+              sandbox=""
+              style={{
+                display: 'block',
+                width: '100%',
+                height: previewHeightPx(deals.length, missed.length),
+                border: 0,
+                background: '#FFFDF7',
+              }}
+            />
+          </div>
+        )}
       </div>
     </ConfigShell>
   );
@@ -155,8 +198,8 @@ async function InstantSummary({ issue }: { issue: Issue }) {
         <Link href="/letters">← Letters</Link>
       </p>
       <p style={hint}>
-        went to plan = paid the minute the deal was published · created {when(issue.createdAt)} ·{' '}
-        {issue.sentAt ? `sent ${when(issue.sentAt)}` : 'not sent'}
+        went to plan = paid the minute the deal was published · created {formatLocalTs(issue.createdAt)} ·{' '}
+        {issue.sentAt ? `sent ${formatLocalTs(issue.sentAt)}` : 'not sent'}
         {issue.sentAt && (
           <>
             {' '}

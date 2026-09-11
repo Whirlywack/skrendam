@@ -25,6 +25,11 @@ from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
 
 CANDIDATE_TTL_DAYS = 14
 NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
+# A run still "running" this long after it started never finished (laptop slept,
+# process killed). The longest healthy full-network run observed is ~80 min; the
+# desk applies the same cutoff when deciding whether a run is in progress
+# (web/src/lib/mappers.ts SCAN_ORPHAN_AFTER_MS).
+ORPHAN_RUN_AFTER = timedelta(hours=6)
 
 
 @dataclass(frozen=True)
@@ -106,6 +111,7 @@ def run_scan(
     # last_seen_at never moves backwards). The midnight default keeps direct
     # test calls deterministic.
     now = now if now is not None else datetime(today.year, today.month, today.day)
+    _fail_orphaned_runs(session, now)
     run = models.ScanRun(scanner_version=scanner_version, status="running", started_at=now)
     session.add(run)
     session.flush()
@@ -463,6 +469,29 @@ def _persist_fare(
             window_name=demand_ctx.window_name(dm.signals.get("window_slug")),
         )
         repo.ensure_content_draft(session, cand.id, tpl.id, draft)
+
+
+def _fail_orphaned_runs(session, now):
+    """Reconcile runs that died without finishing (desk journey review 2026-09-11).
+
+    An interrupted run leaves `status='running'`, `finished_at NULL` and zero
+    counters forever; the desk read the newest row and reported a phantom
+    "running.." scan with "checked 0 fares" for days. Nothing else ever touches
+    those rows, so the next run marks any running row older than
+    ORPHAN_RUN_AFTER as failed. Committed on its own so a crash later in this
+    run can't undo the reconcile.
+    """
+    cutoff = now - ORPHAN_RUN_AFTER
+    orphans = session.scalars(
+        select(models.ScanRun).where(
+            models.ScanRun.status == "running", models.ScanRun.started_at < cutoff
+        )
+    )
+    for r in orphans:
+        r.status = "failed"
+        r.finished_at = now
+        r.health = {"reasons": ["orphaned: never finished"]}
+    session.commit()
 
 
 def _expire_stale(session, now):

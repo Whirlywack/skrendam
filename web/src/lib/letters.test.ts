@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Deal } from './email/render';
 import {
+  EMPTY_ASSEMBLY,
+  emptyAssemblyKind,
   FREE_LETTER_FRESH,
   FREE_LETTER_MISSED,
   missedFacts,
   pickDigest,
   pickNurture,
+  PREVIEW_PANE_PX,
+  previewHeightPx,
   statsOf,
   type DealEvent,
 } from './letters';
@@ -190,5 +194,43 @@ describe('statsOf', () => {
     });
     expect(statsOf(null)).toBeNull();
     expect(statsOf([1])).toBeNull();
+  });
+});
+
+describe('previewHeightPx', () => {
+  it('is never shorter than the preview pane, so an empty or one-deal letter still fills it', () => {
+    expect(previewHeightPx(0, 0)).toBe(PREVIEW_PANE_PX);
+    expect(previewHeightPx(1, 0)).toBe(PREVIEW_PANE_PX);
+  });
+
+  it('grows past the pane with the cards, generously (measured: 2 cards 752px, 3 cards 1022px)', () => {
+    expect(previewHeightPx(2, 0)).toBeGreaterThanOrEqual(752);
+    expect(previewHeightPx(3, 0)).toBeGreaterThanOrEqual(1022);
+    expect(previewHeightPx(2, 3)).toBeGreaterThan(previewHeightPx(2, 0));
+  });
+});
+
+describe('emptyAssemblyKind (the `?empty=` param after an assemble found nothing)', () => {
+  it('reads both letter kinds', () => {
+    expect(emptyAssemblyKind('free_nurture')).toBe('free_nurture');
+    expect(emptyAssemblyKind('paid_digest')).toBe('paid_digest');
+  });
+
+  it('is null for a missing, unknown or repeated param', () => {
+    expect(emptyAssemblyKind(undefined)).toBeNull();
+    expect(emptyAssemblyKind('')).toBeNull();
+    expect(emptyAssemblyKind('instant')).toBeNull();
+    expect(emptyAssemblyKind(['free_nurture', 'paid_digest'])).toBeNull();
+  });
+});
+
+describe('EMPTY_ASSEMBLY (banner text per letter kind)', () => {
+  it('names the letter and what it needs', () => {
+    expect(EMPTY_ASSEMBLY.free_nurture).toBe(
+      'Nothing eligible for a free nurture right now — needs at least one fresh live deal.',
+    );
+    expect(EMPTY_ASSEMBLY.paid_digest).toBe(
+      'Nothing eligible for a paid digest right now — needs at least one live deal published since the last digest went out.',
+    );
   });
 });
