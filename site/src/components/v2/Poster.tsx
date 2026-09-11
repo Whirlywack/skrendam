@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur } from '@/lib/format';
-import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
+import { WAS_PRICE_MIN_DROP_PCT, priceFreeBlurb } from '@/lib/format-rules';
 
 // Photo scenes map onto the design system's duotone poster fields.
 // Exported: the deal page's poster hero shares the mapping.
@@ -32,9 +32,8 @@ export function Poster({
   const save = t.baseline != null && t.baseline > t.price ? Math.round(t.baseline - t.price) : null;
   // Same gate as DealTicket: a shallow discount earns no strikethrough (review 08-28).
   const showWas = t.baseline != null && t.drop >= WAS_PRICE_MIN_DROP_PCT;
-  // The price already dominates the poster — a price-shaped headline fallback
-  // would say it twice, so those fall back to the verdict line instead.
-  const blurb = /\d+\s?€/.test(t.headline) ? hook : t.headline;
+  // Price-shaped headlines („140 €" or „€140") yield to the verdict line — see priceFreeBlurb.
+  const blurb = priceFreeBlurb(t.headline, hook);
   return (
     <section className="wrap">
       <div className={`v2-poster ${POSTER[t.scene] ?? 'v2-poster--sun'}`}>
@@ -67,6 +66,10 @@ export function Poster({
               {showWas && save != null && (
                 <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
               )}
+              {/* Changed deal (WP9): „Dabar nuo 124 €" / „radome už 93 €" */}
+              {t.priceLines.map((line) => (
+                <div key={line} className="mono save">{line}</div>
+              ))}
             </div>
             <Link href={`/deal/${t.id}`} className="cta">
               {S.ctaSeeDealHero} <span className="bead" aria-hidden="true" />

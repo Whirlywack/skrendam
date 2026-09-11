@@ -133,4 +133,84 @@ describe('toPublicDeal', () => {
     const d = toPublicDeal(row(), new Date('2026-06-03T12:00:00Z'));
     expect(d.verifiedAt).toBeNull();
   });
+  it("the deal's own verified_at (WP9) beats the candidate's", () => {
+    const d = toPublicDeal(
+      row({ verifiedAt: '2026-09-10T05:00:00', pd: { verifiedAt: '2026-09-11T05:00:00' } }),
+      new Date('2026-09-11T06:00:00Z'),
+    );
+    expect(d.verifiedAt).toBe('2026-09-11T05:00:00');
+  });
+});
+
+describe('toPublicDeal — WP9 price state', () => {
+  const now = new Date('2026-06-03T12:00:00Z');
+
+  it('a live deal shows the published price and no change lines', () => {
+    const d = toPublicDeal(row(), now);
+    expect(d.state).toBe('live');
+    expect(d.price).toBe(96);
+    expect(d.foundPrice).toBe(96);
+    expect(d.currentPrice).toBeNull();
+    expect(d.priceLines).toEqual([]);
+    expect(d.drop).toBe(36);
+  });
+
+  it('a live deal with a verified current price (within tolerance) still shows the published price', () => {
+    const d = toPublicDeal(row({ pd: { currentPrice: 99 } }), now);
+    expect(d.state).toBe('live');
+    expect(d.price).toBe(96);
+    expect(d.currentPrice).toBe(99);
+    expect(d.priceLines).toEqual([]);
+  });
+
+  it('a changed deal shows the current price and says what it was found at', () => {
+    const d = toPublicDeal(row({ pd: { status: 'changed', price: 93, currentPrice: 124 } }), now);
+    expect(d.state).toBe('changed');
+    expect(d.price).toBe(124);
+    expect(d.foundPrice).toBe(93);
+    expect(d.currentPrice).toBe(124);
+    expect(d.priceLines).toEqual(['Dabar nuo 124\u00a0€', 'radome už 93\u00a0€']);
+    // drop is recomputed against the shown price (baseline 150): 1 − 124/150 → 17 %
+    expect(d.drop).toBe(17);
+    expect(d.why).toBe('17 % pigiau nei įprastai');
+  });
+
+  it('a changed deal without a current price never renders a null € — falls back to published', () => {
+    const d = toPublicDeal(row({ pd: { status: 'changed', currentPrice: null } }), now);
+    expect(d.state).toBe('live');
+    expect(d.price).toBe(96);
+    expect(d.priceLines).toEqual([]);
+  });
+
+  it('a changed deal with no baseline makes no discount claim at all', () => {
+    // discount_pct was measured at the found price; at the higher current price
+    // it would overstate, and there is nothing to recompute against → 0, so
+    // every „N % pigiau" consumer (why, meta description, price context) stays silent.
+    const d = toPublicDeal(
+      row({ pd: { status: 'changed', price: 93, currentPrice: 124, baselinePrice: null, discountPct: 36 } }),
+      now,
+    );
+    expect(d.state).toBe('changed');
+    expect(d.price).toBe(124);
+    expect(d.drop).toBe(0);
+    expect(d.why).toBe('Pigiau nei įprastai');
+    expect(d.why).not.toContain('%');
+  });
+
+  it('a changed deal above its baseline never claims a negative discount', () => {
+    const d = toPublicDeal(row({ pd: { status: 'changed', currentPrice: 180 } }), now);
+    expect(d.drop).toBe(0);
+    expect(d.why).toBe('Pigiau nei įprastai');
+  });
+
+  it('the freshness label speaks about verified_at first, then last_seen_at', () => {
+    const at = new Date('2026-09-11T08:00:00Z');
+    const stale = toPublicDeal(row({ pd: { lastSeenAt: '2026-09-01T06:00:00', verifiedAt: null } }), at);
+    expect(stale.status.label).toBe('Kaina galėjo pasikeisti — patikrink');
+    const verified = toPublicDeal(
+      row({ pd: { lastSeenAt: '2026-09-01T06:00:00', verifiedAt: new Date(Date.now() - 3 * 3600_000).toISOString() } }),
+      at,
+    );
+    expect(verified.status.label).toBe('Tikrinta prieš 3 val.');
+  });
 });

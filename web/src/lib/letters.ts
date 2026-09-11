@@ -3,6 +3,7 @@
 // informational, shown on the Letters page next to the send button.
 
 import type { Deal, MissedDeal } from './email/render';
+import { isLiveStatus } from './verification';
 
 /** Days between free nurture letters. */
 export const FREE_LETTER_CADENCE_DAYS = 10;
@@ -68,13 +69,15 @@ function ts(s: string): number {
   return new Date(s.replace(' ', 'T')).getTime();
 }
 
-/** Paid Thursday digest: every live deal published after the last sent
- *  digest (all live deals when there was none), newest first. A deal
- *  published exactly at the cutoff already went out. */
+/** Paid Thursday digest: every visible deal (`LIVE_STATUSES`: live or
+ *  changed) published after the last sent digest (all of them when there
+ *  was none), newest first. A deal published exactly at the cutoff already
+ *  went out. A `changed` deal is rendered at its current price by
+ *  `dealCard`, never re-sent as instant. */
 export function pickDigest(deals: Deal[], lastDigestAt: string | null): Deal[] {
   const cutoff = lastDigestAt == null ? -Infinity : ts(lastDigestAt);
   return deals
-    .filter((d) => d.status === 'live' && ts(d.publishedAt) > cutoff)
+    .filter((d) => isLiveStatus(d.status) && ts(d.publishedAt) > cutoff)
     .sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt));
 }
 
@@ -104,7 +107,8 @@ export function missedFacts(deals: Deal[], events: DealEvent[]): MissedDeal[] {
     .filter((d) => d.lastedHours >= 1);
 }
 
-/** Free 10-day nurture: the `FREE_LETTER_FRESH` newest live deals, and the
+/** Free 10-day nurture: the `FREE_LETTER_FRESH` newest visible deals
+ *  (`LIVE_STATUSES`), and the
  *  `FREE_LETTER_MISSED` most recently expired ones (latest expiry first)
  *  that pass `missedFacts` — a zero-hour row never takes a slot. Rows whose
  *  expiry is after `now` are skipped too. */
@@ -114,7 +118,7 @@ export function pickNurture(
   now: Date,
 ): { fresh: Deal[]; missed: MissedDeal[] } {
   const fresh = deals
-    .filter((d) => d.status === 'live')
+    .filter((d) => isLiveStatus(d.status))
     .sort((a, b) => ts(b.publishedAt) - ts(a.publishedAt))
     .slice(0, FREE_LETTER_FRESH);
 

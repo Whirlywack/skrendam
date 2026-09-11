@@ -1,7 +1,14 @@
 import Link from 'next/link';
 import { getQueueRows, getLatestFinishedScanRun, getRunningScanRun, getPublishedDeals } from '@/lib/queries';
 import { toCandidateView, toScanView } from '@/lib/mappers';
-import { parseEngineTs, timeAgo } from '@/lib/format';
+import { timeAgo } from '@/lib/format';
+import {
+  isLiveStatus,
+  needsRecheck,
+  RECHECK_AFTER_DAYS,
+  verificationSummary,
+  verificationSummaryLine,
+} from '@/lib/verification';
 import { ScanButtons } from '@/components/ScanButtons';
 import { ScanHealthBanner } from '@/components/ScanHealthBanner';
 import { RecheckButton } from '@/components/RecheckButton';
@@ -51,18 +58,15 @@ export default async function Dashboard() {
   const healthReasons =
     ((run?.health as { reasons?: string[] } | null)?.reasons ?? []).map(String);
 
-  // Live deals whose price nobody has re-checked (B4) — the real emergencies.
-  // lastSeenAt moves whenever a scan re-confirms the fare, so a deal the scanner
-  // still sees daily is fresh no matter how long ago it was published
-  // (review 2026-08-22); publishedAt is the fallback for never-re-seen deals.
+  // WP9: the daily scan verifies every visible deal and moves it to `changed`
+  // or `expired` itself, so Today only summarises what it did („N changed ·
+  // M expired since yesterday") and keeps the manual Recheck for deals whose
+  // last REAL answer (`verified_at`, falling back to last_seen_at/published_at)
+  // is older than RECHECK_AFTER_DAYS — an empty answer never counts.
   const now = new Date();
-  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-  const liveDeals = published.filter((d) => d.status === 'live');
-  const stale = liveDeals.filter(
-    (d) =>
-      d.unverifiedSince ||
-      now.getTime() - parseEngineTs(d.lastSeenAt ?? d.publishedAt).getTime() > sevenDaysMs,
-  );
+  const liveDeals = published.filter((d) => isLiveStatus(d.status));
+  const summary = verificationSummary(published, now);
+  const stale = liveDeals.filter((d) => needsRecheck(d, now));
 
   const today = now.toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -122,7 +126,20 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      {/* Live-deal attention blocks — real emergencies, not fake metrics */}
+      {/* Verification summary — what the scan did to the live set */}
+      {published.length > 0 && (
+        <p style={{ fontSize: 13, color: 'var(--fg-2)', margin: '0 0 14px' }}>
+          <span style={{ ...MONO, fontWeight: 700, color: summary.changed + summary.expired > 0 ? 'var(--amber-700)' : 'var(--fg-2)' }}>
+            {verificationSummaryLine(summary)}
+          </span>
+          {' · '}
+          <Link href="/published" style={{ color: 'inherit' }}>
+            {liveDeals.length} on the site
+          </Link>
+        </p>
+      )}
+
+      {/* Deals the scan has not really answered for in RECHECK_AFTER_DAYS */}
       {stale.map((d) => (
         <div
           key={d.id}
@@ -137,25 +154,18 @@ export default async function Dashboard() {
               <span style={{ ...MONO, fontWeight: 700, fontSize: 14 }}>
                 {d.origin} → {d.destination}
               </span>{' '}
-              €{Math.round(d.price)} · live on the site
+              €{Math.round(d.price)} · {d.status} on the site
             </div>
             <div style={{ fontSize: 13, color: 'var(--fg-2)' }}>
-              Published {timeAgo(d.publishedAt)}
-              {d.unverifiedSince
-                ? ` — last recheck found no fare (${timeAgo(String(d.unverifiedSince))}).`
-                : ' and not re-checked since — the price may no longer exist.'}
+              Published {timeAgo(d.publishedAt)} — no real price answer in {RECHECK_AFTER_DAYS}+ days
+              {d.verifiedAt ? ` (last ${timeAgo(d.verifiedAt)})` : ' (never checked by the scan)'}
+              {d.missedChecks > 0 && ` · ${d.missedChecks} empty ${d.missedChecks === 1 ? 'answer' : 'answers'} in a row`}
+              .
             </div>
           </div>
           <RecheckButton candidateId={d.candidateId} />
         </div>
       ))}
-      {liveDeals.length > 0 && stale.length === 0 && (
-        <p style={{ fontSize: 13, color: 'var(--fg-2)', margin: '0 0 14px' }}>
-          {liveDeals.length} live {liveDeals.length === 1 ? 'deal' : 'deals'} on the site — all
-          prices fresh.
-        </p>
-      )}
-
       <p style={{ ...MONO, fontSize: 11, color: 'var(--fg-3)', marginTop: 18 }}>
         Next scan {now.getHours() < 6 ? 'today' : 'tomorrow'} 06:00 · {liveDeals.length} live ·{' '}
         <Link href="/machine/scan-health" style={{ color: 'inherit' }}>

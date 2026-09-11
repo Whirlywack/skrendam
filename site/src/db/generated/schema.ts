@@ -244,54 +244,6 @@ export const candidateTemplateMatches = pgTable("candidate_template_matches", {
 		}),
 ]);
 
-export const publishedDeals = pgTable("published_deals", {
-	id: serial().primaryKey().notNull(),
-	candidateId: integer("candidate_id").notNull(),
-	dealTemplateId: integer("deal_template_id").notNull(),
-	contentDraftId: integer("content_draft_id"),
-	publicLabel: varchar("public_label"),
-	newsletterTag: varchar("newsletter_tag"),
-	headline: text().notNull(),
-	body: text(),
-	tiktokHook: text("tiktok_hook"),
-	origin: varchar().notNull(),
-	destination: varchar().notNull(),
-	zone: varchar(),
-	tripType: varchar("trip_type").notNull(),
-	travelDate: date("travel_date"),
-	returnDate: date("return_date"),
-	price: doublePrecision().notNull(),
-	baselinePrice: doublePrecision("baseline_price"),
-	discountPct: doublePrecision("discount_pct"),
-	bookingUrl: text("booking_url"),
-	validUntil: date("valid_until"),
-	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }),
-	tier: varchar().notNull(),
-	status: varchar().notNull(),
-	publishedAt: timestamp("published_at", { mode: 'string' }).notNull(),
-	goingFast: boolean("going_fast").default(false).notNull(),
-	unverifiedSince: timestamp("unverified_since", { mode: 'string' }),
-	postedTiktokAt: timestamp("posted_tiktok_at", { mode: 'string' }),
-	postedInstagramAt: timestamp("posted_instagram_at", { mode: 'string' }),
-	expiredAt: timestamp("expired_at", { mode: 'string' }),
-}, (table) => [
-	foreignKey({
-			columns: [table.candidateId],
-			foreignColumns: [candidates.id],
-			name: "published_deals_candidate_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.contentDraftId],
-			foreignColumns: [contentDrafts.id],
-			name: "published_deals_content_draft_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.dealTemplateId],
-			foreignColumns: [dealTemplates.id],
-			name: "published_deals_deal_template_id_fkey"
-		}),
-]);
-
 export const contentDrafts = pgTable("content_drafts", {
 	id: serial().primaryKey().notNull(),
 	candidateId: integer("candidate_id").notNull(),
@@ -336,6 +288,60 @@ export const verificationChecks = pgTable("verification_checks", {
 			columns: [table.candidateId],
 			foreignColumns: [candidates.id],
 			name: "verification_checks_candidate_id_fkey"
+		}),
+]);
+
+export const publishedDeals = pgTable("published_deals", {
+	id: serial().primaryKey().notNull(),
+	candidateId: integer("candidate_id").notNull(),
+	dealTemplateId: integer("deal_template_id").notNull(),
+	contentDraftId: integer("content_draft_id"),
+	publicLabel: varchar("public_label"),
+	newsletterTag: varchar("newsletter_tag"),
+	headline: text().notNull(),
+	body: text(),
+	tiktokHook: text("tiktok_hook"),
+	origin: varchar().notNull(),
+	destination: varchar().notNull(),
+	zone: varchar(),
+	tripType: varchar("trip_type").notNull(),
+	travelDate: date("travel_date"),
+	returnDate: date("return_date"),
+	price: doublePrecision().notNull(),
+	baselinePrice: doublePrecision("baseline_price"),
+	discountPct: doublePrecision("discount_pct"),
+	bookingUrl: text("booking_url"),
+	validUntil: date("valid_until"),
+	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }),
+	tier: varchar().notNull(),
+	status: varchar().notNull(),
+	publishedAt: timestamp("published_at", { mode: 'string' }).notNull(),
+	goingFast: boolean("going_fast").default(false).notNull(),
+	unverifiedSince: timestamp("unverified_since", { mode: 'string' }),
+	postedTiktokAt: timestamp("posted_tiktok_at", { mode: 'string' }),
+	postedInstagramAt: timestamp("posted_instagram_at", { mode: 'string' }),
+	expiredAt: timestamp("expired_at", { mode: 'string' }),
+	currentPrice: doublePrecision("current_price"),
+	currentPriceAt: timestamp("current_price_at", { mode: 'string' }),
+	windowMinPrice: doublePrecision("window_min_price"),
+	windowMinDate: date("window_min_date"),
+	verifiedAt: timestamp("verified_at", { mode: 'string' }),
+	missedChecks: integer("missed_checks").default(0).notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.candidateId],
+			foreignColumns: [candidates.id],
+			name: "published_deals_candidate_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.contentDraftId],
+			foreignColumns: [contentDrafts.id],
+			name: "published_deals_content_draft_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.dealTemplateId],
+			foreignColumns: [dealTemplates.id],
+			name: "published_deals_deal_template_id_fkey"
 		}),
 ]);
 
@@ -462,4 +468,28 @@ export const subscribers = pgTable("subscribers", {
 	index("ix_subscribers_plan").using("btree", table.plan.asc().nullsLast().op("text_ops")),
 	uniqueIndex("ix_subscribers_unsubscribe_token").using("btree", table.unsubscribeToken.asc().nullsLast().op("text_ops")),
 	unique("subscribers_email_key").on(table.email),
+]);
+
+export const dealPriceChecks = pgTable("deal_price_checks", {
+	id: serial().primaryKey().notNull(),
+	dealId: integer("deal_id").notNull(),
+	checkedAt: timestamp("checked_at", { mode: 'string' }).notNull(),
+	source: varchar().notNull(),
+	available: boolean().notNull(),
+	price: doublePrecision(),
+	windowMinPrice: doublePrecision("window_min_price"),
+	windowMinDate: date("window_min_date"),
+	runId: integer("run_id"),
+}, (table) => [
+	index("ix_deal_price_checks_deal_id").using("btree", table.dealId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+			columns: [table.dealId],
+			foreignColumns: [publishedDeals.id],
+			name: "deal_price_checks_deal_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.runId],
+			foreignColumns: [scanRuns.id],
+			name: "deal_price_checks_run_id_fkey"
+		}),
 ]);

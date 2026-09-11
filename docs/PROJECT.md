@@ -5,7 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-11 (WP7 home persona, WP8 instrumentation).
+> Last updated 2026-09-11 (WP9 live-deal verification).
 
 ---
 
@@ -60,6 +60,8 @@ fli (Google Flights RPC)
         └─ 169 routes (39 core daily + tail cohorts), 18 deal templates
         └─ scoring: weighted gates + MAD outlier scorer, month-local baselines
         └─ writes: price_log, candidates, matches, drafts → Neon Postgres
+        └─ then: live-deal verification (WP9) — every live/changed deal
+           re-checked, ≤ 20 flights calls, healthy runs only → deal_price_checks
               └─ Deal Desk (web/, Next.js, port 3000): Review → publish
                     └─ published_deals → public site (site/, Next.js, yip.lt)
                     └─ email (Resend, sent FROM the desk — see "Email streams")
@@ -177,6 +179,69 @@ fli (Google Flights RPC)
     cadence — `docs/plans/2026-09-10-demand-layer-launch-spec.md` §6) **by
     hand from these numbers — not code.** The pages report; nothing
     auto-adjusts from them.
+- **Live-deal verification** (WP9, 2026-09-11, migration
+  `0015_deal_verification`, branch `feat/wp9-deal-verification`). Before WP9 a
+  published deal died only by calendar or by hand, so a fare that moved
+  (€93 → €124) kept being advertised at the old price. Now the **daily scan
+  re-checks every published deal itself** — a step in `orchestrator.py`
+  (`_verify_live_deals`) that runs **after the route pass**, **only on a
+  healthy run** (the health verdict is computed first; a degraded or aborted
+  run makes zero verification calls and zero writes), under a cap of
+  **`VERIFY_CALLS_PER_DAY = 20` exact flights calls**. The rules, exactly:
+  - **States** (`published_deals.status`): `live` (last real answer within
+    tolerance of the published price — site shows the published price),
+    **`changed`** (new: still available and still a deal, but more than
+    `PRICE_DRIFT_TOLERANCE_PCT = 10` % above the published price — site shows
+    „Dabar nuo €124 · radome už €93"), `expired` (archive). `live` and
+    `changed` are both public: the shared `LIVE_STATUSES = ('live','changed')`
+    (Python `skrendam/verification.py`; byte-identical `statuses.ts` in
+    `site/` and `web/`) replaces every literal `status = 'live'` read.
+  - **Checks.** First an **opportunistic calendar check at zero cost**: if
+    today's `price_log` already holds the deal's exact
+    `(route, trip_type, travel_date, return_date)` pair, that price is
+    recorded as a `calendar` check — never a forced calendar call. Then an
+    **exact-itinerary check** (`verify_deal`: one flights call, the fare whose
+    flight numbers equal the candidate's snapshot; the day's cheapest fare is
+    recorded as `window_min_*`) for deals that are public (the site's free
+    window, top `FREE_WINDOW = 3` newest), have no calendar hit today, whose
+    calendar price moved beyond the tolerance, or whose last real answer is
+    older than `EXACT_CHECK_MAX_AGE_DAYS = 3` — priority public → mailed in
+    the last 48 h (`issues.deal_ids`) → newest `published_at`, until the cap
+    is spent. Deals beyond the cap keep their state. The exact loop stops on
+    the first 429 or when the run's circuit breaker opens (BotGuard punishes
+    repetition; skipped deals are `deals_verify_aborted` in the health JSON),
+    and the calendar path applies to economy candidates only — `price_log`
+    has no cabin column. Every check writes one `deal_price_checks` row
+    (`source ∈ calendar | flights | manual` — `manual` is the desk's Recheck
+    button, which writes the same fields through the same `record_check`;
+    `available`, `price`, `window_min_*`, `run_id`) — the price history the
+    desk's Live board counts.
+  - **Transitions** (`transition()`, pure, tested per rule): real price within
+    tolerance → `live`; above tolerance but still clearing **the same
+    price-anomaly gate discovery uses** (`eligibility.price_anomaly_ok`:
+    discount vs the frozen `baseline_price` ≥ the template's min discount OR
+    under the ceiling OR under the psychological price — one shared predicate,
+    parity-tested against the scorer) → `changed`; a real price that fails
+    the gate → `expired`; exact itinerary gone but the day minimum still
+    clears → `changed` with `window_min_*` as the sample (the sample itinerary
+    is not re-fetched). **An empty answer never changes status** (BotGuard
+    protection): it only sets `unverified_since` and, on a healthy run,
+    `missed_checks += 1`; **two consecutive missing days** on healthy runs
+    (`MISSED_CHECKS_TO_EXPIRE = 2`) expire the deal. The calendar-date sweep
+    (travel date passed) is unchanged. Curator expire/republish/supersede as
+    before; republish and supersede reset `missed_checks`. `expired_at` is
+    stamped on every path. `verify_deal` never writes `candidates.price`
+    (nor does the desk's manual Recheck any more).
+  - **Surfaces:** site renders `changed` with the current price + „radome už",
+    freshness from `published_deals.verified_at`, a reader „Kaina pasikeitė"
+    button (`deal_events.kind = 'price_changed'`); desk Live board shows
+    state / current vs published / window min / missed checks / last check /
+    check count, Today shows „N changed · M expired since yesterday"; letters
+    render the current price on `changed` cards (instant mail is published
+    price, sent once, never re-sent). Run summary and health JSON carry
+    `deals_verified / deals_changed / deals_expired / verify_calls`.
+  - The dated `home-*` chores above (2027-01-07, 2027-03-01) are unchanged.
+    Handoff: `docs/handoffs/2026-09-11-wp9-live-deal-verification.md`.
 
 ## 4. How deals are classified (the taxonomy)
 
@@ -253,8 +318,10 @@ it's the heart of the product:
   NULL `score_v2` and are the only ones read-side fallbacks may re-derive.
 - **Candidate lifecycle:** `new` (in Review) → curator action: publish (→
   `published_deals`, status live), reject, or save; `expired` when the travel
-  date passes or the fare disappears (expiry sweep). Published deals carry
-  freshness ("going fast" chip) and are re-checked before being trusted.
+  date passes or the fare disappears (expiry sweep). Published deals are
+  `live` → `changed` (price moved, still a deal) → `expired`, verified daily
+  by the scan (§3 "Live-deal verification"); the "going fast" chip comes only
+  from the desk's manual Recheck.
 - **Desk filtering (web/):** Today = top-20 shortlist; Review = all `new`
   candidates filtered by origin-city chips (one per enabled route origin —
   Vilnius/Kaunas/Riga plus the abroad WP7 origins, labelled from
@@ -334,7 +401,13 @@ the first-send checklist (`docs/handoffs/2026-09-11-wp6-email-streams.md`).
 **WP8 (2026-09-11, branch `feat/wp8-instrumentation`):** read-only Letter
 stats — per-issue clicks/claims by archetype × pref × origin × plan, free→paid
 per nurture issue, TikTok signups by video — see §3 "Letter stats" (incl. the
-~8-issues founder review rule).
+~8-issues founder review rule). **WP9 (2026-09-11, branch
+`feat/wp9-deal-verification`):** live-deal verification inside the daily
+scan — `changed` state, `deal_price_checks` history, ≤ 20 calls/day, empty
+answers never expire — see §3 "Live-deal verification" and the handoff
+`docs/handoffs/2026-09-11-wp9-live-deal-verification.md`. The three deals
+that were live that morning (33–99 % above their published price) were
+expired by hand; the first scan after merge verifies whatever is live then.
 
 **Not yet done (the queue):**
 1. **Wire the site to live deals** — publish steadily from Review (~1,400

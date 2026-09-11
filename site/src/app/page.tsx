@@ -1,6 +1,6 @@
 import { getLiveDeals, getInspirationDeals } from '@/lib/queries';
 import { splitFreeLocked } from '@/lib/scarcity';
-import { toTicket, toPublicDeal } from '@/lib/mappers';
+import { freshSource, toTicket, toPublicDeal } from '@/lib/mappers';
 import { freshInfo } from '@/lib/format';
 import { S } from '@/lib/lt';
 import { Masthead } from '@/components/v2/Masthead';
@@ -20,9 +20,7 @@ export default async function Home() {
   const [featured = null, ...rest] = free;
   // Real freshness + the tier-honest LT verdict line of the featured deal.
   const featuredRow = rows[0];
-  const fresh = featuredRow
-    ? freshInfo(String(featuredRow.pd.lastSeenAt ?? featuredRow.candLastSeen ?? '') || null)
-    : null;
+  const fresh = featuredRow ? freshInfo(freshSource(featuredRow)) : null;
   const hook = featuredRow ? toPublicDeal(featuredRow, now).verdict : '';
   // The stamp always leads with the human claim; the stale-price caveat lives
   // once, in the poster catch-line — never as the page's trust badge. A

@@ -326,6 +326,42 @@ class PublishedDeal(Base):
     # site read it to tell subscribers a deal they saw is gone (WP6). 0014
     # backfilled it from valid_until/last_seen_at/published_at for old rows.
     expired_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Daily verification (WP9, spec 2026-09-11). `price` stays the published
+    # price; these hold the last REAL answer from Google. current_price is the
+    # exact itinerary's fare (None once it is gone), window_min_* the cheapest
+    # fare seen that day. verified_at is the last real (non-empty) answer;
+    # missed_checks counts consecutive empty answers on healthy runs and is
+    # reset by any real one — an empty answer alone never changes status.
+    current_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    current_price_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    window_min_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    window_min_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    missed_checks: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+
+
+class DealPriceCheck(Base):
+    """One verification answer for a published deal (WP9). source is 'flights'
+    (the daily step's exact-itinerary search), 'calendar' (free — this run's
+    price_log already had the deal's date pair) or 'manual' (the desk's Recheck
+    button, via verification.recheck_candidate; run_id NULL). available=False
+    with price NULL is an empty answer (BotGuard); available=True with price
+    NULL means the exact itinerary is gone but the day still had fares."""
+
+    __tablename__ = "deal_price_checks"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    deal_id: Mapped[int] = mapped_column(
+        ForeignKey("published_deals.id", ondelete="CASCADE"), index=True
+    )
+    checked_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    source: Mapped[str] = mapped_column(String)  # 'flights' | 'calendar' | 'manual'
+    available: Mapped[bool] = mapped_column(Boolean)
+    price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    window_min_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    window_min_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    run_id: Mapped[int | None] = mapped_column(ForeignKey("scan_runs.id"), nullable=True)
 
 
 class Subscriber(Base):
@@ -391,7 +427,7 @@ class DealEvent(Base):
     subscriber_id: Mapped[int | None] = mapped_column(
         ForeignKey("subscribers.id", ondelete="SET NULL"), nullable=True, index=True
     )
-    kind: Mapped[str] = mapped_column(String)  # 'click' | 'booked_claim'
+    kind: Mapped[str] = mapped_column(String)  # 'click' | 'booked_claim' | 'price_changed'
     source: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 

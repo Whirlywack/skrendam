@@ -46,7 +46,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let dealRoutes: MetadataRoute.Sitemap = [];
   try {
-    // LIVE free-window only — expired deals are noindex, locked deals redirect.
+    // Free-window only (live + changed, see lib/statuses) — expired deals are
+    // noindex, locked deals redirect.
     // getLiveDeals shares LIVE_ORDER with getFreeWindowIds, so the head of the
     // list IS the free window.
     const live = (await getLiveDeals()).slice(0, FREE_WINDOW);

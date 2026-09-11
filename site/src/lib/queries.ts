@@ -10,6 +10,7 @@ import {
 } from '@/db/generated/schema';
 import type { CollectionFilter } from './collections';
 import { FREE_WINDOW } from './scarcity';
+import { LIVE_STATUSES } from './statuses';
 
 // Dedup guard: candidate_template_matches has no composite unique constraint on
 // (candidate_id, deal_template_id) yet — proper fix is a deferred migration (out-of-scope §2).
@@ -35,6 +36,12 @@ function dealBase() {
       eq(candidateTemplateMatches.dealTemplateId, publishedDeals.dealTemplateId)));
 }
 
+/** "Visible on the site" = live OR changed (WP9). Never compare status to a
+ *  literal 'live' — a changed deal is still a deal, shown at its current price. */
+function isLive() {
+  return inArray(publishedDeals.status, [...LIVE_STATUSES]);
+}
+
 function dedupeById<T extends { pd: { id: number } }>(rows: T[]): T[] {
   const seen = new Set<number>();
   return rows.filter((r) => {
@@ -49,11 +56,11 @@ function dedupeById<T extends { pd: { id: number } }>(rows: T[]): T[] {
 const LIVE_ORDER = [desc(publishedDeals.publishedAt), desc(publishedDeals.id)];
 
 export async function getLiveDeals() {
-  return dedupeById(await dealBase().where(eq(publishedDeals.status, 'live')).orderBy(...LIVE_ORDER));
+  return dedupeById(await dealBase().where(isLive()).orderBy(...LIVE_ORDER));
 }
 
 /**
- * Ids of the free-window deals (newest FREE_WINDOW live). Everything live
+ * Ids of the free-window deals (newest FREE_WINDOW live/changed). Everything live
  * outside this set is "locked" — shown price-free on the homepage, excluded
  * from similar/collection lists, and its detail page redirects to signup.
  * cache(): one consistent snapshot per request (deal page asks twice).
@@ -62,7 +69,7 @@ export const getFreeWindowIds = cache(async (): Promise<Set<number>> => {
   const rows = await db
     .select({ id: publishedDeals.id })
     .from(publishedDeals)
-    .where(eq(publishedDeals.status, 'live'))
+    .where(isLive())
     .orderBy(...LIVE_ORDER)
     .limit(FREE_WINDOW);
   return new Set(rows.map((r) => r.id));
@@ -93,7 +100,7 @@ export async function getSimilarDeals(
   // Fetch zone-matched live deals (excluding self)
   const zoneRows: Awaited<ReturnType<typeof dealBase>> = opts.zone
     ? await dealBase()
-      .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, opts.zone)))
+      .where(and(isLive(), eq(publishedDeals.zone, opts.zone)))
       .orderBy(...LIVE_ORDER)
     : [];
 
@@ -105,7 +112,7 @@ export async function getSimilarDeals(
   // Top-up with same-origin live deals
   const originRows: Awaited<ReturnType<typeof dealBase>> = opts.origin
     ? await dealBase()
-      .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, opts.origin)))
+      .where(and(isLive(), eq(publishedDeals.origin, opts.origin)))
       .orderBy(...LIVE_ORDER)
     : [];
 
@@ -132,21 +139,21 @@ export async function getCollectionDeals(filter: CollectionFilter) {
     case 'origin':
       return split(dedupeById(
         await dealBase()
-          .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.origin, filter.iata)))
+          .where(and(isLive(), eq(publishedDeals.origin, filter.iata)))
           .orderBy(...LIVE_ORDER),
       ));
 
     case 'zone':
       return split(dedupeById(
         await dealBase()
-          .where(and(eq(publishedDeals.status, 'live'), eq(publishedDeals.zone, filter.zone)))
+          .where(and(isLive(), eq(publishedDeals.zone, filter.zone)))
           .orderBy(...LIVE_ORDER),
       ));
 
     case 'destinations':
       return split(dedupeById(
         await dealBase()
-          .where(and(eq(publishedDeals.status, 'live'), inArray(publishedDeals.destination, filter.iatas)))
+          .where(and(isLive(), inArray(publishedDeals.destination, filter.iatas)))
           .orderBy(...LIVE_ORDER),
       ));
 
@@ -170,7 +177,7 @@ export async function getCollectionDeals(filter: CollectionFilter) {
         await dealBase()
           .where(
             and(
-              eq(publishedDeals.status, 'live'),
+              isLive(),
               inArray(
                 publishedDeals.dealTemplateId,
                 tpls.map((t) => t.id),

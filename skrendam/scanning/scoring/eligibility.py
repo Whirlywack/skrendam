@@ -1,8 +1,13 @@
 """Shared pure gate helpers. Scorers may apply these; none is forced upstream."""
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from skrendam.scanning.types import FareItinerary
+
+# Discount floor when a template sets no min_discount_pct (the scorer's
+# "strong anomaly" veto). Lives here so discovery and verification share it.
+STRONG_ANOMALY_DISCOUNT = 0.20
 
 # Family-friendly defaults (spec 2026-09-10 §2.2 "departure ≥ 07:00"; the arrival
 # ceiling is the plan's D3 default). A template's explicit hour columns win.
@@ -59,6 +64,65 @@ def eff(tpl, zone, name):
     return v if v is not None else getattr(zone, name, None)
 
 
+@dataclass(frozen=True)
+class Gates:
+    """The effective price gates of a template (None = not set, passes)."""
+
+    min_discount_pct: float | None
+    price_threshold_eur: float | None  # tpl.max_price_eur; zone ceiling for one-way only
+    psychological_price_threshold_eur: float | None
+
+
+def gates_for(tpl, zone) -> Gates:
+    """Effective price gates via ``eff``; the zone ceiling is a one-way fallback only —
+    round-trip templates must set their own ``max_price_eur``."""
+    ceiling = getattr(tpl, "max_price_eur", None)
+    if ceiling is None and getattr(tpl, "trip_type", None) == "oneway":
+        ceiling = getattr(zone, "threshold_price_eur", None)
+    return Gates(
+        min_discount_pct=eff(tpl, zone, "min_discount_pct"),
+        price_threshold_eur=ceiling,
+        psychological_price_threshold_eur=getattr(tpl, "psychological_price_threshold_eur", None),
+    )
+
+
+def discount_frac(price: float, median: float | None) -> float:
+    """(median - price) / median; 0 when the median is missing or non-positive
+    (mirrors ``Baseline.local_discount``)."""
+    if median is None or median <= 0:
+        return 0.0
+    return (median - price) / median
+
+
+def under_ceiling(price: float, gates: Gates) -> bool:
+    return gates.price_threshold_eur is not None and price <= gates.price_threshold_eur
+
+
+def under_psych(price: float, gates: Gates) -> bool:
+    return (
+        gates.psychological_price_threshold_eur is not None
+        and price <= gates.psychological_price_threshold_eur
+    )
+
+
+def price_anomaly_ok(price: float, median: float | None, gates: Gates) -> bool:
+    """Discovery's price predicate: still a deal when the discount vs ``median`` reaches
+    the template floor OR the fare is under the ceiling OR under the psychological price.
+
+    The floor is ``min_discount_pct`` when set, else ``STRONG_ANOMALY_DISCOUNT``.
+    ``allow_smaller_discount_if_under_price`` needs no branch: it only zeroes the needed
+    discount when the fare is under the psychological price, which passes on its own.
+    The abs-saving floor is a soft marketability signal in the scorer, never a gate.
+    """
+    min_disc = gates.min_discount_pct or 0
+    floor = min_disc / 100.0 if min_disc > 0 else STRONG_ANOMALY_DISCOUNT
+    return (
+        discount_frac(price, median) >= floor
+        or under_ceiling(price, gates)
+        or under_psych(price, gates)
+    )
+
+
 def itinerary_ok(fare: FareItinerary, tpl) -> bool:
     """v1 itinerary-sanity gate (lifted from matching.match)."""
     if tpl.max_stops is not None and fare.stops > tpl.max_stops:
@@ -84,6 +148,7 @@ _DOW = ("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
 def in_template_scope(tpl, route, point, today) -> bool:
     """Destination + date-window scope check (re-homed from orchestrator)."""
     from skrendam.scanning.resolver import _destinations_ok, _window
+
     if not _destinations_ok(tpl, route):
         return False
     # Despite the "preferred" name this is a hard gate: last-minute-weekends

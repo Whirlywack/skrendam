@@ -1,7 +1,8 @@
 """run_scan: the 11-step pass that wires resolver -> adapter -> baseline -> matching -> DB (spec §7)."""
 
+import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -22,6 +23,18 @@ from skrendam.scanning.scoring import demand, tiering
 from skrendam.scanning.scoring.base import ScoringContext
 from skrendam.scanning.scoring.eligibility import in_template_scope, itinerary_ok
 from skrendam.scanning.scoring.registry import enabled_scorers, pick_headline
+from skrendam.verification import (
+    EXACT_CHECK_MAX_AGE_DAYS,
+    LIVE_STATUSES,
+    PRICE_DRIFT_TOLERANCE_PCT,
+    VERIFY_CALLS_PER_DAY,
+    DealCheck,
+    gates_for,
+    record_check,
+    verify_deal,
+)
+
+_log = logging.getLogger(__name__)
 
 CANDIDATE_TTL_DAYS = 14
 NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is within +10%
@@ -30,6 +43,14 @@ NEAR_PRICE_FRAC = 1.10  # a date "supports" a fare if its calendar price is with
 # desk applies the same cutoff when deciding whether a run is in progress
 # (web/src/lib/mappers.ts SCAN_ORPHAN_AFTER_MS).
 ORPHAN_RUN_AFTER = timedelta(hours=6)
+# Public deals for the verification step = the site's free window: the newest
+# FREE_WINDOW live/changed deals ordered `published_at DESC, id DESC` are shown in
+# full, everything after them is locked (site/src/lib/scarcity.ts FREE_WINDOW,
+# site/src/lib/queries.ts getFreeWindowIds / LIVE_ORDER). Mirrored here, not
+# imported, so a visitor-visible price is the one re-checked daily.
+FREE_WINDOW = 3
+# "Mailed recently" for the verification priority: issues.sent_at within this window.
+MAILED_WINDOW = timedelta(hours=48)
 
 
 @dataclass(frozen=True)
@@ -79,6 +100,12 @@ class ScanSummary:
     http_429s: int = 0
     health: HealthVerdict | None = None
     aborted: bool = False
+    # Live-deal verification step (WP9): see VerifyStats.
+    deals_verified: int = 0
+    deals_changed: int = 0
+    deals_expired: int = 0
+    verify_calls: int = 0
+    deals_verify_aborted: int = 0  # due exact checks skipped because the step stopped early
 
 
 def _flagged(points, baseline, _zone):
@@ -299,6 +326,36 @@ def run_scan(
             or 0
         )
     verdict = assess(adapter.call_log, price_rows, prior_rows)
+
+    # Ordering (WP9): the health verdict is computed HERE, before the live-deal
+    # verification step, because the step must know whether today's pipe is
+    # trustworthy — a degraded or aborted run makes zero verification calls and
+    # changes nothing (an empty answer during a gated window is "blocked", not
+    # "gone"). The verdict therefore judges the discovery pass only; the step's
+    # own flights calls still land in adapter.call_log / api_calls and the final
+    # scan_runs write below carries the full metrics plus the step's counters.
+    run_healthy = not aborted and not verdict.degraded
+    vstats = _verify_live_deals(
+        session,
+        adapter,
+        today=today,
+        now=now,
+        run=run,
+        run_healthy=run_healthy,
+        breaker=breaker,  # the run's own consecutive-failure count carries over
+    )
+    summary.deals_verified = vstats.deals_verified
+    summary.deals_changed = vstats.deals_changed
+    summary.deals_expired = vstats.deals_expired
+    summary.verify_calls = vstats.verify_calls
+    summary.deals_verify_aborted = vstats.deals_verify_aborted
+    summary.errors += vstats.errors
+    summary.http_429s += vstats.http_429s
+    verdict = HealthVerdict(
+        status=verdict.status,
+        reasons=verdict.reasons,
+        metrics={**verdict.metrics, **vstats.as_metrics()},
+    )
     summary.health = verdict
 
     # Fresh wall clock, NOT the run-start `now`: the watchdog's "did today's
@@ -317,6 +374,8 @@ def run_scan(
     run.routes_scanned = summary.routes_scanned
     run.candidates_found = summary.candidates_found
     run.matches_created = summary.matches_created
+    # The adapter counts every network call it makes, verification included;
+    # nothing is added here so exact checks are never double counted.
     run.api_calls = adapter.api_calls
     run.errors = summary.errors
     run.http_429s = summary.http_429s
@@ -549,3 +608,229 @@ def _expire_published_past_date(session, today, now):
         pd.status = "expired"
         pd.expired_at = now
     session.flush()
+
+
+@dataclass
+class VerifyStats:
+    """Counters from the live-deal verification step (also merged into health metrics)."""
+
+    deals_verified: int = 0  # deals that received at least one check row this run
+    deals_changed: int = 0  # deals whose status flipped to 'changed' in this step
+    deals_expired: int = 0  # deals whose status flipped to 'expired' in this step
+    verify_calls: int = 0  # network flights calls spent (adapter cache hits are free)
+    errors: int = 0  # ScanErrors from exact checks (no evidence: no row, no transition)
+    http_429s: int = 0  # RateLimitedErrors among those (folded into the run's counter)
+    deals_verify_aborted: int = 0  # due exact checks left unchecked when the loop stopped
+
+    def as_metrics(self) -> dict:
+        """Return the counters persisted into ``scan_runs.health.metrics``."""
+        return {
+            "deals_verified": self.deals_verified,
+            "deals_changed": self.deals_changed,
+            "deals_expired": self.deals_expired,
+            "verify_calls": self.verify_calls,
+            "deals_verify_aborted": self.deals_verify_aborted,
+        }
+
+
+def _verify_live_deals(
+    session,
+    adapter: FliAdapter,
+    *,
+    today: date,
+    now: datetime,
+    run,
+    run_healthy: bool,
+    cap: int = VERIFY_CALLS_PER_DAY,
+    breaker: CircuitBreaker | None = None,
+) -> VerifyStats:
+    """Daily re-check of every live/changed deal (WP9 spec §3–4), after the route pass.
+
+    Runs only on a healthy run (a degraded or aborted run returns at once with zero
+    calls and zero writes). Per deal, in the site's newest-first order:
+
+    1. Opportunistic ``calendar`` check, 0 calls: when today's ``price_log`` already
+       holds the deal's exact ``(route, trip_type, travel_date, return_date)`` pair,
+       that price is the day's price for the sample date (and the window min).
+    2. Exact ``flights`` check (one ``verify_deal`` call on the candidate's itinerary
+       snapshot) for deals that need one: public (free window), no calendar hit today,
+       calendar price moved beyond ``PRICE_DRIFT_TOLERANCE_PCT``, or last real answer
+       older than ``EXACT_CHECK_MAX_AGE_DAYS`` — in priority order public → mailed in
+       the last 48 h (``issues.deal_ids``) → newest ``published_at``, until ``cap``
+       network calls are spent.
+
+    Every check writes a ``deal_price_checks`` row and applies ``transition``; deals
+    already checked today (``verified_at`` or a check row today) and dateless deals
+    (curator-managed) are skipped. Deals beyond the cap keep their state.
+
+    The exact loop stops early on the run's gating signals (final review N3): the first
+    ``RateLimitedError`` (BotGuard punishes repetition on the same session) or the
+    ``breaker`` opening on consecutive errors. Due deals left unchecked keep their state
+    and are counted in ``deals_verify_aborted``.
+    """
+    stats = VerifyStats()
+    if not run_healthy:
+        return stats
+    breaker = breaker if breaker is not None else CircuitBreaker(5)
+    day_start = datetime.combine(today, time.min)
+    deals = session.scalars(
+        select(models.PublishedDeal)
+        .where(models.PublishedDeal.status.in_(LIVE_STATUSES))
+        .order_by(models.PublishedDeal.published_at.desc(), models.PublishedDeal.id.desc())
+    ).all()
+    if not deals:
+        return stats
+    # The free window as the site showed it this morning, BEFORE any transition below.
+    public_ids = {d.id for d in deals[:FREE_WINDOW]}
+    checked_today = set(
+        session.scalars(
+            select(models.DealPriceCheck.deal_id).where(
+                models.DealPriceCheck.checked_at >= day_start
+            )
+        )
+    )
+    checked_today |= {
+        d.id for d in deals if d.verified_at is not None and d.verified_at >= day_start
+    }
+    mailed_ids: set[int] = set()
+    for ids in session.scalars(
+        select(models.Issue.deal_ids).where(
+            models.Issue.sent_at.is_not(None), models.Issue.sent_at >= now - MAILED_WINDOW
+        )
+    ):
+        mailed_ids.update(int(i) for i in (ids or []))
+    zones = {z.zone: z for z in session.scalars(select(models.Zone))}
+    status_before = {d.id: d.status for d in deals}
+    verified_ids: set[int] = set()
+
+    def apply(deal, check, gates):
+        # record_check writes the row + fields + transition (shared with the desk's
+        # manual Recheck); expired_at is the run's wall clock, not midnight.
+        record_check(
+            session,
+            deal,
+            check,
+            gates=gates,
+            today=today,
+            run_healthy=run_healthy,
+            now=now,
+            run_id=run.id,
+        )
+        verified_ids.add(deal.id)
+
+    exact_due = []  # (deal, candidate, gates, cabin)
+    for deal in deals:
+        if deal.id in checked_today or deal.travel_date is None:
+            continue
+        cand = session.get(models.Candidate, deal.candidate_id)
+        route = session.get(models.Route, cand.route_id) if cand is not None else None
+        tpl = session.get(models.DealTemplate, deal.deal_template_id)
+        gates = gates_for(tpl, zones.get(route.zone) if route is not None else None)
+        cabin = ((cand.search_params if cand is not None else None) or {}).get("cabin") or "ECONOMY"
+        # Age is judged on the last real answer BEFORE today's calendar stamp: the
+        # calendar sees the day's cheapest fare, not the sample itinerary, so an
+        # exact check is still due every EXACT_CHECK_MAX_AGE_DAYS (never verified
+        # counts as stale).
+        stale = deal.verified_at is None or deal.verified_at < now - timedelta(
+            days=EXACT_CHECK_MAX_AGE_DAYS
+        )
+        # price_log has no cabin column: the calendar is the pair's cheapest ECONOMY
+        # fare (every template resolves to economy today), so it bounds an economy
+        # itinerary from below but says nothing about a business-class one. A
+        # non-economy candidate therefore gets the exact check only (final review N2).
+        cal = (
+            _calendar_price(session, cand, deal, day_start)
+            if cand is not None and cabin == "ECONOMY"
+            else None
+        )
+        due = deal.id in public_ids or stale or cal is None
+        if cal is not None:
+            apply(deal, DealCheck(True, cal, cal, deal.travel_date, "calendar", now), gates)
+            if abs(cal - deal.price) > deal.price * PRICE_DRIFT_TOLERANCE_PCT / 100:
+                due = True
+        if due and deal.status in LIVE_STATUSES:
+            exact_due.append((deal, cand, gates, cabin))
+
+    # Stable sort: within a tier the newest-first order from the query is kept.
+    def tier(item):
+        deal_id = item[0].id
+        return 0 if deal_id in public_ids else 1 if deal_id in mailed_ids else 2
+
+    exact_due.sort(key=tier)
+    for index, (deal, cand, gates, cabin) in enumerate(exact_due):
+        if stats.verify_calls >= cap:
+            break
+        snapshot = cand.itinerary_snapshot if cand is not None else None
+        before = adapter.api_calls
+        try:
+            check = verify_deal(deal, adapter, now=now, snapshot=snapshot, cabin=cabin)
+        except ScanError as exc:
+            # No evidence: no row, no transition, but the call was spent.
+            stats.errors += 1
+            stats.verify_calls += adapter.api_calls - before
+            breaker.record_failure()
+            if isinstance(exc, RateLimitedError):
+                # The route pass's gating signal: one 429 means the session is being
+                # throttled, and repeating the same call up to the cap is exactly
+                # what BotGuard punishes. Stop now; the deals left keep their state.
+                stats.http_429s += 1
+                stats.deals_verify_aborted = len(exact_due) - index - 1
+                _log.warning(
+                    "verification stopped: rate limited after %d calls (deal %d %s->%s: %s)",
+                    stats.verify_calls,
+                    deal.id,
+                    deal.origin,
+                    deal.destination,
+                    exc,
+                )
+                break
+            _log.warning(
+                "verification: exact check failed for deal %d %s->%s: %s",
+                deal.id,
+                deal.origin,
+                deal.destination,
+                exc,
+            )
+            if breaker.is_open():
+                stats.deals_verify_aborted = len(exact_due) - index - 1
+                _log.warning(
+                    "verification stopped: %d consecutive errors after %d calls",
+                    breaker.threshold,
+                    stats.verify_calls,
+                )
+                break
+            continue
+        stats.verify_calls += adapter.api_calls - before
+        breaker.record_success()
+        apply(deal, check, gates)
+
+    session.flush()
+    stats.deals_verified = len(verified_ids)
+    for deal in deals:
+        if deal.status != status_before[deal.id]:
+            if deal.status == "changed":
+                stats.deals_changed += 1
+            elif deal.status == "expired":
+                stats.deals_expired += 1
+    return stats
+
+
+def _calendar_price(session, cand, deal, day_start) -> float | None:
+    """Today's calendar price for the deal's exact date pair, or None without evidence.
+
+    Reads by ``scanned_at >= today`` rather than ``run_id`` so a resumed attempt
+    (checkpoint) sees the rows its earlier attempt committed, like the price-row
+    count above. Absence means "no calendar evidence" (the day's specs did not
+    cover this pair — research §0.1), never "date gone".
+    """
+    stmt = select(func.min(models.PriceLog.price)).where(
+        models.PriceLog.route_id == cand.route_id,
+        models.PriceLog.trip_type == deal.trip_type,
+        models.PriceLog.travel_date == deal.travel_date,
+        models.PriceLog.scanned_at >= day_start,
+    )
+    if deal.return_date is None:
+        stmt = stmt.where(models.PriceLog.return_date.is_(None))
+    else:
+        stmt = stmt.where(models.PriceLog.return_date == deal.return_date)
+    return session.scalar(stmt)

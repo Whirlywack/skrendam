@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // `streams.ts` imports the real db for `defaultDeps`; the pure `sendInstant`
@@ -5,7 +7,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // import, exactly as `render.test.ts` and `subscribers.test.ts` do.
 vi.mock('@/db', () => ({ db: {}, issues: {}, subscribers: {} }));
 
+import { eur } from '../format';
 import { unsubscribeUrl } from '../links';
+import { L } from './copy';
 import type { Recipient } from '../subscribers';
 import type { OutgoingMail } from './client';
 import type { Deal } from './render';
@@ -26,6 +30,12 @@ function deal(over: Partial<Deal> = {}): Deal {
     candidateId: 1,
     dealTemplateId: 1,
     contentDraftId: null,
+    currentPrice: null,
+    currentPriceAt: null,
+    windowMinPrice: null,
+    windowMinDate: null,
+    verifiedAt: null,
+    missedChecks: 0,
     publicLabel: null,
     newsletterTag: 'xmas',
     headline: 'Kalėdos Londone už 93 €',
@@ -368,6 +378,48 @@ describe('sendLetter', () => {
     const m = send.mock.calls[0][0] as OutgoingMail;
     expect(m.html).toContain('išbuvo 36 val.');
     expect(m.html).toContain('2 prenumeratorių užsisakė');
+  });
+});
+
+describe('sendInstant is only reachable from publishDeal (spec §5: a changed deal is never re-sent as instant)', () => {
+  const SRC = join(__dirname, '..', '..');
+
+  function sources(dir: string, out: string[] = []): string[] {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) sources(p, out);
+      else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(p);
+    }
+    return out;
+  }
+
+  it('has exactly one call site, inside publishDeal in app/actions.ts', () => {
+    const callers = sources(SRC)
+      .filter((p) => /\bsendInstant\(/.test(readFileSync(p, 'utf8')))
+      .map((p) => relative(SRC, p))
+      .filter((p) => p !== 'lib/email/streams.ts');
+    expect(callers).toEqual(['app/actions.ts']);
+
+    const actions = readFileSync(join(SRC, 'app', 'actions.ts'), 'utf8');
+    const start = actions.indexOf('export async function publishDeal');
+    const end = actions.indexOf('export async function', start + 1);
+    const body = actions.slice(start, end);
+    expect(start).toBeGreaterThan(-1);
+    expect(body).toContain('sendInstant(row, defaultDeps)');
+    expect(body).toContain("status: 'live'");
+    // Nowhere else — not from supersede, republish, or the letters actions.
+    expect(actions.replace(body, '')).not.toContain('sendInstant(');
+  });
+
+  it('documents the fallback: a changed deal handed to sendInstant directly still renders its published price', async () => {
+    // Nothing calls it this way (asserted above); `renderInstant` is the
+    // published-price mail by contract, and `dealCard` only switches to
+    // „nuo €current" for the digest/nurture path, where changed deals live.
+    recipients.mockResolvedValue([recipient()]);
+    await sendInstant(deal({ status: 'changed', currentPrice: 124 }), deps());
+    const mail = send.mock.calls[0][0] as OutgoingMail;
+    expect(mail.subject).toBe(`${eur(93)} — Londonas`);
+    expect(mail.text).toContain(`${L.from(124)} · ${L.foundAt(93)}`);
   });
 });
 

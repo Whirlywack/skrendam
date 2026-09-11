@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTicket } from './mappers';
+import { rowMeta, toTicket } from './mappers';
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 const row = (o: Record<string, unknown> = {}): Row => ({
   pd: { id: 1, origin: 'VNO', destination: 'LCA', tripType: 'roundtrip', price: 140, baselinePrice: 301,
@@ -49,5 +49,43 @@ describe('toTicket', () => {
       snapshot: { stops: 1, duration: 170, legs: [{ airline: { code: 'FR' } }, { airline: { code: 'FR' } }] },
     }), new Date());
     expect(ow.legs).toBe('1 persėdimas · 3 val.');
+  });
+  it('a changed deal (WP9) tickets the current price, keeps the found one, carries both lines', () => {
+    const t = toTicket(row({ pd: { status: 'changed', price: 140, currentPrice: 186, headline: null } }), new Date());
+    expect(t.state).toBe('changed');
+    expect(t.price).toBe(186);
+    expect(t.foundPrice).toBe(140);
+    expect(t.currentPrice).toBe(186);
+    expect(t.priceLines).toEqual(['Dabar nuo 186\u00a0€', 'radome už 140\u00a0€']);
+    // baseline 301: 1 − 186/301 → 38 % (published 53 % would overstate)
+    expect(t.drop).toBe(38);
+    // the generated headline quotes the price a reader can actually book at
+    expect(t.headline).toContain('186');
+    expect(t.headline).not.toContain('140');
+  });
+  it('a live deal tickets the published price with no lines', () => {
+    const t = toTicket(row(), new Date());
+    expect(t.state).toBe('live');
+    expect(t.price).toBe(140);
+    expect(t.priceLines).toEqual([]);
+  });
+});
+
+describe('rowMeta — the index row line under the destination', () => {
+  it('a live deal: route · dates · stops chip', () => {
+    expect(rowMeta(toTicket(row(), new Date()))).toBe('VNO → LCA · rugs. 12–19 · 1 persėdimas');
+  });
+  it('a changed deal (WP9 N4) says what it was found at right after the stops chip', () => {
+    const t = toTicket(row({ pd: { status: 'changed', price: 140, currentPrice: 186 } }), new Date());
+    expect(rowMeta(t)).toBe('VNO → LCA · rugs. 12–19 · 1 persėdimas · radome už 140\u00a0€');
+  });
+  it('the going-fast chip closes the line, after the found-at note', () => {
+    const t = toTicket(row({ pd: { status: 'changed', price: 140, currentPrice: 186, goingFast: true } }), new Date());
+    expect(rowMeta(t).endsWith(' · radome už 140\u00a0€ · Tirpsta')).toBe(true);
+    expect(rowMeta(toTicket(row({ pd: { goingFast: true } }), new Date()))).toBe('VNO → LCA · rugs. 12–19 · 1 persėdimas · Tirpsta');
+  });
+  it('a changed row without a verified current price carries no found-at note', () => {
+    const t = toTicket(row({ pd: { status: 'changed', currentPrice: null } }), new Date());
+    expect(rowMeta(t)).not.toContain('radome už');
   });
 });

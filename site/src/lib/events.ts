@@ -7,6 +7,7 @@ import { parseRefCode } from '@/lib/refcode';
  * deal_events writers behind the tracked links every WP6 email carries:
  *   /go/<dealId>?i=<issueId>&s=<refCode>          → 'click' + redirect
  *   /uzsisakiau/<dealId>?i=<issueId>&s=<refCode>  → 'booked_claim' (POST button)
+ *                                                → 'price_changed' (second POST button, WP9)
  *
  * `i` and `s` are public URL parameters — anyone can type them. They are
  * parsed into ids but never trusted beyond that: a wrong `s` simply becomes an
@@ -14,7 +15,10 @@ import { parseRefCode } from '@/lib/refcode';
  * not exist (callers decide whether that failure is ignorable).
  */
 
-export type EventKind = 'click' | 'booked_claim';
+export type EventKind = 'click' | 'booked_claim' | 'price_changed';
+
+/** Reader reports: one per (deal, subscriber). A click is a count, not a report. */
+const DEDUPED_KINDS: ReadonlySet<EventKind> = new Set(['booked_claim', 'price_changed']);
 
 export interface DealEventInput {
   dealId: number;
@@ -52,13 +56,14 @@ export function parseTracking(sp: URLSearchParams): {
   return { issueId: positiveInt(sp.get('i')), subscriberId };
 }
 
-/** Only a booked_claim from a known subscriber is one-per-(deal, subscriber). */
+/** Only a report (booked_claim, price_changed) from a known subscriber is
+ *  one-per-(deal, subscriber, kind). */
 export function needsDedupe(e: Pick<DealEventInput, 'kind' | 'subscriberId'>): boolean {
-  return e.kind === 'booked_claim' && e.subscriberId !== null;
+  return DEDUPED_KINDS.has(e.kind) && e.subscriberId !== null;
 }
 
-/** Pure decision: insert this event given whether a matching claim already
- *  exists? Clicks and anonymous claims are always inserted. */
+/** Pure decision: insert this event given whether a matching report already
+ *  exists? Clicks and anonymous reports are always inserted. */
 export function shouldInsert(
   e: Pick<DealEventInput, 'kind' | 'subscriberId'>,
   alreadyClaimed: boolean,
@@ -66,10 +71,11 @@ export function shouldInsert(
   return !(needsDedupe(e) && alreadyClaimed);
 }
 
-/** Insert one deal_events row. For a booked_claim with a subscriber id, a
- *  select-then-insert skips the insert when that subscriber already claimed
- *  this deal (two concurrent submits can still both land — acceptable noise
- *  for a "how many booked" count; no unique index exists to lean on).
+/** Insert one deal_events row. For a report with a subscriber id, a
+ *  select-then-insert skips the insert when that subscriber already sent the
+ *  same kind for this deal (two concurrent submits can still both land —
+ *  acceptable noise for a "how many booked" count; no unique index exists to
+ *  lean on).
  *  DB errors propagate; callers choose whether to swallow them. */
 export async function recordEvent(e: DealEventInput): Promise<void> {
   if (needsDedupe(e)) {
@@ -80,7 +86,7 @@ export async function recordEvent(e: DealEventInput): Promise<void> {
         and(
           eq(dealEvents.dealId, e.dealId),
           eq(dealEvents.subscriberId, e.subscriberId as number),
-          eq(dealEvents.kind, 'booked_claim'),
+          eq(dealEvents.kind, e.kind),
         ),
       )
       .limit(1);

@@ -74,3 +74,16 @@ describe('booked_claim dedupe decision', () => {
     expect(shouldInsert({ kind: 'booked_claim', subscriberId: 7 }, false)).toBe(true);
   });
 });
+
+describe('price_changed dedupe decision (WP9)', () => {
+  test('a price report from a known subscriber is one per (deal, subscriber)', () => {
+    expect(needsDedupe({ kind: 'price_changed', subscriberId: 7 })).toBe(true);
+    expect(shouldInsert({ kind: 'price_changed', subscriberId: 7 }, true)).toBe(false);
+    expect(shouldInsert({ kind: 'price_changed', subscriberId: 7 }, false)).toBe(true);
+  });
+
+  test('an anonymous price report is recorded every time', () => {
+    expect(needsDedupe({ kind: 'price_changed', subscriberId: null })).toBe(false);
+    expect(shouldInsert({ kind: 'price_changed', subscriberId: null }, true)).toBe(true);
+  });
+});

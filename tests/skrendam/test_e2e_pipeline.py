@@ -311,3 +311,18 @@ def test_full_pipeline_offline(session):
 
     # No new PublishedDeal should have been created (still exactly 1).
     assert session.query(models.PublishedDeal).count() == 1
+
+    # ── 11. the re-scan verified the live deal (WP9) ─────────────────────────────────
+    #    The deal is public (free window) so the step prices its exact itinerary;
+    #    the fake's flight numbers "1"/"2" match the snapshot and EUR30 equals the
+    #    published price, so it stays live with a real answer stamped. The step
+    #    changes none of the discovery counts above (E2E_* constants untouched).
+    saved = session.query(models.PublishedDeal).one()
+    assert saved.status == "live"
+    assert saved.verified_at is not None and saved.current_price == 30.0
+    checks = session.query(models.DealPriceCheck).filter_by(deal_id=saved.id).all()
+    assert checks and all(c.available for c in checks)
+    assert {c.source for c in checks} <= {"calendar", "flights"}
+    rescan = session.query(models.ScanRun).order_by(models.ScanRun.id.desc()).first()
+    assert rescan.health["metrics"]["deals_verified"] == 1
+    assert rescan.health["metrics"]["deals_expired"] == 0

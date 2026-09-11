@@ -3,11 +3,18 @@ historical matching.match() — same gates, same weights, same thresholds.
 """
 
 from skrendam.scanning.scoring.base import Score, ScoringContext
-from skrendam.scanning.scoring.eligibility import eff, itinerary_ok
+from skrendam.scanning.scoring.eligibility import (
+    STRONG_ANOMALY_DISCOUNT,  # noqa: F401  (re-exported; matching.py imports it from here)
+    eff,
+    gates_for,
+    itinerary_ok,
+    price_anomaly_ok,
+    under_ceiling,
+    under_psych,
+)
 
 WEIGHTS = {"price_anomaly": 0.50, "itinerary_quality": 0.20, "bookability": 0.15, "urgency": 0.15}
 SEND_THRESHOLD = 0.55
-STRONG_ANOMALY_DISCOUNT = 0.20
 
 
 class WeightedScorer:
@@ -22,26 +29,14 @@ class WeightedScorer:
         discount = baseline.local_discount(fare.price, ctx.travel_date)
         abs_savings = max(0.0, local_median - fare.price)
 
-        # Gate 1: price anomaly (hard). One-way templates may fall back to the
-        # zone ceiling; round-trips must set their own max_price_eur.
-        if tpl.trip_type == "oneway":
-            max_price = (
-                tpl.max_price_eur if tpl.max_price_eur is not None else zone.threshold_price_eur
-            )
-        else:
-            max_price = tpl.max_price_eur
-        min_disc = eff(tpl, zone, "min_discount_pct")
-        min_disc_frac = (min_disc / 100.0) if min_disc else 0.0
-        under_price = max_price is not None and fare.price <= max_price
-        under_psych = (
-            tpl.psychological_price_threshold_eur is not None
-            and fare.price <= tpl.psychological_price_threshold_eur
-        )
-        needed_disc = (
-            0.0 if (tpl.allow_smaller_discount_if_under_price and under_psych) else min_disc_frac
-        )
-        price_anomaly = (discount >= needed_disc) or under_price or under_psych
-        gates["price_anomaly"] = bool(price_anomaly)
+        # Gate 1: price anomaly (hard) — the same predicate the daily verification
+        # step applies to live deals (eligibility.price_anomaly_ok). It folds in the
+        # STRONG_ANOMALY_DISCOUNT floor that used to be a separate veto below.
+        price_gates = gates_for(tpl, zone)
+        under_price = under_ceiling(fare.price, price_gates)
+        under_psych_price = under_psych(fare.price, price_gates)
+        price_anomaly = price_anomaly_ok(fare.price, local_median, price_gates)
+        gates["price_anomaly"] = price_anomaly
         if not price_anomaly:
             return None
 
@@ -53,13 +48,13 @@ class WeightedScorer:
 
         # Gate 3: marketability (soft - informs score)
         min_abs = eff(tpl, zone, "min_abs_savings_eur") or 0
-        marketable = (abs_savings >= min_abs) or under_psych
+        marketable = (abs_savings >= min_abs) or under_psych_price
         gates["marketability"] = bool(marketable)
 
         # Monotone in cheapness: the 0.4 under-ceiling floor applies at ANY discount,
         # so a fare just below the median can never score worse than the same fare above it.
         s_anom = min(1.0, discount / 0.5) if discount > 0 else 0.0
-        if under_price or under_psych:
+        if under_price or under_psych_price:
             s_anom = max(s_anom, 0.4)
         s_itin = 1.0 if fare.stops == 0 else (0.6 if fare.stops == 1 else 0.3)
         s_book = 1.0 if (not fare.self_transfer and not fare.mixed_cabin) else 0.4
@@ -71,15 +66,14 @@ class WeightedScorer:
             + WEIGHTS["urgency"] * s_urg
         )
 
-        discount_floor = min_disc_frac if min_disc_frac > 0 else STRONG_ANOMALY_DISCOUNT
-        strong_anomaly = discount >= discount_floor or under_psych or under_price
-        if score < SEND_THRESHOLD or not strong_anomaly:
+        if score < SEND_THRESHOLD:
             return None
 
         pct = round(discount * 100)
         month_local = ctx.travel_date is not None and baseline.month_stats(ctx.travel_date)
         basis = (
-            f"its {ctx.travel_date:%B} median" if month_local
+            f"its {ctx.travel_date:%B} median"
+            if month_local
             else f"the {baseline.sample_size}-day median"
         )
         reason = (

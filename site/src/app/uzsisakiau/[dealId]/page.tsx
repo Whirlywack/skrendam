@@ -6,7 +6,7 @@ import { Masthead } from '@/components/v2/Masthead';
 import { V2Footer } from '@/components/v2/V2Footer';
 import { S } from '@/lib/lt';
 import { parseDealId } from '@/lib/events';
-import { claimAction } from './claim-action';
+import { claimAction, priceChangedAction } from './claim-action';
 
 export const metadata: Metadata = {
   title: 'Užsisakei? · Yip',
@@ -29,7 +29,11 @@ const one = (v: string | string[] | undefined) => (typeof v === 'string' ? v : u
  *  the button (`claimAction`); `i` and `s` ride along as hidden fields.
  *
  *  Any deal that exists gets the button, expired ones included — a reader
- *  booking on the last day and clicking a week later should still count. */
+ *  booking on the last day and clicking a week later should still count.
+ *
+ *  A second button, „Kaina pasikeitė" (WP9), is the reader's price signal:
+ *  same hidden fields, its own action, a `price_changed` row, the same
+ *  done state. */
 export default async function Uzsisakiau({ params, searchParams }: PageProps) {
   const [{ dealId: raw }, sp] = await Promise.all([params, searchParams]);
   const dealId = parseDealId(raw);
@@ -66,6 +70,14 @@ export default async function Uzsisakiau({ params, searchParams }: PageProps) {
           {one(sp.s) && <input type="hidden" name="s" value={one(sp.s)} />}
           <button type="submit" className="btn">
             {S.claimCta}
+          </button>
+        </form>
+        <form action={priceChangedAction}>
+          <input type="hidden" name="dealId" value={String(dealId)} />
+          {one(sp.i) && <input type="hidden" name="i" value={one(sp.i)} />}
+          {one(sp.s) && <input type="hidden" name="s" value={one(sp.s)} />}
+          <button type="submit" className="btn">
+            {S.priceChangedCta}
           </button>
         </form>
       </>

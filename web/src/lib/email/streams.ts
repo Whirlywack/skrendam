@@ -8,6 +8,7 @@ import {
   type SendOutcome,
 } from '../letters';
 import { bookedEvents, dealsById } from '../letters-queries';
+import { isLiveStatus } from '../verification';
 import { unsubscribeUrl } from '../links';
 import { activeSubscribers, sendable, wantsOrigin, type Plan, type Recipient } from '../subscribers';
 import { sendMail, type OutgoingMail } from './client';
@@ -59,7 +60,12 @@ export function zeroStats(): SendStats {
  *  subscribers only; a single deal is always immediate, so the rare
  *  archetype changes nothing here. The `issues` row is written first so
  *  every tracked link carries its id, and finished with the stats whatever
- *  happened per recipient — a failed send is counted, never thrown. */
+ *  happened per recipient — a failed send is counted, never thrown.
+ *
+ *  Only `publishDeal` (`app/actions.ts`) calls this, with the row it just
+ *  inserted — so the deal is always freshly `live` at its published price.
+ *  A `changed` deal is never re-sent as instant (spec §5); `streams.test.ts`
+ *  pins the single call site. */
 export async function sendInstant(
   deal: Deal,
   deps: SendDeps,
@@ -146,7 +152,7 @@ export interface LetterIssue {
  *  "sent, no stats" — honest, since mail did go out. */
 export async function sendLetter(issue: LetterIssue, deps: LetterDeps): Promise<SendOutcome> {
   const picked = await deps.dealsById(issue.dealIds);
-  const deals = picked.filter((d) => d.status === 'live');
+  const deals = picked.filter((d) => isLiveStatus(d.status));
   if (deals.length === 0) return { ok: false, reason: 'no_fresh' };
 
   const claimed = await deps.claimIssue(issue.id, deps.now().toISOString());

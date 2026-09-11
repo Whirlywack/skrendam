@@ -99,7 +99,8 @@ def main():
         s = run_scan_command(seed=args.seed, all_routes=args.all_routes)
         print(
             f"scan complete: {s.candidates_found} candidates, {s.matches_created} matches, "
-            f"{s.errors} errors"
+            f"{s.errors} errors; deals: {s.deals_verified} verified, "
+            f"{s.deals_changed} changed, {s.deals_expired} expired"
         )
         if s.aborted:
             print("WARNING: scan FAILED — the circuit breaker aborted the run partway.")

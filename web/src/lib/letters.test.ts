@@ -19,6 +19,12 @@ function deal(over: Partial<Deal> & { id: number }): Deal {
     candidateId: 1,
     dealTemplateId: 1,
     contentDraftId: null,
+    currentPrice: null,
+    currentPriceAt: null,
+    windowMinPrice: null,
+    windowMinDate: null,
+    verifiedAt: null,
+    missedChecks: 0,
     publicLabel: null,
     newsletterTag: null,
     headline: `Deal ${over.id}`,
@@ -74,6 +80,11 @@ describe('pickDigest', () => {
   it('never picks a deal that is not live', () => {
     const mixed = [...live, deal({ id: 4, status: 'expired', publishedAt: '2026-09-09 10:00:00' })];
     expect(pickDigest(mixed, null).map((d) => d.id)).toEqual([2, 3, 1]);
+  });
+
+  it('keeps a changed deal (LIVE_STATUSES) — it is still on the site, at its current price', () => {
+    const mixed = [...live, deal({ id: 5, status: 'changed', currentPrice: 124, publishedAt: '2026-09-09 10:00:00' })];
+    expect(pickDigest(mixed, null).map((d) => d.id)).toEqual([5, 2, 3, 1]);
   });
 });
 
@@ -155,6 +166,13 @@ describe('pickNurture', () => {
       deal({ id: 30, status: 'expired', publishedAt: '2026-09-01 10:00:00', expiredAt: '2026-09-20 10:00:00' }),
     ];
     expect(pickNurture(rows, [], now).missed).toEqual([]);
+  });
+
+  it('counts a changed deal as fresh, never as missed', () => {
+    const changed = deal({ id: 60, status: 'changed', currentPrice: 124, publishedAt: '2026-09-09 10:00:00' });
+    const { fresh, missed } = pickNurture([...live, ...expired, changed], [], now);
+    expect(fresh.map((d) => d.id)).toEqual([60, 2]);
+    expect(missed.map((d) => d.id)).not.toContain(60);
   });
 
   it('never lists a live deal under missed, nor an expired one under fresh', () => {
