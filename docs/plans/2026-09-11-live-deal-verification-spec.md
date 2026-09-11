@@ -46,8 +46,9 @@ available, price, window_min_price, window_min_date)` and updates `published_dea
 ## 4. Transitions (evaluated after the checks, pure function, tested)
 
 - `live → changed`: available, `current_price > published × 1.10`, and still a deal:
-  `discount vs baseline ≥ template min discount` and saving ≥ the zone's abs floor (reuse the template
-  gates; `demand.py` constants for the archetype floors).
+  the same price-anomaly predicate as discovery (`eligibility.price_anomaly_ok`: discount vs the
+  frozen baseline ≥ the template's min discount OR under the price ceiling OR under the
+  psychological price; the abs-saving floor stays a soft signal, never a gate).
 - `changed → live`: price back within tolerance.
 - `* → expired`, automatic, real data only: (a) calendar (today's rule); (b) fails the deal gate on a
   **real** price; (c) `missed_checks ≥ MISSED_CHECKS_TO_EXPIRE = 2` (two consecutive days unavailable

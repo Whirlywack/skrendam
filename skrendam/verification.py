@@ -23,7 +23,9 @@ from sqlalchemy.orm import Session
 from skrendam.db import models
 from skrendam.fli_adapter.adapter import FliAdapter
 from skrendam.fli_adapter.errors import ScanError
-from skrendam.scanning.scoring.eligibility import eff
+from skrendam.scanning.scoring.eligibility import Gates, gates_for, price_anomaly_ok
+
+__all__ = ["DealCheck", "Decision", "Gates", "gates_for", "price_anomaly_ok"]
 
 GOING_FAST_RISE = (
     0.05  # a recheck price >= published price * (1 + this) is an observed "going fast"
@@ -44,7 +46,8 @@ class DealCheck:
 
     ``available=False`` is an empty answer (every price None). ``available=True`` with
     ``price=None`` means the day still had fares but the exact itinerary was not among them;
-    ``window_min_*`` is then the cheapest fare that day.
+    ``window_min_*`` is then the cheapest fare that day. ``checked_at`` is the run's ``now``,
+    written to ``deal_price_checks.checked_at``.
     """
 
     available: bool
@@ -56,54 +59,17 @@ class DealCheck:
 
 
 @dataclass(frozen=True)
-class Gates:
-    """Effective "still a deal" gates; None means the gate is not set (passes)."""
-
-    min_discount_pct: float | None
-    min_abs_saving_eur: float | None
-    price_threshold_eur: float | None
-
-
-@dataclass(frozen=True)
 class Decision:
+    """What ``transition`` decided; the caller persists it.
+
+    ``expired_at`` is midnight of ``today`` when the status becomes ``expired`` (the caller may
+    overwrite it with the run's ``now``), else None. ``reason`` is a short machine tag.
+    """
+
     status: str
     missed_checks: int
     expired_at: datetime | None
     reason: str
-
-
-def gates_for(template, zone) -> Gates:
-    """Build the deal gates from the template with the zone as fallback (``eligibility.eff``).
-
-    The price ceiling mirrors the discovery scorer (``scoring/weighted.py``): one-way templates
-    fall back to the zone ceiling, round trips must set their own ``max_price_eur``.
-    """
-    threshold = getattr(template, "max_price_eur", None)
-    if threshold is None and getattr(template, "trip_type", None) == "oneway":
-        threshold = getattr(zone, "threshold_price_eur", None)
-    return Gates(
-        min_discount_pct=eff(template, zone, "min_discount_pct"),
-        min_abs_saving_eur=eff(template, zone, "min_abs_savings_eur"),
-        price_threshold_eur=threshold,
-    )
-
-
-def clears_gates(price: float, baseline: float | None, gates: Gates) -> bool:
-    """True when ``price`` is still a deal against the frozen ``baseline``.
-
-    Without a baseline no discount can be certified either way, so only the price ceiling can
-    fail; a gate that is None always passes.
-    """
-    if gates.price_threshold_eur is not None and price > gates.price_threshold_eur:
-        return False
-    if baseline is None:
-        return True
-    if gates.min_discount_pct is not None:
-        if baseline <= 0 or (baseline - price) / baseline * 100 < gates.min_discount_pct:
-            return False
-    if gates.min_abs_saving_eur is not None and baseline - price < gates.min_abs_saving_eur:
-        return False
-    return True
 
 
 def _flight_numbers(legs) -> tuple[str, ...]:
@@ -137,7 +103,7 @@ def verify_deal(
         return DealCheck(False, None, None, None, "flights", now)
     wanted = _flight_numbers((snapshot or {}).get("legs"))
     exact = None
-    if wanted:
+    if wanted and all(wanted):
         exact = next((f for f in fares if _flight_numbers(f.legs) == wanted), None)
     cheapest = min(fares, key=lambda f: f.price)
     return DealCheck(
@@ -160,7 +126,9 @@ def transition(
 ) -> Decision:
     """Pure spec-§4 state machine; the caller persists the Decision.
 
-    The calendar rule (travel date passed) stays in the orchestrator's date sweep.
+    "Still a deal" is discovery's own price predicate (``price_anomaly_ok`` against the frozen
+    ``baseline_price``), so a price that would be published today is never expired. The
+    calendar rule (travel date passed) stays in the orchestrator's date sweep.
     """
     unchanged = Decision(deal.status, deal.missed_checks, None, "not_live")
     if deal.status not in LIVE_STATUSES:
@@ -176,13 +144,13 @@ def transition(
     if check.price is not None:
         if check.price <= deal.price * (1 + PRICE_DRIFT_TOLERANCE_PCT / 100):
             return Decision("live", 0, None, "within_tolerance")
-        if clears_gates(check.price, deal.baseline_price, gates):
+        if price_anomaly_ok(check.price, deal.baseline_price, gates):
             return Decision("changed", 0, None, "price_drift")
         return Decision("expired", 0, expired_at, "gate_failed")
 
     if check.window_min_price is None:
         return Decision(deal.status, deal.missed_checks, None, "no_price")
-    if clears_gates(check.window_min_price, deal.baseline_price, gates):
+    if price_anomaly_ok(check.window_min_price, deal.baseline_price, gates):
         return Decision("changed", 0, None, "itinerary_gone")
     return Decision("expired", 0, expired_at, "gate_failed")
 

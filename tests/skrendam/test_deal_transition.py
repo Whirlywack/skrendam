@@ -9,13 +9,22 @@ from skrendam.verification import (
     PRICE_DRIFT_TOLERANCE_PCT,
     DealCheck,
     Gates,
-    clears_gates,
     gates_for,
+    price_anomaly_ok,
     transition,
 )
 
 TODAY = date(2026, 9, 11)
-GATES = Gates(min_discount_pct=25.0, min_abs_saving_eur=20.0, price_threshold_eur=None)
+GATES = Gates(
+    min_discount_pct=25.0, price_threshold_eur=None, psychological_price_threshold_eur=None
+)
+# Seeded CITY_BREAKS zone (45 / 20 / 25) under the seeded templates the review reproduced.
+LAST_MINUTE = Gates(  # last-minute-weekends: oneway, psych 40, zone ceiling 45, zone 25 %
+    min_discount_pct=25.0, price_threshold_eur=45.0, psychological_price_threshold_eur=40.0
+)
+XMAS_MARKETS = Gates(  # christmas-markets: roundtrip (no zone ceiling), template 25 %
+    min_discount_pct=25.0, price_threshold_eur=None, psychological_price_threshold_eur=None
+)
 
 
 def _deal(status="live", price=93.0, baseline=275.0, missed=0, travel=date(2026, 12, 4)):
@@ -112,7 +121,7 @@ def test_changed_deal_returns_to_live_when_price_is_back():
     assert d.status == "live"
 
 
-def test_price_above_tolerance_that_still_clears_gates_is_changed():
+def test_price_above_tolerance_that_is_still_a_deal_is_changed():
     d = _run(_deal(status="live", missed=1), _check(price=124.0))  # 55% off 275, saves 151
     assert d.status == "changed"
     assert d.missed_checks == 0
@@ -127,33 +136,47 @@ def test_price_failing_the_discount_gate_expires():
     assert d.expired_at == datetime(2026, 9, 11)
 
 
-def test_price_failing_the_abs_saving_gate_expires():
-    gates = Gates(min_discount_pct=10.0, min_abs_saving_eur=60.0, price_threshold_eur=None)
-    d = _run(_deal(price=40.0, baseline=100.0), _check(price=50.0), gates=gates)  # saves 50
-    assert d.status == "expired" and d.reason == "gate_failed"
+def test_abs_saving_is_never_a_gate():
+    """Review case C: christmas-markets €42 vs €60 (30 % off, saves €18 < zone €20) stays."""
+    d = _run(_deal(price=36.0, baseline=60.0), _check(price=42.0), gates=XMAS_MARKETS)
+    assert d.status == "changed" and d.reason == "price_drift"
 
 
-def test_price_above_the_threshold_expires_even_with_a_big_discount():
-    gates = Gates(min_discount_pct=25.0, min_abs_saving_eur=20.0, price_threshold_eur=100.0)
-    d = _run(_deal(), _check(price=124.0), gates=gates)
-    assert d.status == "expired" and d.reason == "gate_failed"
+def test_big_discount_above_the_ceiling_is_still_a_deal():
+    """Review case B: last-minute-weekends €70 vs €200 (65 % off) passes on discount alone."""
+    d = _run(_deal(price=60.0, baseline=200.0), _check(price=70.0), gates=LAST_MINUTE)
+    assert d.status == "changed" and d.reason == "price_drift"
 
 
-def test_none_gates_pass():
-    d = _run(_deal(baseline=None), _check(price=124.0), gates=Gates(None, None, None))
-    assert d.status == "changed"
+def test_psychological_price_keeps_a_small_discount_alive():
+    """Review case A: €39 vs €50 (22 % < 25 %) is a deal because it is under the €40 psych price."""
+    deal = _deal(price=39.0, baseline=50.0)
+    assert _run(deal, _check(price=39.0), gates=LAST_MINUTE).status == "live"
+    assert _run(deal, _check(price=None, window_min=39.0), gates=LAST_MINUTE).status == "changed"
 
 
-def test_missing_baseline_lets_only_the_threshold_fail():
-    gates = Gates(min_discount_pct=25.0, min_abs_saving_eur=20.0, price_threshold_eur=120.0)
+def test_drift_under_the_zone_ceiling_is_changed_not_expired():
+    """Review case A′: the same deal at €43 (+10.3 %) is under the €45 one-way ceiling."""
+    d = _run(_deal(price=39.0, baseline=50.0), _check(price=43.0), gates=LAST_MINUTE)
+    assert d.status == "changed" and d.reason == "price_drift"
+
+
+def test_missing_baseline_certifies_nothing_but_the_thresholds():
+    gates = Gates(
+        min_discount_pct=25.0, price_threshold_eur=120.0, psychological_price_threshold_eur=None
+    )
     assert _run(_deal(baseline=None), _check(price=119.0), gates=gates).status == "changed"
     assert _run(_deal(baseline=None), _check(price=124.0), gates=gates).status == "expired"
+    assert (
+        _run(_deal(baseline=None), _check(price=124.0), gates=Gates(None, None, None)).status
+        == "expired"
+    )
 
 
 # --- exact itinerary gone, other fares that day ---------------------------------
 
 
-def test_itinerary_gone_but_window_min_clears_gates_is_changed():
+def test_itinerary_gone_but_window_min_still_a_deal_is_changed():
     d = _run(_deal(missed=1), _check(price=None, window_min=110.0))
     assert d.status == "changed"
     assert d.missed_checks == 0
@@ -188,13 +211,17 @@ def test_calendar_rule_is_not_applied_here():
 # --- gates ----------------------------------------------------------------------
 
 
-def test_clears_gates_boundaries():
-    g = Gates(min_discount_pct=25.0, min_abs_saving_eur=20.0, price_threshold_eur=None)
-    assert clears_gates(75.0, 100.0, g)  # 25% and 25 saved: both at the line
-    assert not clears_gates(76.0, 100.0, g)  # 24%
-    g2 = Gates(min_discount_pct=10.0, min_abs_saving_eur=25.0, price_threshold_eur=None)
-    assert not clears_gates(80.0, 100.0, g2)  # 20% but only 20 saved
-    assert not clears_gates(80.0, 0.0, g2)  # a zero baseline cannot certify a discount
+def test_price_anomaly_ok_boundaries():
+    assert price_anomaly_ok(75.0, 100.0, GATES)  # 25 %: at the line
+    assert not price_anomaly_ok(76.0, 100.0, GATES)  # 24 %
+    assert not price_anomaly_ok(80.0, 0.0, GATES)  # a zero baseline cannot certify a discount
+    assert not price_anomaly_ok(80.0, None, GATES)
+    no_floor = Gates(None, None, None)
+    assert price_anomaly_ok(80.0, 100.0, no_floor)  # 20 % = STRONG_ANOMALY_DISCOUNT
+    assert not price_anomaly_ok(81.0, 100.0, no_floor)
+    assert price_anomaly_ok(45.0, 50.0, LAST_MINUTE)  # 10 % off but at the €45 ceiling
+    assert not price_anomaly_ok(46.0, 50.0, LAST_MINUTE)  # 8 % off, above both thresholds
+    assert price_anomaly_ok(40.0, 41.0, LAST_MINUTE)  # psych price alone
 
 
 def test_gates_for_prefers_template_values_and_falls_back_to_zone():
@@ -214,7 +241,7 @@ def test_gates_for_prefers_template_values_and_falls_back_to_zone():
         min_abs_savings_eur=None,
         max_price_eur=None,
     )
-    assert gates_for(tpl, zone) == Gates(40.0, 20.0, 45.0)
+    assert gates_for(tpl, zone) == Gates(40.0, 45.0, None)
 
 
 def test_gates_for_round_trip_threshold_comes_only_from_the_template():
@@ -228,9 +255,10 @@ def test_gates_for_round_trip_threshold_comes_only_from_the_template():
     tpl = models.DealTemplate(
         slug="t", name="t", audience_segment_id=1, travel_moment_id=1, trip_type="roundtrip"
     )
-    assert gates_for(tpl, zone) == Gates(25.0, 20.0, None)
+    assert gates_for(tpl, zone) == Gates(25.0, None, None)
     tpl.max_price_eur = 150.0
-    assert gates_for(tpl, zone).price_threshold_eur == 150.0
+    tpl.psychological_price_threshold_eur = 40.0
+    assert gates_for(tpl, zone) == Gates(25.0, 150.0, 40.0)
 
 
 def test_gates_for_without_a_zone():

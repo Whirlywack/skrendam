@@ -302,6 +302,13 @@ def test_verify_deal_without_a_snapshot_cannot_identify_the_itinerary():
     assert check.available is True and check.price is None and check.window_min_price == 93.0
 
 
+def test_verify_deal_snapshot_legs_without_numbers_cannot_match():
+    fares = [_itin(93.0, [{"airline": {"code": "W6"}}, {"airline": {"code": "W6"}}])]
+    snapshot = {"legs": [{"airline": {"code": "W6"}}, {"airline": {"code": "W6"}}]}
+    check = verify_deal(_published_deal(), _adapter(fares), now=NOW, snapshot=snapshot)
+    assert check.available is True and check.price is None and check.window_min_price == 93.0
+
+
 def test_verify_deal_empty_answer_is_unavailable_with_no_prices():
     check = verify_deal(_published_deal(), _adapter([]), now=NOW, snapshot=SNAPSHOT)
     assert check == DealCheck(False, None, None, None, "flights", NOW)
