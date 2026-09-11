@@ -54,7 +54,11 @@ function demand(r: { archetype?: string | null; demandSignals?: unknown }): {
 /** WP9 price state. A `changed` row is still a deal, but the daily check found
  *  it above the published price: the site shows `current_price` and says what
  *  it was found at. `drop` is recomputed against the shown price so „−36 %"
- *  and „sutaupai X €" stay true numbers. Anything that is not `changed` (or is
+ *  and „sutaupai X €" stay true numbers — and with no baseline to recompute
+ *  against it is 0: the published discount_pct was measured at the found
+ *  price, so quoting it at the higher current price would overstate (review
+ *  round 1). Every „N % pigiau" consumer gates on drop > 0, so 0 = no claim.
+ *  Anything that is not `changed` (or is
  *  changed without a verified current price — should not happen, but a stale
  *  row must never render a null €) reads as the published price. */
 function priceState(pd: Row['pd']): {
@@ -74,7 +78,7 @@ function priceState(pd: Row['pd']): {
   const baseline = pd.baselinePrice == null ? null : Number(pd.baselinePrice);
   const drop = baseline != null && baseline > 0
     ? Math.max(0, Math.round((1 - currentPrice / baseline) * 100))
-    : publishedDrop;
+    : 0;
   return {
     state: 'changed',
     price: currentPrice,

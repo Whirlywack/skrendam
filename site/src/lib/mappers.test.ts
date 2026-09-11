@@ -182,6 +182,21 @@ describe('toPublicDeal — WP9 price state', () => {
     expect(d.priceLines).toEqual([]);
   });
 
+  it('a changed deal with no baseline makes no discount claim at all', () => {
+    // discount_pct was measured at the found price; at the higher current price
+    // it would overstate, and there is nothing to recompute against → 0, so
+    // every „N % pigiau" consumer (why, meta description, price context) stays silent.
+    const d = toPublicDeal(
+      row({ pd: { status: 'changed', price: 93, currentPrice: 124, baselinePrice: null, discountPct: 36 } }),
+      now,
+    );
+    expect(d.state).toBe('changed');
+    expect(d.price).toBe(124);
+    expect(d.drop).toBe(0);
+    expect(d.why).toBe('Pigiau nei įprastai');
+    expect(d.why).not.toContain('%');
+  });
+
   it('a changed deal above its baseline never claims a negative discount', () => {
     const d = toPublicDeal(row({ pd: { status: 'changed', currentPrice: 180 } }), now);
     expect(d.drop).toBe(0);

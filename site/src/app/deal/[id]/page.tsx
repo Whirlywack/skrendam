@@ -8,7 +8,7 @@ import { dealWhyAndCatch, ltDealHeadline } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
 import { ltCity } from '@/lib/cities-lt';
 import { eur, freshnessLabel } from '@/lib/format';
-import { WAS_PRICE_MIN_DROP_PCT } from '@/lib/format-rules';
+import { WAS_PRICE_MIN_DROP_PCT, priceFreeBlurb } from '@/lib/format-rules';
 import { destinationsCollection, originCollection, zoneCollection } from '@/lib/collections';
 import { S, curator } from '@/lib/lt';
 import { LIVE_STATUSES } from '@/lib/statuses';
@@ -49,10 +49,9 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const t = toTicket(row, now);
   // A changed deal's curator headline may quote the found price („€140 return…")
   // — that number is no longer the one on the poster, so the verdict line takes
-  // the blurb slot (the rule Poster.tsx already applies to price-shaped hooks).
+  // the blurb slot (same guard as the home poster: priceFreeBlurb).
   const rawHeadline = ltDealHeadline(pd.headline, deal.price, pd.destination);
-  const headline = deal.state === 'changed' && /\d+\s?€|€\s?\d+/.test(rawHeadline)
-    ? deal.verdict : rawHeadline;
+  const headline = deal.state === 'changed' ? priceFreeBlurb(rawHeadline, deal.verdict) : rawHeadline;
 
   // Free-window rank — the poster kicker's honest "Nr. 0X" (Set keeps order).
   const rank = isLive(pd.status) ? [...freeIds].indexOf(pd.id) + 1 : 0;
