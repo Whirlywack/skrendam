@@ -17,10 +17,10 @@ import {
 } from '@/lib/letters';
 import { bookedEvents, dealsById, getIssue, type Issue } from '@/lib/letters-queries';
 import type { Recipient } from '@/lib/subscribers';
+import { formatLocalTs } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-const when = (ts: string | null) => (ts ? ts.replace('T', ' ').slice(0, 16) : '—');
 
 const hint: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -72,13 +72,13 @@ export default async function LetterPage({ params }: { params: Promise<{ id: str
         {kind === 'paid_digest'
           ? `goes to plan = paid · slot ${DIGEST_DAY} ${DIGEST_TIME}`
           : `goes to plan = free · every ${FREE_LETTER_CADENCE_DAYS} days`}{' '}
-        · send by hand — no scheduler · assembled {when(issue.createdAt)}
+        · send by hand — no scheduler · assembled {formatLocalTs(issue.createdAt)}
       </p>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
         {issue.sentAt ? (
           <>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Sent {when(issue.sentAt)}</span>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Sent {formatLocalTs(issue.sentAt)}</span>
             <Link href={`/letters/${id}/stats`} style={{ fontSize: 13 }}>
               stats →
             </Link>
@@ -198,8 +198,8 @@ async function InstantSummary({ issue }: { issue: Issue }) {
         <Link href="/letters">← Letters</Link>
       </p>
       <p style={hint}>
-        went to plan = paid the minute the deal was published · created {when(issue.createdAt)} ·{' '}
-        {issue.sentAt ? `sent ${when(issue.sentAt)}` : 'not sent'}
+        went to plan = paid the minute the deal was published · created {formatLocalTs(issue.createdAt)} ·{' '}
+        {issue.sentAt ? `sent ${formatLocalTs(issue.sentAt)}` : 'not sent'}
         {issue.sentAt && (
           <>
             {' '}

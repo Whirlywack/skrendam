@@ -13,11 +13,10 @@ import {
   type IssueKind,
 } from '@/lib/letters';
 import { countInstantIssues, listLetters } from '@/lib/letters-queries';
+import { formatLocalTs } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-/** `2026-09-10 07:02` from an ISO or space-separated timestamp; '—' for null. */
-const when = (ts: string | null) => (ts ? ts.replace('T', ' ').slice(0, 16) : '—');
 
 const EMPTY_MESSAGE: Record<IssueKind, string> = {
   paid_digest: 'Nothing to assemble: no live deals published since the last digest went out.',
@@ -146,8 +145,8 @@ export default async function LettersPage({
                   </td>
                   <td style={mono}>{idList(r.dealIds).length}</td>
                   <td style={mono}>{idList(r.expiredDealIds).length}</td>
-                  <td style={mono}>{when(r.createdAt)}</td>
-                  <td style={mono}>{when(r.sentAt)}</td>
+                  <td style={mono}>{formatLocalTs(r.createdAt)}</td>
+                  <td style={mono}>{formatLocalTs(r.sentAt)}</td>
                   <td style={{ ...td, color: r.sentAt ? 'var(--fg-1)' : 'var(--fg-3)' }}>
                     {statsLine(r.stats, r.sentAt)}
                   </td>

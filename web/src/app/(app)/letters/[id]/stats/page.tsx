@@ -5,11 +5,10 @@ import { ISSUE_LABEL, idList, statsOf, type IssueKind } from '@/lib/letters';
 import { getIssue } from '@/lib/letters-queries';
 import { ANON, NONE, breakdown, type Dim } from '@/lib/stats';
 import { dealFacts, eventsForIssue, subFacts } from '@/lib/stats-queries';
+import { formatLocalTs } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-/** `2026-09-10 07:02` from an ISO or space-separated timestamp; '—' for null. */
-const when = (ts: string | null) => (ts ? ts.replace('T', ' ').slice(0, 16) : '—');
 
 const hint: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -114,8 +113,8 @@ export default async function LetterStatsPage({ params }: { params: Promise<{ id
         <Link href="/letters/stats">Overview</Link>
       </p>
       <p style={hint}>
-        {label} · assembled {when(issue.createdAt)} ·{' '}
-        {issue.sentAt ? `sent ${when(issue.sentAt)} · ` : ''}
+        {label} · assembled {formatLocalTs(issue.createdAt)} ·{' '}
+        {issue.sentAt ? `sent ${formatLocalTs(issue.sentAt)} · ` : ''}
         {sendLine(issue.stats, issue.sentAt)}
       </p>
       {issue.stats != null && (

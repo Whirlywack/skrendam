@@ -39,6 +39,16 @@ export function parseEngineTs(ts: string): Date {
 export function formatClock(d: Date): string {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
+/** „11 Sept 2026, 10:35" — a full timestamp in the desk's local zone, for
+ *  the Letters pages' assembled/sent columns. Goes through parseEngineTs, so
+ *  a naive UTC string from the engine or a `toISOString()` written by the
+ *  desk both land on the right wall clock; '—' for null. */
+export function formatLocalTs(ts: string | null): string {
+  if (!ts) return '—';
+  return parseEngineTs(ts).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+}
 export function timeAgo(iso: string | null): string {
   if (!iso) return '—';
   const mins = Math.max(0, Math.round((Date.now() - parseEngineTs(iso).getTime()) / 60000));

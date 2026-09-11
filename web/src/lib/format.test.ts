@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { eur, formatDates, parseEngineTs, pct } from './format';
+import { eur, formatDates, formatLocalTs, parseEngineTs, pct } from './format';
 
 test('formats one-way and round-trip date ranges', () => {
   expect(formatDates('2026-10-14', null)).toBe('14 Oct');
@@ -40,4 +40,20 @@ test('parseEngineTs accepts the 2-digit offset Postgres prints for timestamptz t
 test('eur renders „93 €" — symbol after, non-breaking space, same bytes as site/src/lib/format.ts', () => {
   expect(eur(93)).toBe('93 €');
   expect(eur(92.6)).toBe('93 €');
+});
+
+test('formatLocalTs renders engine/desk timestamps in the local zone, never raw UTC (Letters regression)', () => {
+  // `issues.created_at` is written as new Date().toISOString() and comes back
+  // naive; the Letters pages showed "07:35" for a 10:35 click in Vilnius.
+  const d = parseEngineTs('2026-09-11 07:35:12.345');
+  const expected = d.toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  expect(formatLocalTs('2026-09-11 07:35:12.345')).toBe(expected);
+  expect(formatLocalTs('2026-09-11T07:35:12.345Z')).toBe(expected);
+  // Only the timezone-shifted rendering is acceptable: under any zone east of UTC
+  // the wall clock must not read 07:35 unless the zone IS UTC.
+  const offsetMin = -d.getTimezoneOffset();
+  if (offsetMin !== 0) expect(formatLocalTs('2026-09-11 07:35:12.345')).not.toContain('07:35');
+  expect(formatLocalTs(null)).toBe('—');
 });

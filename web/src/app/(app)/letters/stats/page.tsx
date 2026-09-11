@@ -3,11 +3,10 @@ import { ConfigShell } from '@/components/ConfigShell';
 import { FREE_LETTER_CADENCE_DAYS, statsOf } from '@/lib/letters';
 import { conversionAfter, tiktokSignups } from '@/lib/stats';
 import { nurtureIssuesOrdered, subFacts } from '@/lib/stats-queries';
+import { formatLocalTs } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-/** `2026-09-10 07:02` from an ISO or space-separated timestamp; '—' for null. */
-const when = (ts: string | null) => (ts ? ts.replace('T', ' ').slice(0, 16) : '—');
 
 const hint: React.CSSProperties = {
   fontFamily: 'var(--font-mono)',
@@ -108,9 +107,9 @@ export default async function LettersStatsPage() {
                 <td style={mono}>
                   <Link href={`/letters/${r.id}/stats`}>#{r.id}</Link>
                 </td>
-                <td style={mono}>{when(r.sentAt)}</td>
+                <td style={mono}>{formatLocalTs(r.sentAt)}</td>
                 <td style={{ ...mono, color: r.nextSentAt ? 'inherit' : 'var(--fg-3)' }}>
-                  {r.nextSentAt ? when(r.nextSentAt) : 'now'}
+                  {r.nextSentAt ? formatLocalTs(r.nextSentAt) : 'now'}
                 </td>
                 <td style={{ ...num, color: r.sent > 0 ? 'inherit' : 'var(--fg-3)' }}>
                   {r.sent > 0 ? r.sent : '—'}
