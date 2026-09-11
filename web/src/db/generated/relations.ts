@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { audienceSegments, dealTemplates, travelMoments, zones, routes, candidates, scanRuns, priceLog, candidateTemplateMatches, publishedDeals, contentDrafts, verificationChecks, scanRequests, candidateScores, dealEvents, issues, subscribers } from "./schema";
+import { audienceSegments, dealTemplates, travelMoments, zones, routes, candidates, scanRuns, priceLog, candidateTemplateMatches, contentDrafts, verificationChecks, publishedDeals, scanRequests, candidateScores, dealEvents, issues, subscribers, dealPriceChecks } from "./schema";
 
 export const dealTemplatesRelations = relations(dealTemplates, ({one, many}) => ({
 	audienceSegment: one(audienceSegments, {
@@ -11,8 +11,8 @@ export const dealTemplatesRelations = relations(dealTemplates, ({one, many}) => 
 		references: [travelMoments.id]
 	}),
 	candidateTemplateMatches: many(candidateTemplateMatches),
-	publishedDeals: many(publishedDeals),
 	contentDrafts: many(contentDrafts),
+	publishedDeals: many(publishedDeals),
 	candidateScores: many(candidateScores),
 }));
 
@@ -47,9 +47,9 @@ export const candidatesRelations = relations(candidates, ({one, many}) => ({
 		references: [scanRuns.id]
 	}),
 	candidateTemplateMatches: many(candidateTemplateMatches),
-	publishedDeals: many(publishedDeals),
 	contentDrafts: many(contentDrafts),
 	verificationChecks: many(verificationChecks),
+	publishedDeals: many(publishedDeals),
 	scanRequests: many(scanRequests),
 	candidateScores: many(candidateScores),
 }));
@@ -57,6 +57,7 @@ export const candidatesRelations = relations(candidates, ({one, many}) => ({
 export const scanRunsRelations = relations(scanRuns, ({many}) => ({
 	candidates: many(candidates),
 	priceLogs: many(priceLog),
+	dealPriceChecks: many(dealPriceChecks),
 }));
 
 export const priceLogRelations = relations(priceLog, ({one}) => ({
@@ -81,6 +82,25 @@ export const candidateTemplateMatchesRelations = relations(candidateTemplateMatc
 	}),
 }));
 
+export const contentDraftsRelations = relations(contentDrafts, ({one, many}) => ({
+	candidate: one(candidates, {
+		fields: [contentDrafts.candidateId],
+		references: [candidates.id]
+	}),
+	dealTemplate: one(dealTemplates, {
+		fields: [contentDrafts.dealTemplateId],
+		references: [dealTemplates.id]
+	}),
+	publishedDeals: many(publishedDeals),
+}));
+
+export const verificationChecksRelations = relations(verificationChecks, ({one}) => ({
+	candidate: one(candidates, {
+		fields: [verificationChecks.candidateId],
+		references: [candidates.id]
+	}),
+}));
+
 export const publishedDealsRelations = relations(publishedDeals, ({one, many}) => ({
 	candidate: one(candidates, {
 		fields: [publishedDeals.candidateId],
@@ -95,25 +115,7 @@ export const publishedDealsRelations = relations(publishedDeals, ({one, many}) =
 		references: [dealTemplates.id]
 	}),
 	dealEvents: many(dealEvents),
-}));
-
-export const contentDraftsRelations = relations(contentDrafts, ({one, many}) => ({
-	publishedDeals: many(publishedDeals),
-	candidate: one(candidates, {
-		fields: [contentDrafts.candidateId],
-		references: [candidates.id]
-	}),
-	dealTemplate: one(dealTemplates, {
-		fields: [contentDrafts.dealTemplateId],
-		references: [dealTemplates.id]
-	}),
-}));
-
-export const verificationChecksRelations = relations(verificationChecks, ({one}) => ({
-	candidate: one(candidates, {
-		fields: [verificationChecks.candidateId],
-		references: [candidates.id]
-	}),
+	dealPriceChecks: many(dealPriceChecks),
 }));
 
 export const scanRequestsRelations = relations(scanRequests, ({one}) => ({
@@ -155,4 +157,15 @@ export const issuesRelations = relations(issues, ({many}) => ({
 
 export const subscribersRelations = relations(subscribers, ({many}) => ({
 	dealEvents: many(dealEvents),
+}));
+
+export const dealPriceChecksRelations = relations(dealPriceChecks, ({one}) => ({
+	publishedDeal: one(publishedDeals, {
+		fields: [dealPriceChecks.dealId],
+		references: [publishedDeals.id]
+	}),
+	scanRun: one(scanRuns, {
+		fields: [dealPriceChecks.runId],
+		references: [scanRuns.id]
+	}),
 }));
