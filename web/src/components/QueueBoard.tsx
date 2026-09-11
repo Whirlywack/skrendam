@@ -254,6 +254,11 @@ export function QueueBoard({
           <span>
             Scanner ran <b>{scan.ago}</b> · checked <b>{scan.fares}</b> fares across{' '}
             <b>{scan.airports}</b> routes · <b>{scan.newToday}</b> new candidates
+            {scan.runningSince && (
+              <>
+                {' '}· a new scan is running since <b>{scan.runningSince}</b>
+              </>
+            )}
           </span>
         </div>
         <div className="pagehead">

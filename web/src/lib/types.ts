@@ -30,5 +30,9 @@ export interface CandidateView {
   priority: number;                  // dealTemplates.priority
 }
 
-export interface ScanView { fares: string; airports: number; ago: string; newToday: number; status: string; healthReasons: string[]; }
+export interface ScanView {
+  fares: string; airports: number; ago: string; newToday: number; status: string; healthReasons: string[];
+  /** Local HH:MM a newer scan has been running since; null when nothing is in progress. */
+  runningSince: string | null;
+}
 export interface TemplateGroup { templateId: number; templateLabel: string; items: CandidateView[]; }

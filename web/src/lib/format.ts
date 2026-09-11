@@ -34,6 +34,11 @@ export function parseEngineTs(ts: string): Date {
   }
   return new Date(iso);
 }
+/** „06:25" — wall-clock time in the desk's local zone (the laptop's), the
+ *  same rendering Today uses for its "as of" line. */
+export function formatClock(d: Date): string {
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
 export function timeAgo(iso: string | null): string {
   if (!iso) return '—';
   const mins = Math.max(0, Math.round((Date.now() - parseEngineTs(iso).getTime()) / 60000));

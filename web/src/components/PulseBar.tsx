@@ -11,10 +11,13 @@ const MONO: React.CSSProperties = {
 export function PulseBar({
   scanAgo,
   scanHealthy,
+  runningSince,
   queued,
 }: {
   scanAgo: string;
   scanHealthy: boolean;
+  /** Local HH:MM a newer scan has been running since; null when idle. */
+  runningSince: string | null;
   queued: number;
 }) {
   // The daily scan fires at 06:00 local (launchd); "next" is informational.
@@ -31,9 +34,15 @@ export function PulseBar({
         background: 'var(--bg-surface)',
       }}
     >
-      <span style={{ ...MONO, color: scanHealthy ? 'var(--sea-600)' : 'var(--coral-600)' }}>
+      <span
+        style={{ ...MONO, color: scanHealthy ? 'var(--sea-600)' : 'var(--coral-600)' }}
+        title={scanHealthy ? 'Last finished scan was healthy' : 'Last finished scan was not healthy — see Scan health'}
+      >
         scan {scanAgo} {scanHealthy ? '✓' : '⚠'}
       </span>
+      {runningSince && (
+        <span style={{ ...MONO, color: 'var(--amber-700)' }}>scan running since {runningSince}</span>
+      )}
       <span style={{ ...MONO, color: 'var(--fg-3)' }}>next {nextScan}</span>
       <span style={{ ...MONO, color: queued > 0 ? 'var(--amber-700)' : 'var(--fg-3)' }}>
         {queued > 0 ? `${queued} queued` : 'queue idle'}

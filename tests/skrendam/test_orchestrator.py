@@ -738,3 +738,40 @@ def test_date_sweep_stamps_expired_at(session):
     pd = session.get(models.PublishedDeal, 21)
     assert pd.status == "expired"
     assert pd.expired_at == now
+
+
+def test_orphaned_running_runs_are_failed_at_scan_start(session):
+    """Runs still 'running' 6h+ after start are failed; younger and finished rows stay.
+
+    An interrupted run (laptop slept, process died) never finishes on its own, and
+    the desk was reading it as an in-progress scan for days.
+    """
+    _seed(session)
+    now = datetime(2026, 6, 2, 6, 0)
+    session.add_all(
+        [
+            models.ScanRun(
+                id=90, scanner_version="t", status="running", started_at=now - timedelta(hours=7)
+            ),
+            models.ScanRun(
+                id=91, scanner_version="t", status="running", started_at=now - timedelta(hours=1)
+            ),
+            models.ScanRun(
+                id=92,
+                scanner_version="t",
+                status="completed",
+                started_at=now - timedelta(days=1),
+                finished_at=now - timedelta(days=1),
+            ),
+        ]
+    )
+    session.commit()
+    adapter = FliAdapter(FakeBackend(), pace=lambda: None)
+    run_scan(session, today=date(2026, 6, 2), adapter=adapter, scanner_version="t", now=now)
+
+    orphan = session.get(models.ScanRun, 90)
+    assert orphan.status == "failed"
+    assert orphan.finished_at == now
+    assert orphan.health == {"reasons": ["orphaned: never finished"]}
+    assert session.get(models.ScanRun, 91).status == "running"
+    assert session.get(models.ScanRun, 92).status == "completed"

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { getQueueRows, getLatestScanRun, getPublishedDeals } from '@/lib/queries';
-import { toCandidateView } from '@/lib/mappers';
+import { getQueueRows, getLatestFinishedScanRun, getRunningScanRun, getPublishedDeals } from '@/lib/queries';
+import { toCandidateView, toScanView } from '@/lib/mappers';
 import { parseEngineTs, timeAgo } from '@/lib/format';
 import { ScanButtons } from '@/components/ScanButtons';
 import { ScanHealthBanner } from '@/components/ScanHealthBanner';
@@ -9,11 +9,15 @@ import { RecheckButton } from '@/components/RecheckButton';
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 12 };
 
 export default async function Dashboard() {
-  const [rows, run, published] = await Promise.all([
+  // `run` is the latest FINISHED scan — counts and health never come from a
+  // row that is still (or was left) "running" (review 2026-09-11, blocker 1).
+  const [rows, run, running, published] = await Promise.all([
     getQueueRows(),
-    getLatestScanRun(),
+    getLatestFinishedScanRun(),
+    getRunningScanRun(),
     getPublishedDeals(),
   ]);
+  const scan = toScanView(run, running);
 
   const views = rows.map(toCandidateView);
 
@@ -35,11 +39,14 @@ export default async function Dashboard() {
     calCalls > 0 ? Math.round(((calCalls - (metrics?.calendar_empty ?? 0)) / calCalls) * 100) : null;
   const priceRows = metrics?.price_rows;
   const healthy = run?.status === 'completed';
-  const scanLine = !run
-    ? 'No scan has run yet.'
-    : `Scan ran ${timeAgo(String(run.startedAt))} — ${healthy ? 'healthy' : run.status}.` +
-      (answeredPct != null ? ` Google answered ${answeredPct}% of searches` : '') +
-      (priceRows != null ? ` · ${priceRows.toLocaleString('en-GB')} prices logged.` : '.');
+  const runningClause = scan.runningSince ? ` A new scan is running since ${scan.runningSince}.` : '';
+  const scanLine =
+    (!run
+      ? 'No scan has finished yet.'
+      : `Scan ran ${scan.ago} — ${healthy ? 'healthy' : run.status}.` +
+        (answeredPct != null ? ` Google answered ${answeredPct}% of searches` : '') +
+        (priceRows != null ? ` · ${priceRows.toLocaleString('en-GB')} prices logged.` : '.')) +
+    runningClause;
 
   const healthReasons =
     ((run?.health as { reasons?: string[] } | null)?.reasons ?? []).map(String);
