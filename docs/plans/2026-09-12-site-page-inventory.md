@@ -158,5 +158,12 @@ Ads monthly averages; the peak month matters more than the average for seasonal 
 | Hub `/rinkiniai`, archive `/buvo` | as in the SEO doc | no search term either way („kelionių kryptys" 30, „kur keliauti" 50 are informational) | Navigation pages, not keyword pages; LT for consistency. |
 
 Not renamed: `/subscribe`, `/early-alerts` (funnel, no search intent, cookie path + ~25 refs).
-Tool note: DataForSEO Labs and Google Ads disagree on some month queries („kur keliauti lapkričio
-mėnesį" 110 vs 10); the deep research should settle which source to trust for the seasonal pages.
+Spelling note (resolved 2026-09-12 with a third source): the apparent disagreement between Google
+Ads and DataForSEO Labs on the month queries was a diacritics split, not a data conflict.
+Lithuanians type these on phones without diacritics: „kur keliauti lapkricio menesi" 110/mo
+(peak Sep–Oct 320) vs „kur keliauti lapkričio mėnesį" 10; „kur keliauti rugsejo menesi" 20
+(Aug 70) vs the diacritic form below 10. Both tools agree once the spelling matches. Google Trends
+(Lithuania, 12 months) shows all of these at index 0–2, i.e. below its reporting floor, which is
+consistent with tens-to-low-hundreds absolute volumes. Consequences: slugs are ASCII anyway and
+already match the typed form; titles and H1s must carry the correct diacritics (Google folds them,
+the reader does not); when sizing a seasonal page, always query both spellings and add them.
