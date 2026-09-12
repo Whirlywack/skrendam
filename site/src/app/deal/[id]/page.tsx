@@ -167,6 +167,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             <div className="routebox" aria-hidden="true">
               <div className="mono ends"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
               <div className="bead-route"><span className="track" /><span className="bead" /></div>
+              {/* Mobile (PR B): essentials inside the poster; an expired deal carries no human stamp */}
+              <div className="facts m-only">{expired ? `${t.dates} · ${t.airline}` : `${t.dates} · ${t.airline} · ${S.humanStamp}`}</div>
             </div>
             <div className="pricecell">
               <div>
@@ -184,6 +186,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               {expired
                 ? <a className="cta" href="#kapote">{S.ctaSubmit} <span className="bead" aria-hidden="true" /></a>
                 : <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">{booking.button} <span className="bead" aria-hidden="true" /></a>}
+              {/* Mobile (PR B): buy-direct trust line under the booking button; none on an expired deal (the CTA is the signup) */}
+              {!expired && <div className="trust m-only">{S.trustDirect}</div>}
             </div>
           </div>
         </div>

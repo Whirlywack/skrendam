@@ -53,6 +53,8 @@ export function Poster({
           <div className="routebox" aria-hidden="true">
             <div className="mono ends"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
             <div className="bead-route"><span className="track" /><span className="bead" /></div>
+            {/* Mobile (PR B): the essentials live inside the poster — the catch line is hidden there */}
+            <div className="facts m-only">{t.dates} · {t.airline} · {S.humanStamp}</div>
           </div>
           <div className="pricecell">
             <div>
@@ -74,6 +76,7 @@ export function Poster({
             <Link href={`/deal/${t.id}`} className="cta">
               {S.ctaSeeDealHero} <span className="bead" aria-hidden="true" />
             </Link>
+            <div className="trust m-only">{S.trustDirect}</div>
           </div>
         </div>
       </div>

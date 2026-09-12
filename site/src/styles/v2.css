@@ -337,11 +337,25 @@
   .v2-hero .sub-row { margin-top: 12px; gap: 10px; }
   .v2-hero .lead { font-size: 13.5px; }
   .v2 .v2-stamp { font-size: 11px; letter-spacing: .1em; }
-  .v2-poster { min-height: 400px; padding: 20px 18px; border-radius: 22px; gap: 14px; }
+  /* PR B: phones get the reduced layout — the poster carries dates, airline and the
+     human stamp (.facts), the buy-direct line sits under the button (.trust), and the
+     catch line under the poster goes; .m-only / .d-only flip here */
+  .m-only { display: block; } .d-only { display: none; }
+  .v2-poster { min-height: 0; padding: 20px 18px; border-radius: 22px; gap: 18px; }
+  /* the stamp is a seal — one line; the kicker wraps: „Nr. 01 iš 12 · šią savaitę" is
+     already wider than the 322px row at 390, nowrap pushed the stamp off the poster */
+  .v2-poster .v2-stamp { white-space: nowrap; }
   .v2-poster .blurb { font-size: 13.5px; }
-  .v2-poster .cta { font-size: 14px; padding: 13px 18px; border-radius: 12px; }
+  .v2-poster .facts { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: rgba(255,255,255,.92); margin-top: 10px; }
+  .v2-poster .pricecell { flex-direction: column; align-items: stretch; gap: 14px; width: 100%; }
+  /* border-box: the site has no global reset, so width:100% + padding would overflow the poster */
+  .v2-poster .cta { font-size: 14px; padding: 13px 18px; border-radius: 12px;
+    width: 100%; box-sizing: border-box; justify-content: center; min-height: 48px; }
+  .v2-poster .trust { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; color: rgba(255,255,255,.8); text-align: center; }
   .v2-poster .price s { font-size: 14px; }
-  .v2-catchline { gap: 14px; font-size: 11px; }
+  .v2-catchline { display: none; }
   .v2 .v2-sec, .v2 .v2-capture { padding-block: 32px 8px; }
   .v2-capture .inner { flex-direction: column; align-items: stretch; gap: 14px; }
   .v2-capture form { max-width: none; }
