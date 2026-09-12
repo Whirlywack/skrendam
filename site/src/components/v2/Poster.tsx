@@ -50,9 +50,9 @@ export function Poster({
           {blurb && <p className="blurb">{blurb}</p>}
         </div>
         <div className="foot">
-          <div className="routebox" aria-hidden="true">
-            <div className="mono ends"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
-            <div className="bead-route"><span className="track" /><span className="bead" /></div>
+          <div className="routebox">
+            <div className="mono ends" aria-hidden="true"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
+            <div className="bead-route" aria-hidden="true"><span className="track" /><span className="bead" /></div>
             {/* Mobile (PR B): the essentials live inside the poster — the catch line is hidden there */}
             <div className="facts m-only">{t.dates} · {t.airline} · {S.humanStamp}</div>
           </div>

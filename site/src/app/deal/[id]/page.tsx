@@ -164,9 +164,9 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             <p className="blurb">{expired ? S.trophyCaption : headline}</p>
           </div>
           <div className="foot">
-            <div className="routebox" aria-hidden="true">
-              <div className="mono ends"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
-              <div className="bead-route"><span className="track" /><span className="bead" /></div>
+            <div className="routebox">
+              <div className="mono ends" aria-hidden="true"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
+              <div className="bead-route" aria-hidden="true"><span className="track" /><span className="bead" /></div>
               {/* Mobile (PR B): essentials inside the poster; an expired deal carries no human stamp */}
               <div className="facts m-only">{expired ? `${t.dates} · ${t.airline}` : `${t.dates} · ${t.airline} · ${S.humanStamp}`}</div>
             </div>
