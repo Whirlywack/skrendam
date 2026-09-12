@@ -5,7 +5,7 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-12 (Deal Desk operating guide; VPN auto-connect recurrence).
+> Last updated 2026-09-12 (DNS hosting moved to Cloudflare; Deal Desk operating guide; VPN auto-connect recurrence).
 
 > **Operating manual:** `docs/DESK-GUIDE.md` — how a morning runs, every desk page and button and
 > what each click costs in Google calls, deal states and constants, letters, chores, troubleshooting.
@@ -362,6 +362,9 @@ it's the heart of the product:
   daily checkpoint/resume (`~/Library/Logs/skrendam/scan-checkpoint.json`) so
   retry mornings cost ~1 pass of Google load. Watchdog notifies after 08:30.
 - **ProtonVPN is enemy #2 and it impersonates BotGuard** (learned the hard way,
+  **DNS hosting is at Cloudflare since 2026-09-12** (domain still registered at iv.lt; iv.lt's DNS signer and
+  zone editor overwrite each other — never host the zone there again; runbook
+  `docs/runbooks/2026-09-12-dns-move-off-ivlt.md`).
   **Recurred 2026-09-12:** ProtonVPN auto-connected when the internet returned after an outage;
   132/132 empty calendar answers. Disable auto-connect in the ProtonVPN app; check
   `scutil --nc list` for `(Connected) … ProtonVPN` before diagnosing anything else.
