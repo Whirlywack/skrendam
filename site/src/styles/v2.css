@@ -329,11 +329,14 @@
 /* ---------- mobile (HomeMobile artboard; mono floor 11px) ---------- */
 @media (max-width: 720px) {
   .v2 .wrap { padding-inline: 16px; }
-  .v2-masthead .bar { height: 54px; gap: 12px; }
-  .v2-masthead .mid { display: none; }
-  .v2-masthead .navlinks { gap: 12px; font-size: 11px; letter-spacing: .1em; flex: 1; }
-  .v2-masthead .pill { font-size: 13px; padding: 8px 14px; }
+  /* nav links are d-only (the base .v2-masthead .navlinks rule outranks .d-only,
+     so hide them here too): logo left, pill right, both tappable */
+  .v2-masthead .bar { height: 54px; gap: 12px; justify-content: space-between; }
+  .v2-masthead .mid, .v2-masthead .navlinks { display: none; }
+  .v2-masthead .pill { font-size: 13px; padding: 8px 14px; min-height: 44px; }
   .v2 .v2-hero { padding-block: 26px 18px; }
+  /* with a featured deal the poster is the page — no hero above it */
+  .v2-hero--has-poster { display: none; }
   .v2-hero .sub-row { margin-top: 12px; gap: 10px; }
   .v2-hero .lead { font-size: 13.5px; }
   .v2 .v2-stamp { font-size: 11px; letter-spacing: .1em; }
@@ -359,16 +362,21 @@
   .v2 .v2-sec, .v2 .v2-capture { padding-block: 32px 8px; }
   .v2-capture .inner { flex-direction: column; align-items: stretch; gap: 14px; }
   .v2-capture form { max-width: none; }
-  .v2 .v2-row { grid-template-columns: auto 1fr auto; gap: 4px 14px; padding: 16px 4px; }
-  .v2 .v2-row .no { display: none; }
-  .v2 .v2-row .v2-row-meta { grid-column: 1 / -1; font-size: 11px; }
-  .v2 .v2-row .v2-row-price { justify-self: end; }
-  /* touch has no hover — live rows carry a visible bead affordance */
-  a.v2-row .v2-row-name::after {
-    content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-    background: var(--v2-amber); margin-left: 8px; vertical-align: 6px;
-  }
-  .v2-ink-band { padding: 44px 0; margin-top: 32px; }
+  /* rows are taps: name + price on one line, meta under (MainMobile board);
+     the № column goes, the four shown locked rows collapse into the one
+     „+ dar N" row, the section kicker goes */
+  .v2-row--locked-n { display: none; }
+  .v2-rows .v2-row { grid-template-columns: 1fr auto; grid-template-areas: "name price" "meta meta";
+    gap: 6px 14px; padding: 16px 4px; min-height: 44px; }
+  .v2-rows .v2-row .no { display: none; }
+  .v2-rows .v2-row-name { grid-area: name; }
+  .v2-rows .v2-row-price { grid-area: price; justify-self: end; white-space: nowrap; }
+  .v2-rows .v2-row-meta { grid-area: meta; font-size: 11px; }
+  /* the collapsed „+ dar N radiniai" label is a phrase, not a city — the board
+     sets it a size down so it stays on one line beside the price chip */
+  .v2-row--more .v2-row-name { font-size: clamp(22px, 6vw, 28px); }
+  .v2-sec .head .v2-kicker { display: none; }
+  .v2-ink-band { margin-top: 28px; padding: 44px 0; }
   .v2-ink-band .grid { grid-template-columns: 1fr; gap: 24px; }
   .v2-ink-band form .frow { flex-direction: column; }
   .v2-ink-band .sunball { width: 200px; height: 200px; right: -60px; top: -80px; }

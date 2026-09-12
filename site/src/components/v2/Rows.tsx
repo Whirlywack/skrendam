@@ -69,7 +69,11 @@ export function LiveIndex({ deals, locked = [], startAt }: {
                 {S.moreLocked} {locked.length} {ltPlural(locked.length, 'radinys', 'radiniai', 'radinių')}
               </span>
             </span>
-            <span className="v2-row-meta">{lockedCollapsed.map((t) => t.destination).join(' · ')}</span>
+            <span className="v2-row-meta">
+              {/* mobile hides every locked row, so the collapsed row names all of them */}
+              <span className="d-only">{lockedCollapsed.map((t) => t.destination).join(' · ')}</span>
+              <span className="m-only">{locked.map((t) => t.destination).join(' · ')}</span>
+            </span>
             <span className="v2-row-price">
               <span className="bead" aria-hidden="true" />{S.lockedChip}
             </span>

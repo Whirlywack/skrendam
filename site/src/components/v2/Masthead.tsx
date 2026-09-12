@@ -10,7 +10,7 @@ export function Masthead() {
     <header className="v2-masthead">
       <div className="wrap bar">
         <Link href="/" className="v2-display logo" aria-label="Yip">yıp</Link>
-        <nav className="navlinks" aria-label={S.navAria}>
+        <nav className="navlinks d-only" aria-label={S.navAria}>
           <Link href="/">{S.navDeals}</Link>
           <Link href="/rinkiniai">{S.navCollections}</Link>
         </nav>

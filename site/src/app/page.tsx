@@ -1,7 +1,8 @@
 import { getLiveDeals, getInspirationDeals, getEditionNumber } from '@/lib/queries';
 import { splitFreeLocked } from '@/lib/scarcity';
-import { freshSource, toTicket, toPublicDeal } from '@/lib/mappers';
-import { freshInfo } from '@/lib/format';
+import Link from 'next/link';
+import { freshSource, rowMeta, toTicket, toPublicDeal } from '@/lib/mappers';
+import { eur, freshInfo } from '@/lib/format';
 import { S } from '@/lib/lt';
 import { Masthead } from '@/components/v2/Masthead';
 import { Poster } from '@/components/v2/Poster';
@@ -35,8 +36,10 @@ export default async function Home() {
     <main className="v2">
       <Masthead />
 
-      {/* Hero: issue kicker → poster headline → subhead + human stamp */}
-      <section className="wrap v2-hero">
+      {/* Hero: issue kicker → poster headline → subhead + human stamp.
+          Mobile (PR B): the poster IS the page — with a featured deal the hero
+          is cut so the primary button sits inside the Safari fold. */}
+      <section className={`wrap v2-hero${featured ? ' v2-hero--has-poster' : ''}`}>
         <div className="v2-kicker">{S.issueLabel} {edition}</div>
         <h1 className="v2-display">
           {S.heroH1.replace(/\.$/, '')}
@@ -62,12 +65,33 @@ export default async function Home() {
           </div>
         </section>
       )}
+      {/* Empty home on mobile (HomeEmptyMobile board): one expired proof row
+          plus the „Buvę radiniai" tap — the trophy case itself is desktop-only. */}
+      {!featured && (
+        <section className="wrap v2-sec m-only m-rows">
+          <div className="v2-rows">
+            {past[0] && (
+              <Link href={`/deal/${past[0].id}`} className="v2-row v2-row--dead">
+                <span className="no" /><span className="v2-row-name">{past[0].destination}</span>
+                <span className="v2-row-meta">{rowMeta(past[0])}</span>
+                <span className="v2-row-price">{eur(past[0].price)}{past[0].baseline != null && <s>{eur(past[0].baseline)}</s>}</span>
+              </Link>
+            )}
+            <Link href="/buvo" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.navPast}</span><span className="v2-row-meta">{S.pastEyebrow}</span><span className="v2-row-price">→</span></Link>
+          </div>
+        </section>
+      )}
 
-      {/* The ask lives next to the desire — never a full viewport below it */}
-      <CaptureRow />
+      {/* The ask lives next to the desire — never a full viewport below it.
+          Mobile cuts the mid-page capture and the trophy case (founder 09-12). */}
+      <div className="d-only">
+        <CaptureRow />
+      </div>
 
       {/* Artboard order: what you missed → what's left → the email */}
-      <TrophyCase deals={past} />
+      <div className="d-only">
+        <TrophyCase deals={past} />
+      </div>
       <LiveIndex deals={rest} locked={locked} startAt={2} />
       <InkBand />
 
