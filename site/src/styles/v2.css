@@ -98,7 +98,9 @@
 .v2-poster--stone { background: var(--poster-stone); }
 /* expired deal: sand duotone, never the live sun/dusk/sea fields */
 .v2-poster--dead { background: linear-gradient(160deg, var(--sand-300) 0%, var(--sand-500) 55%, var(--sand-700) 100%); }
-.v2-poster .price-dead { margin-left: 0; font: inherit; opacity: .75; letter-spacing: inherit; }
+/* (0,3,1): must out-rank `.v2-poster .price s` (0,2,1) and its mobile
+   font-size override, or the struck price shrinks to the was-price size */
+.v2-poster .price s.price-dead { margin-left: 0; font: inherit; opacity: .75; letter-spacing: inherit; }
 
 .v2-catchline {
   display: flex; gap: 22px; flex-wrap: wrap; padding: 14px 6px 0;

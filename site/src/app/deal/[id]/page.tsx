@@ -143,7 +143,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         { label: deal.destination },
       ]} />
 
-      {/* Poster hero — the home poster atom; the CTA becomes the booking action */}
+      {/* Poster hero — the home poster atom; the CTA is the booking action on a live deal, the signup ask on an expired one */}
       <section className="wrap" style={{ paddingTop: 14 }}>
         <div className={`v2-poster ${posterField}`}>
           <div className="top">
