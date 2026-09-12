@@ -2,10 +2,23 @@
 
 You are picking up Yip/Skrendam with no memory of the last three days. Read §0 and §1, then act.
 
-## 0. PRIORITY (founder, 2026-09-12): the frontend comes first
-The backend is done (every work package of the launch spec is merged). **The next block of work is the public
-site (`site/`)**: it must reflect what the backend now produces, and the new pages must exist. Chores and
-backlog items come after, unless they block the site. Concretely:
+## 0. PRIORITY (founder, 2026-09-12; order refined the same day): frontend first — after email is switched on
+The backend is done (every work package of the launch spec is merged). The order that follows from the spec's
+own decision ("the paid stream is the product, the site captures leads"):
+
+- **Step 0 — switch email on (founder, 1–2 h, this week).** `RESEND_API_KEY`, `YIP_FROM_EMAIL`,
+  `NEXT_PUBLIC_SITE_URL`, `PAYMENT_LINK_URL` into `web/.env.local`; Stripe Payment Link; test sends to
+  Gmail/Apple Mail/Outlook; `scripts/2026-09-12_founding_interest_backfill.sql`. Blocking chores for this:
+  `List-Unsubscribe-Post` header (RFC 8058) and the iv.lt DS ticket. Then **let the machine run a week**
+  (first real verification pass, first instant mail, first Thursday digest) — bugs are cheapest here.
+- **In parallel:** the founder runs the deep-research prompt; brief a Lithuanian copywriter (see item 3).
+- **Step 1 — the frontend / site redo (`site/`)**, in two phases: (a) polish so the site *shows* the backend
+  (mostly wired already — see item 1); (b) the SEO page architecture once the research is in, built in
+  slices, **route pages first** (they compound with time). Chores and backlog after, unless they block the site.
+- **Reality check:** the site redo pays off only when TikTok traffic arrives; the top of the funnel is the
+  founder's (the desk drafts a TikTok hook per deal).
+
+Concretely for the site:
 
 1. **Make yip.lt reflect the backend.** Deals carry `score_v2`, archetype (date / rare / destination), the peak
    window, family saving, verified-at, `current_price` and the `live / changed / expired` states, price-check
