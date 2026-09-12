@@ -28,6 +28,8 @@ export interface TicketView {
   scene: string;          // sceneClass(destination)
   airline: string;
   goingFast: boolean;
+  verifiedTime: string | null;  // „06:41" from published_deals.verified_at (WP9), else null
+  lasted: string | null;        // „14 d." / „7 val." from expired_at − published_at, else null
 }
 export interface PublicDeal {
   id: number;               // published_deals.id
@@ -54,4 +56,6 @@ export interface PublicDeal {
   archetype: DealArchetype | null;  // why it looked interesting: date | rare | destination
   windowSlug: string | null;        // peak window it sits in, e.g. "xmas_markets"
   savingFamily: number | null;      // € saved for a family of four, when the window is a family one
+  verifiedTime: string | null;  // „06:41" from published_deals.verified_at (WP9), else null
+  lasted: string | null;        // „14 d." / „7 val." from expired_at − published_at, else null
 }

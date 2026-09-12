@@ -89,3 +89,15 @@ describe('rowMeta — the index row line under the destination', () => {
     expect(rowMeta(t)).not.toContain('radome už');
   });
 });
+
+describe('slice 2 fields', () => {
+  it('verifiedTime comes from pd.verifiedAt in Vilnius time, null otherwise', () => {
+    expect(toTicket(row({ pd: { verifiedAt: '2026-09-12 03:41:00' } }), new Date()).verifiedTime).toBe('06:41');
+    expect(toTicket(row(), new Date()).verifiedTime).toBeNull();
+  });
+  it('lasted is set only for expired rows with expiredAt after publishedAt', () => {
+    const t = toTicket(row({ pd: { status: 'expired', publishedAt: '2026-08-28T10:00:00', expiredAt: '2026-09-11T10:21:49' } }), new Date());
+    expect(t.lasted).toBe('14 d.');
+    expect(toTicket(row({ pd: { publishedAt: '2026-08-28T10:00:00', expiredAt: null } }), new Date()).lasted).toBeNull();
+  });
+});

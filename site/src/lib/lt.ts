@@ -164,6 +164,14 @@ export const S = {
   navAllDeals: 'Visi radiniai',
   checkedByHand: 'Rasta ir patikrinta žmogaus.', // metadata / JSON-LD sentence tail
   retOneWay: 'į vieną pusę',
+
+  // Slice 2 slots (2026-09-12). Empty = the UI hides the slot. The founder's
+  // copy pass fills these; do not draft wording here. // copy pass
+  lastedLabel: '',     // word before „14 d." on expired rows and the expired page
+  priceRoseFlag: '',   // eyebrow flag on a changed deal
+  windowMinLabel: '',  // catch-column line before „gruod. 14 · 78 €"
+  checkGone: '',       // check line value when the itinerary was gone
+  moreLocked: '+ dar', // collapsed locked row: „+ dar 5 radiniai" (approved on the board)
 } as const;
 
 // Curator identity is configurable, never hardcoded — different people may

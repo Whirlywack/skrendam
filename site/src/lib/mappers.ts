@@ -3,7 +3,7 @@ import { qualityTag } from './quality';
 import { bookingCta } from './booking';
 import { ltCity } from './cities-lt';
 import { ltDealHeadline, stopsChip } from './dealDetail';
-import { eur, formatDates, freshnessLabel, ltMonthNom } from './format';
+import { clockLT, eur, formatDates, freshnessLabel, lasted, ltMonthNom } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
 import { groundHint } from './ground';
@@ -159,6 +159,8 @@ export function toTicket(r: Row, now: Date): TicketView {
     scene: sceneClass(pd.destination),
     airline,
     goingFast: Boolean(pd.goingFast),
+    verifiedTime: clockLT(pd.verifiedAt ?? null),
+    lasted: lasted(String(pd.publishedAt), pd.expiredAt ?? null),
   };
 }
 
@@ -207,5 +209,7 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     verifiedAt: pd.verifiedAt ? String(pd.verifiedAt) : r.verifiedAt ? String(r.verifiedAt) : null,
     groundHint: groundHint(pd.origin),
     ...demand(r),
+    verifiedTime: clockLT(pd.verifiedAt ?? null),
+    lasted: lasted(String(pd.publishedAt), pd.expiredAt ?? null),
   };
 }
