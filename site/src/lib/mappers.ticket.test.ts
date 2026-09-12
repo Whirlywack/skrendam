@@ -91,9 +91,11 @@ describe('rowMeta — the index row line under the destination', () => {
 });
 
 describe('slice 2 fields', () => {
-  it('verifiedTime comes from pd.verifiedAt in Vilnius time, null otherwise', () => {
-    expect(toTicket(row({ pd: { verifiedAt: '2026-09-12 03:41:00' } }), new Date()).verifiedTime).toBe('06:41');
-    expect(toTicket(row(), new Date()).verifiedTime).toBeNull();
+  it('verifiedTime comes from pd.verifiedAt in Vilnius time, only on the day it was taken', () => {
+    const now = new Date('2026-09-12T10:00:00Z');
+    expect(toTicket(row({ pd: { verifiedAt: '2026-09-12 03:41:00' } }), now).verifiedTime).toBe('06:41');
+    expect(toTicket(row({ pd: { verifiedAt: '2026-09-11 03:41:00' } }), now).verifiedTime).toBeNull();
+    expect(toTicket(row(), now).verifiedTime).toBeNull();
   });
   it('lasted is set only for expired rows with expiredAt after publishedAt', () => {
     const t = toTicket(row({ pd: { status: 'expired', publishedAt: '2026-08-28T10:00:00', expiredAt: '2026-09-11T10:21:49' } }), new Date());

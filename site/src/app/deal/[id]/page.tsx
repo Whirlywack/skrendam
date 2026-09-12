@@ -67,7 +67,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   // With no copy for a gone check yet, a line containing one would show a bare
   // dash — hide the line until the key is filled (Global Constraints).
   const checkItems = toCheckItems(checkRows, S.checkGone);
-  const showChecks = checkItems.length > 0 && (S.checkGone !== '' || checkRows.every((r) => r.available && r.price != null));
+  const showChecks = checkItems.length > 0 && (Boolean(S.checkGone) || checkRows.every((r) => r.available && r.price != null));
 
   // Why / catch columns
   const score = Math.round(Number(row.score ?? 0) * 100);

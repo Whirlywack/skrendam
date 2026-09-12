@@ -3,7 +3,7 @@ import { qualityTag } from './quality';
 import { bookingCta } from './booking';
 import { ltCity } from './cities-lt';
 import { ltDealHeadline, stopsChip } from './dealDetail';
-import { clockLT, eur, formatDates, freshnessLabel, lasted, ltMonthNom } from './format';
+import { clockLT, eur, formatDates, freshnessLabel, lasted, ltMonthNom, sameVilniusDay } from './format';
 import { sceneClass } from './photos';
 import { airlineName } from './airlines';
 import { groundHint } from './ground';
@@ -118,8 +118,6 @@ function legs(snapshot: unknown): { stops: number; airline: string } {
 }
 
 export function toTicket(r: Row, now: Date): TicketView {
-  // now is accepted for signature consistency with toPublicDeal; reserved for relative-time use.
-  void now;
   const pd = r.pd;
   const { stops, airline } = legs(r.snapshot);
   const s = (r.snapshot ?? {}) as Record<string, unknown>;
@@ -159,7 +157,8 @@ export function toTicket(r: Row, now: Date): TicketView {
     scene: sceneClass(pd.destination),
     airline,
     goingFast: Boolean(pd.goingFast),
-    verifiedTime: clockLT(pd.verifiedAt ?? null),
+    // The clock is the deal's own WP9 stamp (not the candidate fallback `verifiedAt` uses) and shows only on the day it was taken.
+    verifiedTime: sameVilniusDay(pd.verifiedAt ?? null, now) ? clockLT(pd.verifiedAt ?? null) : null,
     lasted: lasted(String(pd.publishedAt), pd.expiredAt ?? null),
   };
 }
@@ -175,9 +174,6 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
   const status = pd.goingFast
     ? { kind: 'going_fast' as const, label: S.chipGoingFast }
     : { kind: 'fresh' as const, label: freshnessLabel(freshSource(r)) };
-
-  // reserved for Task 8 — will be threaded into timeAgo() for the detail page's relative time
-  void now;
 
   return {
     id: pd.id,
@@ -209,7 +205,8 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     verifiedAt: pd.verifiedAt ? String(pd.verifiedAt) : r.verifiedAt ? String(r.verifiedAt) : null,
     groundHint: groundHint(pd.origin),
     ...demand(r),
-    verifiedTime: clockLT(pd.verifiedAt ?? null),
+    // The clock is the deal's own WP9 stamp (not the candidate fallback `verifiedAt` uses) and shows only on the day it was taken.
+    verifiedTime: sameVilniusDay(pd.verifiedAt ?? null, now) ? clockLT(pd.verifiedAt ?? null) : null,
     lasted: lasted(String(pd.publishedAt), pd.expiredAt ?? null),
   };
 }

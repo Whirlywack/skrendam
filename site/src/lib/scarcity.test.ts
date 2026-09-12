@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FREE_WINDOW, LOCKED_SHOWN, splitFreeLocked, splitLockedRows } from './scarcity';
+import { FREE_WINDOW, LOCKED_SHOWN, lockedRangeLabel, splitFreeLocked, splitLockedRows } from './scarcity';
 
 describe('splitFreeLocked', () => {
   it('locks nothing at or under the free window', () => {
@@ -26,5 +26,12 @@ describe('splitLockedRows', () => {
     expect(LOCKED_SHOWN).toBe(4);
     expect(splitLockedRows([])).toEqual({ shown: [], collapsed: [] });
     expect(splitLockedRows([1, 2, 3], 0)).toEqual({ shown: [], collapsed: [1, 2, 3] });
+  });
+});
+
+describe('lockedRangeLabel', () => {
+  it('„Nr. 08–12" for a range, „Nr. 08" when exactly one row is collapsed', () => {
+    expect(lockedRangeLabel(8, 12)).toBe('Nr. 08–12');
+    expect(lockedRangeLabel(8, 8)).toBe('Nr. 08');
   });
 });

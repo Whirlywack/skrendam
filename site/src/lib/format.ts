@@ -94,6 +94,17 @@ export function lasted(publishedAt: string, expiredAt: string | null): string | 
   return h < 48 ? `${Math.max(1, h)} val.` : `${Math.round(h / 24)} d.`;
 }
 
+/** True only when `iso` and `now` fall on the same calendar day in
+ *  Europe/Vilnius — the verification clock must not advertise yesterday's
+ *  stamp as today's. A null stamp is never "today". */
+export function sameVilniusDay(iso: string | null, now: Date): boolean {
+  if (!iso) return false;
+  const day = new Intl.DateTimeFormat('lt-LT', {
+    timeZone: 'Europe/Vilnius', year: 'numeric', month: '2-digit', day: '2-digit',
+  });
+  return day.format(new Date(utcMs(iso))) === day.format(now);
+}
+
 /** „06:41" — the verification clock in Lithuanian local time. */
 export function clockLT(iso: string | null): string | null {
   if (!iso) return null;

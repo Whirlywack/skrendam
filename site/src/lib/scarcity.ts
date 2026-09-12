@@ -18,3 +18,9 @@ export const LOCKED_SHOWN = 4;
 export function splitLockedRows<T>(locked: T[], shown = LOCKED_SHOWN): { shown: T[]; collapsed: T[] } {
   return { shown: locked.slice(0, shown), collapsed: locked.slice(shown) };
 }
+
+/** „Nr. 08–12" for a collapsed range, „Nr. 08" when one row is collapsed. */
+export function lockedRangeLabel(from: number, to: number): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return from === to ? `Nr. ${p(from)}` : `Nr. ${p(from)}–${p(to)}`;
+}

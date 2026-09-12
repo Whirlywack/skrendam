@@ -3,7 +3,7 @@ import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur, ltPlural } from '@/lib/format';
 import { rowMeta } from '@/lib/mappers';
-import { splitLockedRows } from '@/lib/scarcity';
+import { lockedRangeLabel, splitLockedRows } from '@/lib/scarcity';
 
 /** One live-deal index row — the single source for home, collection pages and
  *  similar-deals lists (review 08-28: three drifting copies collapsed here). */
@@ -59,9 +59,7 @@ export function LiveIndex({ deals, locked = [], startAt }: {
         ))}
         {lockedCollapsed.length > 0 && (
           <a href="#kapote" className="v2-row v2-row--locked v2-row--more">
-            <span className="no">
-              Nr. {String(collapsedFrom).padStart(2, '0')}–{String(total).padStart(2, '0')}
-            </span>
+            <span className="no">{lockedRangeLabel(collapsedFrom, total)}</span>
             <span className="v2-row-name">
               {/* desktop counts what is collapsed; mobile (PR B) counts every locked deal */}
               <span className="d-only">
