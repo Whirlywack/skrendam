@@ -1,5 +1,11 @@
 # Runbook — move yip.lt DNS hosting off iv.lt (keep the domain registered there)
 
+> **Status 2026-09-12 13:50 — DONE.** Zone imported at Cloudflare (`greg`/`sarah.ns.cloudflare.com`, Vercel
+> records DNS-only), DNSSEC switched off at iv.lt 12:01, nameservers changed 12:13; the .lt registry published
+> both at 13:49 and yip.lt resolved everywhere within a minute. In practice the NS change was submitted before
+> the DS was withdrawn — harmless because the domain was already SERVFAIL, and the registry applied both
+> in one publication. **Open:** enable DNSSEC at Cloudflare and get the DS added by iv.lt ticket (§ step 5).
+
 Written 2026-09-12 from live checks and current provider docs (facts + sources in
 `.superpowers/sdd/2026-09-12-dns-migration-research.md`, exact records in
 `.superpowers/sdd/2026-09-12-yip-lt-zone-records.txt`). Founder does the clicks; Claude verifies each
