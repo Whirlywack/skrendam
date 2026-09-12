@@ -638,3 +638,18 @@ Added 2026-09-12 after the controller's visual check: Task 4 covered the kicker,
 - [ ] **Step 5: Verify** — `npx tsc --noEmit`, `npx vitest run`, `npx next build`; `npx next start -p 3103`; `curl -s http://localhost:3103/deal/3` must contain `v2-poster--dead`, `price-dead`, `Buvo. Nebėra.`, `href="#kapote"` inside the poster, and must NOT contain `Google Flights` or `Tirpsta`; `curl -s http://localhost:3103/deal/17` must be unchanged (sun/stone field, booking CTA present, no `price-dead`). `pkill -f 'next start -p 3103'`.
 
 - [ ] **Step 6: Commit** — `git commit -m "feat(site): expired deal page — sand poster, struck price, signup CTA"`.
+
+## Post-review fixes (PR #56 high-effort review, 2026-09-12)
+
+1. `getPriceChecks` reads exact-itinerary rows only (`source IN ('flights','manual')`, `calendar` excluded — it carries the window minimum), ordered by `checked_at, id` desc.
+2. Three check states in `priceChecks.ts` — `priced` / `gone` / `unpriced` (`available=true, price=null` is a real engine state, never rendered as gone); `up` compares to the previous *priced* check; `canShowCheckLine` gates the line (no bare dash, no empty value).
+3. `InkBand` takes a `source` prop (default `home`); the deal page passes `deal` so signups attribute correctly.
+4. Hero clock hidden again — `verified_at` carries the run start time, not the check time; `verifiedTime` stays in the mappers/types for later.
+5. Expired `generateMetadata`: title `«Destination» — Buvo. Nebėra. · Yip`, description = trophy caption + footnote; no dead price in the `<title>`.
+6. Expired poster save line uses the same depth gate as live and `/buvo` (`showWas && save > 0`).
+7. `vilniusDay(iso)` in `format.ts`; `sameVilniusDay` refactored onto it; check dates are Vilnius calendar days, not UTC.
+8. The price-context section is hidden on expired pages — the page speaks in the past tense only in the poster (controller ruling; deviates from the approved board deliberately). `|| showChecks` lets a fresh route with checks but no history show its line.
+9. `getPriceChecks` is skipped on expired pages.
+10. `going_fast` is a live-only signal in `toTicket` / `toPublicDeal` (a dead row never says „Tirpsta").
+
+Follow-up — engine: stamp `verified_at`/`checked_at` per check, not with the run start `now` (skrendam/verification.py:225) — separate PR; re-enable the hero clock after.

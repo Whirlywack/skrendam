@@ -101,13 +101,14 @@ export async function getDeal(id: number) {
   return rows[0] ?? null;
 }
 
-/** Newest N verification checks for one deal (WP9). */
+/** Newest N verification checks for one deal (WP9) — exact-itinerary rows only. */
 export async function getPriceChecks(dealId: number, limit = 3) {
   return db
     .select({ checkedAt: dealPriceChecks.checkedAt, price: dealPriceChecks.price, available: dealPriceChecks.available })
     .from(dealPriceChecks)
-    .where(eq(dealPriceChecks.dealId, dealId))
-    .orderBy(desc(dealPriceChecks.checkedAt))
+    // 'calendar' rows carry the window-minimum price, not the itinerary's — the check line is about the exact itinerary.
+    .where(and(eq(dealPriceChecks.dealId, dealId), inArray(dealPriceChecks.source, ['flights', 'manual'])))
+    .orderBy(desc(dealPriceChecks.checkedAt), desc(dealPriceChecks.id))
     .limit(limit);
 }
 

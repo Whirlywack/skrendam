@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { ascii, clockLT, formatDates, freshnessLabel, lasted, ltPlural, eur, sameVilniusDay, timeAgo } from './format';
+import { ascii, clockLT, formatDates, freshnessLabel, lasted, ltPlural, eur, sameVilniusDay, timeAgo, vilniusDay } from './format';
 
 test('ascii: strips Lithuanian diacritics to the typed form', () => {
   expect(ascii('Pigūs skrydžiai į Kiprą — atrinkti žmogaus')).toBe('Pigus skrydziai i Kipra — atrinkti zmogaus');
@@ -58,4 +58,10 @@ test('sameVilniusDay: compares calendar days in Europe/Vilnius, not UTC', () => 
   expect(sameVilniusDay('2026-09-11T21:30:00Z', new Date('2026-09-12T01:00:00Z'))).toBe(true);
   expect(sameVilniusDay('2026-09-11 03:41:00', new Date('2026-09-12T10:00:00Z'))).toBe(false);
   expect(sameVilniusDay(null, new Date('2026-09-12T10:00:00Z'))).toBe(false);
+});
+
+test('vilniusDay: YYYY-MM-DD of the Europe/Vilnius calendar day, from naive-UTC or zoned stamps', () => {
+  expect(vilniusDay('2026-09-11 21:30:00')).toBe('2026-09-12'); // 21:30 UTC = 00:30 next day in Vilnius (UTC+3)
+  expect(vilniusDay('2026-09-12T03:41:00Z')).toBe('2026-09-12');
+  expect(vilniusDay('2026-01-11T22:30:00Z')).toBe('2026-01-12'); // UTC+2 in January
 });

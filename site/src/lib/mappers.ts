@@ -8,6 +8,7 @@ import { sceneClass } from './photos';
 import { airlineName } from './airlines';
 import { groundHint } from './ground';
 import { S } from './lt';
+import { LIVE_STATUSES } from './statuses';
 
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 
@@ -134,6 +135,9 @@ export function toTicket(r: Row, now: Date): TicketView {
   const score = r.score100 != null ? Number(r.score100) : Math.round(Number(r.score ?? 0) * 100);
   const quality = r.qualityTier === 'rare' || r.qualityTier === 'great'
     ? r.qualityTier : (qualityTag(tierScore(r, score)) ?? 'great');
+  // going_fast is a live-only signal: the engine never clears the flag when a
+  // deal dies, so a dead row must not keep saying „Tirpsta" (PR #56 review).
+  const live = (LIVE_STATUSES as readonly string[]).includes(pd.status);
   return {
     id: pd.id,
     destination: ltCity(pd.destination).nom,
@@ -156,7 +160,7 @@ export function toTicket(r: Row, now: Date): TicketView {
     catchChip: stopsChip(stops),
     scene: sceneClass(pd.destination),
     airline,
-    goingFast: Boolean(pd.goingFast),
+    goingFast: Boolean(pd.goingFast) && live,
     // The clock is the deal's own WP9 stamp (not the candidate fallback `verifiedAt` uses) and shows only on the day it was taken.
     verifiedTime: sameVilniusDay(pd.verifiedAt ?? null, now) ? clockLT(pd.verifiedAt ?? null) : null,
     lasted: lasted(String(pd.publishedAt), pd.expiredAt ?? null),
@@ -171,7 +175,9 @@ export function toPublicDeal(r: Row, now: Date): PublicDeal {
     ? r.qualityTier : (qualityTag(tierScore(r, score)) ?? 'great');
   const ps = priceState(pd);
   const drop = ps.drop;
-  const status = pd.goingFast
+  // Same live-only gate as toTicket: a dead row never says „Tirpsta".
+  const live = (LIVE_STATUSES as readonly string[]).includes(pd.status);
+  const status = pd.goingFast && live
     ? { kind: 'going_fast' as const, label: S.chipGoingFast }
     : { kind: 'fresh' as const, label: freshnessLabel(freshSource(r)) };
 

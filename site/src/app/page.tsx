@@ -26,6 +26,7 @@ export default async function Home() {
   // once, in the poster catch-line — never as the page's trust badge. A
   // going-fast deal's catch-line leads with that instead of a freshness claim.
   const stampFresh = fresh?.withinCap ? ` · ${fresh.label.toLowerCase()}` : '';
+  // verifiedTime is not shown yet: the engine stamps verified_at with the run start time (PR #56 review); re-enable when it stamps per check.
   const catchFreshness = featured?.goingFast
     ? S.chipGoingFast
     : fresh?.label ?? '';
@@ -45,7 +46,7 @@ export default async function Home() {
           <p className="lead">{S.heroSub}</p>
           <span className="v2-stamp">
             <span className="bead" style={{ width: 7, height: 7 }} aria-hidden="true" />
-            {S.humanStamp}{featured?.verifiedTime ? ` · ${featured.verifiedTime}` : stampFresh}
+            {S.humanStamp}{stampFresh}
           </span>
         </div>
       </section>

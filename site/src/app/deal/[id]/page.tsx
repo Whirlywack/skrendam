@@ -8,7 +8,7 @@ import { dealWhyAndCatch, ltDealHeadline } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
 import { ltCity } from '@/lib/cities-lt';
 import { eur, formatDates, freshnessLabel } from '@/lib/format';
-import { toCheckItems } from '@/lib/priceChecks';
+import { canShowCheckLine, toCheckItems } from '@/lib/priceChecks';
 import { WAS_PRICE_MIN_DROP_PCT, priceFreeBlurb } from '@/lib/format-rules';
 import { destinationsCollection, originCollection, zoneCollection } from '@/lib/collections';
 import { S, curator } from '@/lib/lt';
@@ -63,11 +63,12 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   // Slice 2: expired variant + the last daily checks (WP9 deal_price_checks)
   const expired = !isLive(pd.status);
-  const checkRows = await getPriceChecks(pd.id);
-  // With no copy for a gone check yet, a line containing one would show a bare
-  // dash — hide the line until the key is filled (Global Constraints).
+  // An expired page has no price-context section (see below), so its checks are never read.
+  const checkRows = expired ? [] : await getPriceChecks(pd.id);
+  // Three check states (priced / gone / unpriced); the line shows only when it
+  // can be honest in every slot — no bare dash, no empty value (Global Constraints).
   const checkItems = toCheckItems(checkRows, S.checkGone);
-  const showChecks = checkItems.length > 0 && (Boolean(S.checkGone) || checkRows.every((r) => r.available && r.price != null));
+  const showChecks = canShowCheckLine(checkItems, S.checkGone);
 
   // Why / catch columns
   const score = Math.round(Number(row.score ?? 0) * 100);
@@ -174,7 +175,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                 </div>
                 {/* Live: same depth gate as the strikethrough (see Poster.tsx). Expired: trophy meta „sutaupė". */}
                 {expired
-                  ? (save != null && <div className="mono save">{S.savedWord} {eur(save)}</div>)
+                  ? (showWas && save != null && save > 0 && <div className="mono save">{S.savedWord} {eur(save)}</div>)
                   : (showWas && save != null && <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>)}
                 {/* Changed deal (WP9): „Dabar nuo 124 €" / „radome už 93 €" */}
                 {!expired && t.priceLines.map((line) => <div key={line} className="mono save">{line}</div>)}
@@ -236,8 +237,12 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
       {/* Price context — one plain-language claim + the real sparkline when history exists */}
       {/* One integrated price story: kicker → price-free claim → bars → method.
-          The € figure already dominates the poster — never repeated here. */}
-      {(stats.hasHistory || deal.drop > 0) && (
+          The € figure already dominates the poster — never repeated here.
+          Expired: the whole section is hidden — the page speaks in the past
+          tense only in the poster (controller ruling, PR #56 review; the
+          approved board still had the chart — this deviates deliberately).
+          `|| showChecks` lets a fresh route with checks but no history show its line. */}
+      {!expired && (stats.hasHistory || deal.drop > 0 || showChecks) && (
         <section className="wrap v2-context">
           <div className="v2-kicker v2-kicker--dim">{S.priceContextH}</div>
           <div className="big">
@@ -272,7 +277,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
       <LinkBand links={bandLinks} />
 
-      <InkBand />
+      <InkBand source="deal" />
       <V2Footer />
     </main>
   );
@@ -305,10 +310,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // Sentence position after „į" declines the destination (spec §4 — never nominative after „į").
   const destAcc = ltCity(row.pd.destination).acc;
 
-  const title = `${d.destination} ${eur(d.price)} — ${d.route} · Yip`;
-  const description = d.drop > 0
-    ? `${eur(d.price)} ${tripLabel} į ${destAcc} — ${d.drop} % pigiau nei įprastai. ${d.dates}. ${S.checkedByHand}`
-    : `${eur(d.price)} ${tripLabel} į ${destAcc}. ${d.dates}. ${S.checkedByHand}`;
+  // Expired: the page is a trophy, not an offer — the title must not advertise
+  // a price that no longer exists (PR #56 review). Live/changed unchanged.
+  const title = noindex
+    ? `${d.destination} — ${S.trophyHeader} · Yip`
+    : `${d.destination} ${eur(d.price)} — ${d.route} · Yip`;
+  const description = noindex
+    ? `${S.trophyCaption} ${S.trophyFootnote}`
+    : d.drop > 0
+      ? `${eur(d.price)} ${tripLabel} į ${destAcc} — ${d.drop} % pigiau nei įprastai. ${d.dates}. ${S.checkedByHand}`
+      : `${eur(d.price)} ${tripLabel} į ${destAcc}. ${d.dates}. ${S.checkedByHand}`;
 
   return {
     title,
