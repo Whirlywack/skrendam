@@ -77,7 +77,7 @@ export default async function Home() {
                 <span className="v2-row-price">{eur(past[0].price)}{past[0].baseline != null && <s>{eur(past[0].baseline)}</s>}</span>
               </Link>
             )}
-            <Link href="/buvo" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.navPast}</span><span className="v2-row-meta">{S.pastEyebrow}</span><span className="v2-row-price">→</span></Link>
+            <Link href="/buvo" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.navPast}</span><span className="v2-row-meta">{S.pastEyebrow}</span><span className="v2-row-price" aria-hidden="true">→</span></Link>
           </div>
         </section>
       )}

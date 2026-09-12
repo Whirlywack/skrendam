@@ -215,7 +215,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
       {expired && (
         <>
           <section className="wrap v2-sec m-only m-rows"><div className="v2-rows">
-            <Link href="/" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.liveHeader}</span><span className="v2-row-meta">{S.navAllDeals}</span><span className="v2-row-price">→</span></Link>
+            <Link href="/" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.liveHeader}</span><span className="v2-row-meta">{S.navAllDeals}</span><span className="v2-row-price" aria-hidden="true">→</span></Link>
           </div></section>
           <MobileCapture source="deal-expired-mobile" />
         </>

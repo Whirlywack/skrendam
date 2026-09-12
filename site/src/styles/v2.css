@@ -377,6 +377,7 @@
   .m-capture .fine { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sand-500); margin-top: 10px; }
   .m-capture .ok { font-weight: 700; font-size: 16px; }
   .m-capture [role="alert"] { display: block; color: var(--coral-600, #B3462E); font-size: 13px; margin-top: 8px; }
+  #kapote-m { scroll-margin-top: 70px; }
   /* rows are taps: name + price on one line, meta under (MainMobile board);
      the № column goes, the four shown locked rows collapse into the one
      „+ dar N" row, the section kicker goes */

@@ -46,6 +46,10 @@ export const SUBSCRIBE_SOURCES = [
   'subscribe',
   'collection',
   'deal',
+  // PR B mobile deal page: MobileCapture's default + the expired-page form
+  // (cleanSource rewrites anything not listed here to 'site').
+  'deal-mobile',
+  'deal-expired-mobile',
   'past',
   'early',
   'site',
