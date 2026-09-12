@@ -5,7 +5,11 @@
 > person) never needs the story re-explained. CLAUDE.md covers the codebase
 > mechanics; this covers the product, the pipeline, and the hard-won operational
 > truths. Update it when a decision changes; date every update.
-> Last updated 2026-09-11 (WP9 live-deal verification).
+> Last updated 2026-09-12 (Deal Desk operating guide; VPN auto-connect recurrence).
+
+> **Operating manual:** `docs/DESK-GUIDE.md` — how a morning runs, every desk page and button and
+> what each click costs in Google calls, deal states and constants, letters, chores, troubleshooting.
+> Rendered inside the desk at `/guide` (sidebar → Guide). Keep it accurate when rules change.
 
 ---
 
@@ -358,6 +362,9 @@ it's the heart of the product:
   daily checkpoint/resume (`~/Library/Logs/skrendam/scan-checkpoint.json`) so
   retry mornings cost ~1 pass of Google load. Watchdog notifies after 08:30.
 - **ProtonVPN is enemy #2 and it impersonates BotGuard** (learned the hard way,
+  **Recurred 2026-09-12:** ProtonVPN auto-connected when the internet returned after an outage;
+  132/132 empty calendar answers. Disable auto-connect in the ProtonVPN app; check
+  `scutil --nc list` for `(Connected) … ProtonVPN` before diagnosing anything else.
   2026-08-30→09-03): scans through a VPN exit IP get 100% empty calendar
   responses (+ occasional 429s), and VPN DNS breaks Neon hostname resolution.
   Check `scutil --nc list` + `curl api.ipify.org` **before** diagnosing Google
