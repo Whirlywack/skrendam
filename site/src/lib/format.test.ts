@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { ascii, formatDates, freshnessLabel, ltPlural, eur, timeAgo } from './format';
+import { ascii, clockLT, formatDates, freshnessLabel, lasted, ltPlural, eur, sameVilniusDay, timeAgo, vilniusDay } from './format';
 
 test('ascii: strips Lithuanian diacritics to the typed form', () => {
   expect(ascii('Pigūs skrydžiai į Kiprą — atrinkti žmogaus')).toBe('Pigus skrydziai i Kipra — atrinkti zmogaus');
@@ -37,4 +37,31 @@ test('freshness: recent keeps the claim, stale stops advertising age', () => {
   const days86 = new Date(Date.now() - 86 * 86_400_000).toISOString();
   expect(freshnessLabel(days86)).toBe('Kaina galėjo pasikeisti — patikrink');
   expect(freshnessLabel(null)).toBe('Patikrinta neseniai');
+});
+
+test('lasted: hours under 48 h, days after, null when not expired', () => {
+  expect(lasted('2026-08-29T00:00:00', '2026-08-29T06:36:40')).toBe('7 val.');
+  expect(lasted('2026-08-28T10:00:00', '2026-09-11T10:21:49')).toBe('14 d.');
+  expect(lasted('2026-08-28T10:00:00', null)).toBeNull();
+  expect(lasted('2026-08-28T10:00:00', '2026-08-28T09:00:00')).toBeNull();
+});
+
+test('clockLT: HH:MM in Vilnius time from a naive-UTC DB stamp', () => {
+  expect(clockLT('2026-09-12 03:41:00')).toBe('06:41');   // UTC+3 in September
+  expect(clockLT('2026-01-12T03:41:00Z')).toBe('05:41');  // UTC+2 in January
+  expect(clockLT(null)).toBeNull();
+});
+
+test('sameVilniusDay: compares calendar days in Europe/Vilnius, not UTC', () => {
+  expect(sameVilniusDay('2026-09-12 03:41:00', new Date('2026-09-12T10:00:00Z'))).toBe(true);
+  // 21:30 UTC on Sep 11 is already 00:30 Sep 12 in Vilnius (UTC+3) — same day as 01:00 UTC Sep 12.
+  expect(sameVilniusDay('2026-09-11T21:30:00Z', new Date('2026-09-12T01:00:00Z'))).toBe(true);
+  expect(sameVilniusDay('2026-09-11 03:41:00', new Date('2026-09-12T10:00:00Z'))).toBe(false);
+  expect(sameVilniusDay(null, new Date('2026-09-12T10:00:00Z'))).toBe(false);
+});
+
+test('vilniusDay: YYYY-MM-DD of the Europe/Vilnius calendar day, from naive-UTC or zoned stamps', () => {
+  expect(vilniusDay('2026-09-11 21:30:00')).toBe('2026-09-12'); // 21:30 UTC = 00:30 next day in Vilnius (UTC+3)
+  expect(vilniusDay('2026-09-12T03:41:00Z')).toBe('2026-09-12');
+  expect(vilniusDay('2026-01-11T22:30:00Z')).toBe('2026-01-12'); // UTC+2 in January
 });

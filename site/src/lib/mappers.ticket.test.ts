@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rowMeta, toTicket } from './mappers';
+import { rowMeta, toPublicDeal, toTicket } from './mappers';
 type Row = Awaited<ReturnType<typeof import('./queries').getLiveDeals>>[number];
 const row = (o: Record<string, unknown> = {}): Row => ({
   pd: { id: 1, origin: 'VNO', destination: 'LCA', tripType: 'roundtrip', price: 140, baselinePrice: 301,
@@ -87,5 +87,28 @@ describe('rowMeta — the index row line under the destination', () => {
   it('a changed row without a verified current price carries no found-at note', () => {
     const t = toTicket(row({ pd: { status: 'changed', currentPrice: null } }), new Date());
     expect(rowMeta(t)).not.toContain('radome už');
+  });
+});
+
+describe('slice 2 fields', () => {
+  it('verifiedTime comes from pd.verifiedAt in Vilnius time, only on the day it was taken', () => {
+    const now = new Date('2026-09-12T10:00:00Z');
+    expect(toTicket(row({ pd: { verifiedAt: '2026-09-12 03:41:00' } }), now).verifiedTime).toBe('06:41');
+    expect(toTicket(row({ pd: { verifiedAt: '2026-09-11 03:41:00' } }), now).verifiedTime).toBeNull();
+    expect(toTicket(row(), now).verifiedTime).toBeNull();
+  });
+  it('goingFast is dropped on dead rows — „Tirpsta" is a live-only signal', () => {
+    expect(toTicket(row({ pd: { status: 'expired', goingFast: true } }), new Date()).goingFast).toBe(false);
+    expect(toTicket(row({ pd: { status: 'live', goingFast: true } }), new Date()).goingFast).toBe(true);
+    expect(toTicket(row({ pd: { status: 'changed', goingFast: true, currentPrice: 186 } }), new Date()).goingFast).toBe(true);
+  });
+  it('toPublicDeal status never says going_fast on a dead row', () => {
+    expect(toPublicDeal(row({ pd: { status: 'expired', goingFast: true } }), new Date()).status.kind).toBe('fresh');
+    expect(toPublicDeal(row({ pd: { status: 'live', goingFast: true } }), new Date()).status.kind).toBe('going_fast');
+  });
+  it('lasted is set only for expired rows with expiredAt after publishedAt', () => {
+    const t = toTicket(row({ pd: { status: 'expired', publishedAt: '2026-08-28T10:00:00', expiredAt: '2026-09-11T10:21:49' } }), new Date());
+    expect(t.lasted).toBe('14 d.');
+    expect(toTicket(row({ pd: { publishedAt: '2026-08-28T10:00:00', expiredAt: null } }), new Date()).lasted).toBeNull();
   });
 });

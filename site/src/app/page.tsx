@@ -26,6 +26,7 @@ export default async function Home() {
   // once, in the poster catch-line — never as the page's trust badge. A
   // going-fast deal's catch-line leads with that instead of a freshness claim.
   const stampFresh = fresh?.withinCap ? ` · ${fresh.label.toLowerCase()}` : '';
+  // verifiedTime is not shown yet: the engine stamps verified_at with the run start time (PR #56 review); re-enable when it stamps per check.
   const catchFreshness = featured?.goingFast
     ? S.chipGoingFast
     : fresh?.label ?? '';

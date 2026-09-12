@@ -81,3 +81,39 @@ export function freshnessLabel(iso: string | null): string {
 export function ascii(s: string): string {
   return s.normalize('NFD').replace(/\p{M}/gu, '');
 }
+
+/** How long a published deal stayed bookable: under 48 h in hours („7 val."),
+ *  otherwise whole days („14 d."). Null when it has not expired (or the stamps
+ *  are inconsistent) so callers hide the slot. Units only — the label word in
+ *  front is a copy-pass key (S.lastedLabel). */
+export function lasted(publishedAt: string, expiredAt: string | null): string | null {
+  if (!expiredAt) return null;
+  const ms = utcMs(expiredAt) - utcMs(publishedAt);
+  if (!(ms > 0)) return null;
+  const h = Math.round(ms / 3_600_000);
+  return h < 48 ? `${Math.max(1, h)} val.` : `${Math.round(h / 24)} d.`;
+}
+
+/** 'YYYY-MM-DD' of the Europe/Vilnius calendar day a stamp falls on — a
+ *  21:30 UTC check is already the next day here. `en-CA` yields ISO order. */
+export function vilniusDay(iso: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Vilnius', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date(utcMs(iso)));
+}
+
+/** True only when `iso` and `now` fall on the same calendar day in
+ *  Europe/Vilnius — the verification clock must not advertise yesterday's
+ *  stamp as today's. A null stamp is never "today". */
+export function sameVilniusDay(iso: string | null, now: Date): boolean {
+  if (!iso) return false;
+  return vilniusDay(iso) === vilniusDay(now.toISOString());
+}
+
+/** „06:41" — the verification clock in Lithuanian local time. */
+export function clockLT(iso: string | null): string | null {
+  if (!iso) return null;
+  return new Intl.DateTimeFormat('lt-LT', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Vilnius',
+  }).format(new Date(utcMs(iso)));
+}

@@ -4,8 +4,9 @@ import { subscribeAction } from '@/app/subscribe-action';
 import { TrackingFields } from '@/components/TrackingFields';
 import { S } from '@/lib/lt';
 
-/** The ink signup band — the page's one conversion, fed directly by the trophy case above it. */
-export function InkBand() {
+/** The ink signup band — the page's one conversion, fed directly by the trophy case above it.
+ *  `source` is the signup attribution written with the subscriber ('home' | 'deal' | …). */
+export function InkBand({ source = 'home' }: { source?: string }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -39,7 +40,7 @@ export function InkBand() {
                 the post-confirmation upsell (conversion audit 08-28: no second
                 decision at the moment of the first). */}
             <form onSubmit={onSubmit}>
-              <input type="hidden" name="source" value="home" />
+              <input type="hidden" name="source" value={source} />
               <input type="hidden" name="mode" value="inline" />
               <TrackingFields />
               <div className="frow">

@@ -1,0 +1,4 @@
+# Impeccable skill scratch output (local UI-review artifacts)
+.impeccable/
+# Vercel CLI link metadata
+.vercel

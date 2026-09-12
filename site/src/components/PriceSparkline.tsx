@@ -2,8 +2,9 @@ import type { PriceStats } from '@/lib/priceContext';
 import { eur } from '@/lib/format';
 
 /** V2 price-history bars — no card, no header: the page supplies the claim.
-    Bars sit directly on the paper; today is the amber bead's color. */
-export function PriceSparkline({ stats, todayPrice }: { stats: PriceStats; todayPrice: number }) {
+    Bars sit directly on the paper; today is the amber bead's color — or the
+    strike coral when the deal is expired (`dead`). */
+export function PriceSparkline({ stats, todayPrice, dead = false }: { stats: PriceStats; todayPrice: number; dead?: boolean }) {
   if (!stats.hasHistory) return null;
   const max = Math.max(...stats.series, todayPrice);
   const bars = stats.series.slice(-14);
@@ -13,7 +14,7 @@ export function PriceSparkline({ stats, todayPrice }: { stats: PriceStats; today
         {bars.map((p, i) => (
           <i key={i} style={{ height: `${Math.round((p / max) * 100)}%` }} />
         ))}
-        <i className="today" style={{ height: `${Math.round((todayPrice / max) * 100)}%` }} />
+        <i className={`today${dead ? ' dead' : ''}`} style={{ height: `${Math.round((todayPrice / max) * 100)}%` }} />
       </div>
       <div className="mono lbls">
         {/* "Best" appears only when today IS the best — a lower historical price

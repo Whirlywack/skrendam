@@ -5,6 +5,7 @@ import {
   publishedDeals,
   candidates,
   candidateTemplateMatches,
+  dealPriceChecks,
   dealTemplates,
   issues,
   travelMoments,
@@ -98,6 +99,17 @@ export async function getInspirationDeals(limit = INSPIRATION_LIMIT) {
 export async function getDeal(id: number) {
   const rows = await dealBase().where(eq(publishedDeals.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+/** Newest N verification checks for one deal (WP9) — exact-itinerary rows only. */
+export async function getPriceChecks(dealId: number, limit = 3) {
+  return db
+    .select({ checkedAt: dealPriceChecks.checkedAt, price: dealPriceChecks.price, available: dealPriceChecks.available })
+    .from(dealPriceChecks)
+    // 'calendar' rows carry the window-minimum price, not the itinerary's — the check line is about the exact itinerary.
+    .where(and(eq(dealPriceChecks.dealId, dealId), inArray(dealPriceChecks.source, ['flights', 'manual'])))
+    .orderBy(desc(dealPriceChecks.checkedAt), desc(dealPriceChecks.id))
+    .limit(limit);
 }
 
 export async function getSimilarDeals(
