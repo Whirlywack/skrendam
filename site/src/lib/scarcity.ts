@@ -13,7 +13,9 @@ export function splitFreeLocked<T>(live: T[]): { free: T[]; locked: T[] } {
 }
 
 /** Desktop shows four locked rows, then one „+ dar N" row (founder 2026-09-12:
- *  "seven of them is just too much"). Mobile shows none and the same row. */
+ *  "seven of them is just too much"). Mobile hides the four and shows only the
+ *  „+ dar N" row, which there counts every locked deal — so LiveIndex renders it
+ *  for any locked count ≥ 1, even when `collapsed` is empty. */
 export const LOCKED_SHOWN = 4;
 export function splitLockedRows<T>(locked: T[], shown = LOCKED_SHOWN): { shown: T[]; collapsed: T[] } {
   return { shown: locked.slice(0, shown), collapsed: locked.slice(shown) };

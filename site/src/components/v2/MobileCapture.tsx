@@ -7,9 +7,11 @@ import { S } from '@/lib/lt';
  * Mobile-only stacked capture (PR B, DealExpiredMobile board): the form right
  * under the poster on an expired deal, where the ink band is cut. Same
  * behaviour as CaptureRow — the `source` is the signup attribution written
- * with the subscriber. `id="kapote-m"` is the target of the poster's mobile CTA.
+ * with the subscriber (required, and it must be in SUBSCRIBE_SOURCES or the
+ * action rewrites it to 'site'). `id="kapote-m"` is the target of the poster's
+ * mobile CTA and of the masthead pill on the expired page.
  */
-export function MobileCapture({ source = 'deal-mobile' }: { source?: string }) {
+export function MobileCapture({ source }: { source: string }) {
   const { done, error, pending, onSubmit } = useSubscribeForm();
 
   return (

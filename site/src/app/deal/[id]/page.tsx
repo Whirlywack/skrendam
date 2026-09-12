@@ -138,7 +138,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         description: articleDescription,
         datePublished: pd.publishedAt,
       })} />
-      <Masthead />
+      {/* Expired on mobile the ink band (#kapote) is cut, so the pill targets the stacked form */}
+      <Masthead mobileCtaHref={expired ? '#kapote-m' : undefined} />
 
       {/* Mobile (PR B): the poster is the page — the crumb, columns, curator quote,
           price story, mid-page capture, similar rows and link band are desktop-only

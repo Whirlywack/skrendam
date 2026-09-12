@@ -91,8 +91,7 @@ describe('cleanSource', () => {
     expect(cleanSource('site')).toBe('site');
   });
 
-  test('keeps the mobile deal-page sources (PR B) — never rewritten to "site"', () => {
-    expect(cleanSource('deal-mobile')).toBe('deal-mobile');
+  test('keeps the mobile expired-deal source (PR B) — never rewritten to "site"', () => {
     expect(cleanSource('deal-expired-mobile')).toBe('deal-expired-mobile');
   });
 

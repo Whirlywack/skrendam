@@ -1,13 +1,13 @@
 import { getLiveDeals, getInspirationDeals, getEditionNumber } from '@/lib/queries';
 import { splitFreeLocked } from '@/lib/scarcity';
 import Link from 'next/link';
-import { freshSource, rowMeta, toTicket, toPublicDeal } from '@/lib/mappers';
-import { eur, freshInfo } from '@/lib/format';
+import { freshSource, toTicket, toPublicDeal } from '@/lib/mappers';
+import { freshInfo } from '@/lib/format';
 import { S } from '@/lib/lt';
 import { Masthead } from '@/components/v2/Masthead';
 import { Poster } from '@/components/v2/Poster';
 import { CaptureRow } from '@/components/v2/CaptureRow';
-import { LiveIndex, TrophyCase } from '@/components/v2/Rows';
+import { LiveIndex, TrophyCase, TrophyRow } from '@/components/v2/Rows';
 import { InkBand } from '@/components/v2/InkBand';
 import { V2Footer } from '@/components/v2/V2Footer';
 
@@ -65,18 +65,14 @@ export default async function Home() {
           </div>
         </section>
       )}
-      {/* Empty home on mobile (HomeEmptyMobile board): one expired proof row
-          plus the „Buvę radiniai" tap — the trophy case itself is desktop-only. */}
-      {!featured && (
+      {/* Empty home on mobile (HomeEmptyMobile board): one expired proof row (the
+          trophy case's dead row, tappable) plus the „Buvę radiniai" tap — the trophy
+          case itself is desktop-only. Nothing at all when the archive is empty too:
+          an archive link that opens „Kol kas nėra ką rodyti" is not proof. */}
+      {!featured && past.length > 0 && (
         <section className="wrap v2-sec m-only m-rows">
           <div className="v2-rows">
-            {past[0] && (
-              <Link href={`/deal/${past[0].id}`} className="v2-row v2-row--dead">
-                <span className="no" /><span className="v2-row-name">{past[0].destination}</span>
-                <span className="v2-row-meta">{rowMeta(past[0])}</span>
-                <span className="v2-row-price">{eur(past[0].price)}{past[0].baseline != null && <s>{eur(past[0].baseline)}</s>}</span>
-              </Link>
-            )}
+            <TrophyRow t={past[0]} href={`/deal/${past[0].id}`} />
             <Link href="/buvo" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.navPast}</span><span className="v2-row-meta">{S.pastEyebrow}</span><span className="v2-row-price" aria-hidden="true">→</span></Link>
           </div>
         </section>

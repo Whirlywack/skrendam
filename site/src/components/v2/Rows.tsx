@@ -30,8 +30,12 @@ export function LiveIndex({ deals, locked = [], startAt }: {
   const shown = deals.length + startAt - 1;
   const total = shown + locked.length;
   // Desktop: four locked rows, then one collapsed „+ dar N" row (board Nr. 08–12).
+  // Mobile hides the four and shows only the collapsed row, which then counts
+  // and names every locked deal — so it renders for ANY locked count ≥ 1
+  // (final review: with 1–4 locked, phones showed no locked destination at all).
   const { shown: lockedShown, collapsed: lockedCollapsed } = splitLockedRows(locked);
   const collapsedFrom = startAt + deals.length + lockedShown.length;
+  const hasCollapsed = lockedCollapsed.length > 0;
   // With a locked tail the kicker states the honest split; otherwise the count claim.
   const kicker = locked.length > 0
     ? `${S.foundToday} ${total} · ${S.shownHere} ${shown} · ${S.updatedMorning}`
@@ -57,9 +61,11 @@ export function LiveIndex({ deals, locked = [], startAt }: {
             <span className="go" aria-hidden="true" />
           </a>
         ))}
-        {lockedCollapsed.length > 0 && (
-          <a href="#kapote" className="v2-row v2-row--locked v2-row--more">
-            <span className="no">{lockedRangeLabel(collapsedFrom, total)}</span>
+        {locked.length > 0 && (
+          /* `v2-row--more-m`: nothing is collapsed on desktop, so the row is
+             mobile-only; the № range is empty rather than a nonsense „Nr. 06–05" */
+          <a href="#kapote" className={`v2-row v2-row--locked v2-row--more${hasCollapsed ? '' : ' v2-row--more-m'}`}>
+            {hasCollapsed ? <span className="no">{lockedRangeLabel(collapsedFrom, total)}</span> : <span className="no" />}
             <span className="v2-row-name">
               {/* desktop counts what is collapsed; mobile (PR B) counts every locked deal */}
               <span className="d-only">
@@ -90,6 +96,33 @@ export function LiveIndex({ deals, locked = [], startAt }: {
   );
 }
 
+/** One dead trophy row — month in the № slot, struck name, „sutaupė" meta, muted
+ *  price with the struck baseline. A Link when `href` is given (the mobile empty
+ *  home taps through to the expired page), otherwise the trophy case's plain div. */
+export function TrophyRow({ t, href }: { t: TicketView; href?: string }) {
+  const saved = t.baseline != null && t.baseline > t.price
+    ? Math.round(t.baseline - t.price) : null;
+  // artboard: the № slot carries the month tag (dates open "rugs. 30 …")
+  const month = t.dates.split(' ')[0]?.replace('.', '') ?? '';
+  const cls = 'v2-row v2-row--dead';
+  const inner = (
+    <>
+      <span className="no">{month.toUpperCase()}</span>
+      <span className="v2-row-name">{t.destination}</span>
+      <span className="v2-row-meta">
+        {t.route}{saved != null ? ` · ${S.savedWord} ${eur(saved)}` : ''} · {t.dates}
+        {S.lastedLabel && t.lasted ? ` · ${S.lastedLabel} ${t.lasted}` : ''}
+      </span>
+      <span className="v2-row-price">
+        {eur(t.price)}{t.baseline != null && <s>{eur(t.baseline)}</s>}
+      </span>
+    </>
+  );
+  return href
+    ? <Link href={href} className={cls}>{inner}</Link>
+    : <div className={cls}>{inner}</div>;
+}
+
 /** Trophy case — „Buvo. Nebėra.": dead rows, muted price, the SAVING is the story. */
 export function TrophyCase({ deals }: { deals: TicketView[] }) {
   if (deals.length === 0) return null;
@@ -100,25 +133,7 @@ export function TrophyCase({ deals }: { deals: TicketView[] }) {
         <span className="v2-kicker v2-kicker--dim">{S.trophyCaption}</span>
       </div>
       <div className="v2-rows">
-        {deals.map((t) => {
-          const saved = t.baseline != null && t.baseline > t.price
-            ? Math.round(t.baseline - t.price) : null;
-          // artboard: the № slot carries the month tag (dates open "rugs. 30 …")
-          const month = t.dates.split(' ')[0]?.replace('.', '') ?? '';
-          return (
-            <div key={t.id} className="v2-row v2-row--dead">
-              <span className="no">{month.toUpperCase()}</span>
-              <span className="v2-row-name">{t.destination}</span>
-              <span className="v2-row-meta">
-                {t.route}{saved != null ? ` · ${S.savedWord} ${eur(saved)}` : ''} · {t.dates}
-                {S.lastedLabel && t.lasted ? ` · ${S.lastedLabel} ${t.lasted}` : ''}
-              </span>
-              <span className="v2-row-price">
-                {eur(t.price)}{t.baseline != null && <s>{eur(t.baseline)}</s>}
-              </span>
-            </div>
-          );
-        })}
+        {deals.map((t) => <TrophyRow key={t.id} t={t} />)}
       </div>
       <div className="mono v2-footnote">{S.trophyFootnote}</div>
     </section>
