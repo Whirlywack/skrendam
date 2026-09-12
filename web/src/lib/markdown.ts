@@ -2,8 +2,8 @@
 //
 // It renders exactly the subset `docs/DESK-GUIDE.md` uses — `#`–`###` headings
 // (with slug ids for anchors), paragraphs, `>` quotes, `-` bullet lists (one
-// level), numbered lists, `**bold**`, `` `code` ``, fenced code blocks, links
-// and simple pipe tables. Every piece of text is HTML-escaped before any
+// level), numbered lists, `**bold**`, `*italic*`, `` `code` ``, fenced code
+// blocks, links and simple pipe tables. Every piece of text is HTML-escaped before any
 // inline markup is applied, so the output never carries raw HTML from the
 // source. The only consumer is the Guide page, which feeds it a file from the
 // repo itself (never user input).
@@ -41,13 +41,15 @@ export function slugify(text: string): string {
 }
 
 /** Inline markup over already-escaped text: code spans first (their content is
- *  literal), then links, then bold. Code spans are parked in placeholders so a
- *  `**` or `[` inside backticks is never treated as markup. */
+ *  literal), then links, then bold, then italic. Code spans are parked in
+ *  placeholders so a `**`, `*` or `[` inside backticks is never treated as
+ *  markup. */
 export function renderInline(raw: string): string {
   const codes: string[] = [];
-  // NUL-delimited placeholders: escapeHtml never emits NUL and the source is a
-  // text file, so they cannot collide with real content.
-  let s = escapeHtml(raw).replace(/`([^`]+)`/g, (_m, code: string) => {
+  // NUL-delimited placeholders. escapeHtml never emits NUL, and a literal NUL in
+  // the source is stripped here, so a placeholder can never collide with real
+  // content (an unstripped `\0 0 \0` used to read back as placeholder index 0).
+  let s = escapeHtml(raw.replace(/\u0000/g, '')).replace(/`([^`]+)`/g, (_m, code: string) => {
     codes.push(`<code>${code}</code>`);
     return `\u0000${codes.length - 1}\u0000`;
   });
@@ -59,6 +61,10 @@ export function renderInline(raw: string): string {
     return `<a href="${href}"${external ? ' target="_blank" rel="noreferrer"' : ''}>${text}</a>`;
   });
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Italic AFTER bold, so `**x**` is already consumed and never comes out as
+  // `*<em>x</em>*`. The content must start and end with a non-space, so a lone
+  // `*` in prose ("2 * 3") is left alone.
+  s = s.replace(/\*([^\s*](?:[^*]*[^\s*])?)\*/g, '<em>$1</em>');
   return s.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => codes[Number(i)]);
 }
 

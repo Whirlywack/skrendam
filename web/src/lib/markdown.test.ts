@@ -43,6 +43,40 @@ test('inline bold, code and links', () => {
   expect(renderInline('[anchor](#2-a-normal-morning)')).toBe('<a href="#2-a-normal-morning">anchor</a>');
 });
 
+test('single asterisks emphasise — the guide labels its scopes that way', () => {
+  expect(renderInline('*New today* shows the top ten')).toBe(
+    '<em>New today</em> shows the top ten',
+  );
+  expect(renderMarkdown('- **Scopes:** *New today*, *Saved*, *History*.\n').html).toBe(
+    '<ul><li><strong>Scopes:</strong> <em>New today</em>, <em>Saved</em>, <em>History</em>.</li></ul>',
+  );
+});
+
+test('bold and italic on one line both render, bold first so it is not eaten', () => {
+  expect(renderInline('**bold** and *italic*')).toBe(
+    '<strong>bold</strong> and <em>italic</em>',
+  );
+  // The bold rule must win: **x** must never come out as *<em>x</em>*.
+  expect(renderInline('**bold**')).toBe('<strong>bold</strong>');
+});
+
+test('a lone asterisk in prose is left alone', () => {
+  expect(renderInline('2 * 3 and 4 * 5')).toBe('2 * 3 and 4 * 5');
+  expect(renderInline('a * b')).toBe('a * b');
+});
+
+test('emphasis inside a code span stays literal', () => {
+  expect(renderInline('`*not em*` but *em*')).toBe('<code>*not em*</code> but <em>em</em>');
+});
+
+test('a literal NUL in the source cannot alias a code-span placeholder', () => {
+  // Code spans are parked as \u0000<index>\u0000. A literal \u0000 0 \u0000 in the source
+  // used to read back as index 0, restoring that code span a second time.
+  const nul = 'a \u00000\u0000 b `c`';
+  expect(renderInline(nul)).toBe('a 0 b <code>c</code>');
+  expect(renderMarkdown(nul + '\n').html).toBe('<p>a 0 b <code>c</code></p>');
+});
+
 test('markup inside a code span is literal and numbers in prose survive', () => {
   expect(renderInline('`**not bold**` costs 5 min and `[x](y)` too')).toBe(
     '<code>**not bold**</code> costs 5 min and <code>[x](y)</code> too',
