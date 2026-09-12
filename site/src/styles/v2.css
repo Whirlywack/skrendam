@@ -45,7 +45,7 @@
 .v2-masthead .pill .bead { width: 8px; height: 8px; background: var(--v2-ink); }
 
 /* ---------- hero ---------- */
-.v2 .v2-hero { padding: 70px 0 48px; }
+.v2 .v2-hero { padding-block: 70px 48px; }
 .v2-hero h1 { font-size: var(--d-hero); margin: 18px 0 0; text-wrap: balance; }
 .v2-hero h1 .bead { width: .13em; height: .13em; margin-left: .06em; }
 .v2-hero .sub-row {
@@ -107,8 +107,11 @@
 }
 
 /* ---------- mid-page capture (the ask lives next to the desire) ---------- */
+/* padding-block, not the shorthand: `.v2 .wrap` sets the side gutters at the
+   same specificity, and a `padding: X 0 Y` here zeroed them on mobile (the
+   hero, capture and every section sat flush to the screen edge — 09-12). */
 .v2 .v2-capture {
-  padding: 56px 0 8px;
+  padding-block: 56px 8px;
 }
 .v2-capture .inner {
   border-top: 1.5px solid var(--v2-ink);
@@ -140,7 +143,7 @@
 .v2-capture [role="alert"] { color: var(--coral-600, #B3462E); font-size: 13px; }
 
 /* ---------- section headers + row extras on the system's .v2-row ---------- */
-.v2 .v2-sec { padding: 64px 0 8px; }
+.v2 .v2-sec { padding-block: 64px 8px; }
 .v2-sec .head { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 6px; flex-wrap: wrap; }
 .v2-sec .head h2 { font-size: clamp(30px, 3.4vw, 40px); margin: 0; }
 .v2-sec .head h2 .bead { width: 11px; height: 11px; margin-left: 8px; }
@@ -309,7 +312,7 @@
   .v2-masthead .mid { display: none; }
   .v2-masthead .navlinks { gap: 12px; font-size: 11px; letter-spacing: .1em; flex: 1; }
   .v2-masthead .pill { font-size: 13px; padding: 8px 14px; }
-  .v2 .v2-hero { padding: 26px 0 18px; }
+  .v2 .v2-hero { padding-block: 26px 18px; }
   .v2-hero .sub-row { margin-top: 12px; gap: 10px; }
   .v2-hero .lead { font-size: 13.5px; }
   .v2 .v2-stamp { font-size: 11px; letter-spacing: .1em; }
@@ -318,7 +321,7 @@
   .v2-poster .cta { font-size: 14px; padding: 13px 18px; border-radius: 12px; }
   .v2-poster .price s { font-size: 14px; }
   .v2-catchline { gap: 14px; font-size: 11px; }
-  .v2 .v2-sec, .v2 .v2-capture { padding: 32px 0 8px; }
+  .v2 .v2-sec, .v2 .v2-capture { padding-block: 32px 8px; }
   .v2-capture .inner { flex-direction: column; align-items: stretch; gap: 14px; }
   .v2-capture form { max-width: none; }
   .v2 .v2-row { grid-template-columns: auto 1fr auto; gap: 4px 14px; padding: 16px 4px; }
