@@ -10,6 +10,8 @@
 > **Operating manual:** `docs/DESK-GUIDE.md` — how a morning runs, every desk page and button and
 > what each click costs in Google calls, deal states and constants, letters, chores, troubleshooting.
 > Rendered inside the desk at `/guide` (sidebar → Guide). Keep it accurate when rules change.
+>
+> **Current handoff:** `docs/handoffs/2026-09-12-session-close.md` — state, open items, next steps.
 
 ---
 
