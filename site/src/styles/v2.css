@@ -170,6 +170,12 @@
 }
 .v2-row--locked .v2-row-price .bead { width: 7px; height: 7px; }
 .v2-row--locked:hover .v2-row-price { color: var(--v2-amber, #F5A623); }
+/* collapsed „+ dar N" row: the name is a count, not a city — dimmed; the
+   d-only / m-only spans carry the desktop vs mobile count (PR B flips them) */
+.v2-row--more .v2-row-name { color: var(--sand-600, #685B47); }
+.v2-row--more:hover .v2-row-name { color: var(--v2-paper); } /* ink hover: same lift as the dead rows */
+.d-only { display: inline; }
+.m-only { display: none; }
 .v2-footnote { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-500); padding: 14px 8px 0; }
 .v2-footnote a { color: var(--accent, #0F7C68); }
 

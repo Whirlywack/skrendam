@@ -3,6 +3,7 @@ import type { TicketView } from '@/lib/types';
 import { S } from '@/lib/lt';
 import { eur, ltPlural } from '@/lib/format';
 import { rowMeta } from '@/lib/mappers';
+import { splitLockedRows } from '@/lib/scarcity';
 
 /** One live-deal index row — the single source for home, collection pages and
  *  similar-deals lists (review 08-28: three drifting copies collapsed here). */
@@ -28,6 +29,9 @@ export function LiveIndex({ deals, locked = [], startAt }: {
   if (deals.length === 0 && locked.length === 0) return null;
   const shown = deals.length + startAt - 1;
   const total = shown + locked.length;
+  // Desktop: four locked rows, then one collapsed „+ dar N" row (board Nr. 08–12).
+  const { shown: lockedShown, collapsed: lockedCollapsed } = splitLockedRows(locked);
+  const collapsedFrom = startAt + deals.length + lockedShown.length;
   // With a locked tail the kicker states the honest split; otherwise the count claim.
   const kicker = locked.length > 0
     ? `${S.foundToday} ${total} · ${S.shownHere} ${shown} · ${S.updatedMorning}`
@@ -42,8 +46,8 @@ export function LiveIndex({ deals, locked = [], startAt }: {
         {deals.map((t, i) => (
           <DealRow key={t.id} t={t} no={`Nr. ${String(startAt + i).padStart(2, '0')}`} />
         ))}
-        {locked.map((t, i) => (
-          <a key={t.id} href="#kapote" className="v2-row v2-row--locked">
+        {lockedShown.map((t, i) => (
+          <a key={t.id} href="#kapote" className="v2-row v2-row--locked v2-row--locked-n">
             <span className="no">Nr. {String(startAt + deals.length + i).padStart(2, '0')}</span>
             <span className="v2-row-name">{t.destination}</span>
             <span className="v2-row-meta">{t.route} · {t.month} · {t.catchChip}</span>
@@ -53,6 +57,27 @@ export function LiveIndex({ deals, locked = [], startAt }: {
             <span className="go" aria-hidden="true" />
           </a>
         ))}
+        {lockedCollapsed.length > 0 && (
+          <a href="#kapote" className="v2-row v2-row--locked v2-row--more">
+            <span className="no">
+              Nr. {String(collapsedFrom).padStart(2, '0')}–{String(total).padStart(2, '0')}
+            </span>
+            <span className="v2-row-name">
+              {/* desktop counts what is collapsed; mobile (PR B) counts every locked deal */}
+              <span className="d-only">
+                {S.moreLocked} {lockedCollapsed.length} {ltPlural(lockedCollapsed.length, 'radinys', 'radiniai', 'radinių')}
+              </span>
+              <span className="m-only">
+                {S.moreLocked} {locked.length} {ltPlural(locked.length, 'radinys', 'radiniai', 'radinių')}
+              </span>
+            </span>
+            <span className="v2-row-meta">{lockedCollapsed.map((t) => t.destination).join(' · ')}</span>
+            <span className="v2-row-price">
+              <span className="bead" aria-hidden="true" />{S.lockedChip}
+            </span>
+            <span className="go" aria-hidden="true" />
+          </a>
+        )}
       </div>
       {locked.length > 0 && (
         <div className="mono v2-footnote">
@@ -84,6 +109,7 @@ export function TrophyCase({ deals }: { deals: TicketView[] }) {
               <span className="v2-row-name">{t.destination}</span>
               <span className="v2-row-meta">
                 {t.route}{saved != null ? ` · ${S.savedWord} ${eur(saved)}` : ''} · {t.dates}
+                {S.lastedLabel && t.lasted ? ` · ${S.lastedLabel} ${t.lasted}` : ''}
               </span>
               <span className="v2-row-price">
                 {eur(t.price)}{t.baseline != null && <s>{eur(t.baseline)}</s>}

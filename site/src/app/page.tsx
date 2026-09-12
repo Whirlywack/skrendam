@@ -45,7 +45,7 @@ export default async function Home() {
           <p className="lead">{S.heroSub}</p>
           <span className="v2-stamp">
             <span className="bead" style={{ width: 7, height: 7 }} aria-hidden="true" />
-            {S.humanStamp}{stampFresh}
+            {S.humanStamp}{featured?.verifiedTime ? ` · ${featured.verifiedTime}` : stampFresh}
           </span>
         </div>
       </section>

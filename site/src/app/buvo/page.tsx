@@ -62,6 +62,7 @@ export default async function PastDeals() {
                   <span className="v2-row-name">{t.destination}</span>
                   <span className="v2-row-meta">
                     {t.route}{saved != null ? ` · ${S.savedWord} ${eur(saved)}` : ''} · {t.dates}
+                    {S.lastedLabel && t.lasted ? ` · ${S.lastedLabel} ${t.lasted}` : ''}
                   </span>
                   <span className="v2-row-price">
                     {eur(t.price)}{was != null && <s>{eur(was)}</s>}
