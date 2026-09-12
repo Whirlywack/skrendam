@@ -92,6 +92,10 @@
 }
 .v2-poster .cta:hover { transform: scale(1.04); color: var(--v2-ink); }
 .v2-poster .cta .bead { width: 9px; height: 9px; }
+/* the expired poster carries two CTAs (desktop → #kapote, mobile → #kapote-m);
+   the .cta rule above outranks .m-only / .d-only, so the flip is spelled out here
+   and in the mobile block */
+.v2-poster .cta.m-only { display: none; }
 .v2-poster--sun { background: var(--poster-sun); }
 .v2-poster--dusk { background: var(--poster-dusk); }
 .v2-poster--sea { background: var(--poster-sea); }
@@ -355,6 +359,8 @@
   /* border-box: the site has no global reset, so width:100% + padding would overflow the poster */
   .v2-poster .cta { font-size: 14px; padding: 13px 18px; border-radius: 12px;
     width: 100%; box-sizing: border-box; justify-content: center; min-height: 48px; }
+  .v2-poster .cta.d-only { display: none; }
+  .v2-poster .cta.m-only { display: inline-flex; }
   .v2-poster .trust { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
     text-transform: uppercase; color: rgba(255,255,255,.8); text-align: center; }
   .v2-poster .price s { font-size: 14px; }
@@ -362,6 +368,15 @@
   .v2 .v2-sec, .v2 .v2-capture { padding-block: 32px 8px; }
   .v2-capture .inner { flex-direction: column; align-items: stretch; gap: 14px; }
   .v2-capture form { max-width: none; }
+  /* PR B: the stacked form right under an expired poster (DealExpiredMobile board) */
+  .m-capture { padding-block: 20px 0; }
+  .m-capture form { display: flex; flex-direction: column; gap: 10px; }
+  .m-capture input[type="email"] { font-size: 16px; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--sand-300); background: #fff; color: var(--v2-ink); font-family: inherit; min-height: 48px; }
+  .m-capture input[type="email"]:focus { outline: 2px solid var(--v2-amber); outline-offset: 1px; }
+  .m-capture .btn { font-weight: 700; font-size: 16px; padding: 14px 22px; border-radius: 12px; background: var(--v2-amber); color: var(--v2-ink); border: 0; font-family: inherit; min-height: 48px; }
+  .m-capture .fine { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sand-500); margin-top: 10px; }
+  .m-capture .ok { font-weight: 700; font-size: 16px; }
+  .m-capture [role="alert"] { display: block; color: var(--coral-600, #B3462E); font-size: 13px; margin-top: 8px; }
   /* rows are taps: name + price on one line, meta under (MainMobile board);
      the № column goes, the four shown locked rows collapse into the one
      „+ dar N" row, the section kicker goes */
