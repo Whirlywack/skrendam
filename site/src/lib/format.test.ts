@@ -1,5 +1,10 @@
 import { expect, test } from 'vitest';
-import { formatDates, freshnessLabel, ltPlural, eur, timeAgo } from './format';
+import { ascii, formatDates, freshnessLabel, ltPlural, eur, timeAgo } from './format';
+
+test('ascii: strips Lithuanian diacritics to the typed form', () => {
+  expect(ascii('Pigūs skrydžiai į Kiprą — atrinkti žmogaus')).toBe('Pigus skrydziai i Kipra — atrinkti zmogaus');
+  expect(ascii('kur keliauti rugsėjo mėnesį')).toBe('kur keliauti rugsejo menesi');
+});
 
 test('dates: month-first LT chips', () => {
   expect(formatDates('2026-09-12', '2026-09-19')).toBe('rugs. 12–19');

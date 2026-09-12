@@ -73,3 +73,11 @@ export function freshInfo(iso: string | null): { withinCap: boolean; label: stri
 export function freshnessLabel(iso: string | null): string {
   return freshInfo(iso).label;
 }
+
+/** Search-facing strings in the form Lithuanians actually type (no diacritics):
+ *  „kur keliauti rugsėjo mėnesį" → „kur keliauti rugsejo menesi". Founder call
+ *  2026-09-12: meta titles/descriptions ship this way; body copy keeps diacritics.
+ *  NFD splits ė/ų/š into base + combining mark; \p{M} drops the mark. */
+export function ascii(s: string): string {
+  return s.normalize('NFD').replace(/\p{M}/gu, '');
+}

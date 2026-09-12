@@ -13,8 +13,8 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: 'Kryptys · Yip',
   description:
-    'Žmogaus patikrinti pigūs skrydžiai pagal išvykimo miestą ir kelionės tipą — Vilnius, Kaunas, Ryga, rugsėjo saulė, Kalėdų mugės, Kipras.',
-  alternates: { canonical: '/collections' },
+    'Žmogaus patikrinti pigūs skrydžiai pagal išvykimo miestą ir kelionės momentą — Vilnius, Kaunas, Ryga, kur keliauti rugsėjį, kalėdinės mugės, Kipras.',
+  alternates: { canonical: '/rinkiniai' },
 };
 
 // „Pigūs skrydžiai iš Vilniaus" → „Iš Vilniaus" — the SEO phrase stays in the

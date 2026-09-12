@@ -114,7 +114,7 @@ export const S = {
   footerLead:
     'Atrinkti pigūs skrydžiai iš Vilniaus, Kauno ir Rygos. ' +
     'Randam, patikrinam ir pasakom, koks kabliukas.',
-  footerXmas: 'Kalėdų mugės',
+  footerXmas: 'Kalėdinės mugės',
   footerEarly: 'Skubios žinutės',
   footerContact: 'Rašyk mums',
   footerPrivacy: 'Privatumas',
@@ -148,7 +148,7 @@ export const S = {
 
   // V2 poster & bead surfaces
   mastheadKicker: 'Atrinkti skrydžiai — Vilnius · Kaunas · Ryga',
-  issueLabel: 'Laiškas Nr. 1 — vėlyva vasara', // issue numbering ties to the email
+  issueLabel: 'Laiškas Nr.', // + edition number from `issues` (sent letters + 1)
   dealNoWord: 'Radinys', // poster kicker: "Radinys Nr. 01"
   captureLine: 'Kasdien peržiūrim visus maršrutus iš VNO, KUN ir RIX. Skelbiam tik tai, kas atlaiko patikrą.',
   trustDirect: 'Bilietą perki tiesiogiai iš aviakompanijos — mes tavo pinigų neliečiam.',

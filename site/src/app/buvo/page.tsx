@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: 'Buvę radiniai · Yip',
   description:
     'Pigūs skrydžiai iš Vilniaus, Kauno ir Rygos, kuriuos radom — ir kurie jau išpirkti. Įrodymas, kad randam tikrus. Kitą gauk el. paštu, kol nedingo.',
-  alternates: { canonical: '/past-deals' },
+  alternates: { canonical: '/buvo' },
 };
 
 export default async function PastDeals() {

@@ -29,26 +29,26 @@ describe('collectionBySlug', () => {
     expect(collectionBySlug('cheap-flights-from-riga')).toBeUndefined();
   });
 
-  it("returns kind 'moment' for september-sun-deals", () => {
-    expect(collectionBySlug('september-sun-deals')?.filter.kind).toBe('moment');
+  it("returns kind 'moment' for kur-keliauti-rugsejo-menesi", () => {
+    expect(collectionBySlug('kur-keliauti-rugsejo-menesi')?.filter.kind).toBe('moment');
   });
 
-  it('uses the real DB slug for september-sun-deals', () => {
-    expect(collectionBySlug('september-sun-deals')?.filter).toEqual({
+  it('uses the real DB slug for kur-keliauti-rugsejo-menesi', () => {
+    expect(collectionBySlug('kur-keliauti-rugsejo-menesi')?.filter).toEqual({
       kind: 'moment',
       slug: 'sept_shoulder',
     });
   });
 
-  it('uses the real DB slug for christmas-market-flights', () => {
-    expect(collectionBySlug('christmas-market-flights')?.filter).toEqual({
+  it('uses the real DB slug for kaledines-muges-europoje', () => {
+    expect(collectionBySlug('kaledines-muges-europoje')?.filter).toEqual({
       kind: 'moment',
       slug: 'xmas_markets',
     });
   });
 
-  it('filters cyprus-flight-deals-from-lithuania to LCA/PFO, not the whole Mediterranean zone', () => {
-    expect(collectionBySlug('cyprus-flight-deals-from-lithuania')?.filter).toEqual({
+  it('filters pigus-skrydziai-i-kipra to LCA/PFO, not the whole Mediterranean zone', () => {
+    expect(collectionBySlug('pigus-skrydziai-i-kipra')?.filter).toEqual({
       kind: 'destinations',
       iatas: ['LCA', 'PFO'],
     });
@@ -61,8 +61,8 @@ describe('collectionBySlug', () => {
 
 describe('destinationsCollection', () => {
   it('finds the Cyprus collection from either of its airports', () => {
-    expect(destinationsCollection('LCA')?.slug).toBe('cyprus-flight-deals-from-lithuania');
-    expect(destinationsCollection('PFO')?.slug).toBe('cyprus-flight-deals-from-lithuania');
+    expect(destinationsCollection('LCA')?.slug).toBe('pigus-skrydziai-i-kipra');
+    expect(destinationsCollection('PFO')?.slug).toBe('pigus-skrydziai-i-kipra');
   });
 
   it('returns undefined for a destination no collection covers', () => {

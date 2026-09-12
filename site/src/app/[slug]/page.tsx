@@ -11,7 +11,7 @@ import { InkBand } from '@/components/v2/InkBand';
 import { V2Footer } from '@/components/v2/V2Footer';
 import { JsonLd } from '@/components/JsonLd';
 import { breadcrumbJsonLd } from '@/lib/seo';
-import { ltPlural } from '@/lib/format';
+import { ascii, ltPlural } from '@/lib/format';
 import { S } from '@/lib/lt';
 
 export const revalidate = 300;
@@ -29,11 +29,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const c = collectionBySlug(slug);
   if (!c) return {};
+  // Search-facing strings in the typed, diacritic-free form (see format.ascii).
+  const title = `${ascii(c.h1)} · Yip`;
+  const description = ascii(c.promise);
   return {
-    title: `${c.h1} · Yip`,
-    description: c.promise,
+    title,
+    description,
     alternates: { canonical: `/${c.slug}` },
-    openGraph: { title: `${c.h1} · Yip`, description: c.promise },
+    openGraph: { title, description },
   };
 }
 
@@ -58,14 +61,14 @@ export default async function CollectionPage({
     <main className="v2">
       <JsonLd data={breadcrumbJsonLd([
         { name: S.navDeals, path: '/' },
-        { name: S.navCollections, path: '/collections' },
+        { name: S.navCollections, path: '/rinkiniai' },
         { name: c.label, path: `/${c.slug}` },
       ])} />
       <Masthead />
 
       <Crumb items={[
         { label: S.navDeals, href: '/' },
-        { label: S.navCollections, href: '/collections' },
+        { label: S.navCollections, href: '/rinkiniai' },
         { label: c.label },
       ]} />
 
