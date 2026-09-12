@@ -431,6 +431,19 @@ expired by hand; the first scan after merge verifies whatever is live then.
 6. **Later:** move scanning off the founder's laptop (must stay on a
    residential IP); consider replacing fli (stage 2).
 
+**Open decisions (no replacement chosen yet):**
+
+- **„kabliukas" is to be renamed (founder, 2026-09-11):** „no one says kabliukas
+  like that… we will fix that". The replacement word has not been picked, so
+  nothing has been changed yet. It is a copy-only change with a small blast
+  radius: the word lives in the site copy alone — `site/src/lib/lt.ts`,
+  `site/src/lib/collections.ts`, `site/src/app/collections/page.tsx`,
+  `site/src/app/subscribe/page.tsx` — plus the specs under `docs/plans/`. The
+  scan engine never emits it: `build_content_draft` writes draft bodies out of
+  rules-based LT strings with no label words at all, so drafts and every stored
+  `content_drafts` row are unaffected. Pick the word, then sweep those four site
+  files.
+
 **Where deeper history lives:** `docs/handoffs/` (session-by-session),
 `docs/plans/` (specs), Claude's memory directory (cross-session facts, indexed
 in its MEMORY.md). The most recent full handoff before this file:
