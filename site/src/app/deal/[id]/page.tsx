@@ -78,7 +78,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     stops: deal.stops,
     airline: deal.airline,
     score: score > 0 ? score : null,
-    goingFast: pd.goingFast,
+    goingFast: pd.goingFast && !expired,
     dates: deal.dates,
   });
 
@@ -104,7 +104,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const [o, , d] = t.route.split(' ');
   const save = t.baseline != null && t.baseline > t.price ? Math.round(t.baseline - t.price) : null;
   const showWas = t.baseline != null && t.drop >= WAS_PRICE_MIN_DROP_PCT;
-  const posterField = POSTER[sceneClass(pd.destination)] ?? 'v2-poster--sun';
+  const posterField = expired ? 'v2-poster--dead' : (POSTER[sceneClass(pd.destination)] ?? 'v2-poster--sun');
 
   // Interlinks: the collections this deal belongs to (visible twin of JSON-LD)
   const origColl = originCollection(pd.origin);
@@ -154,13 +154,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                   ? `${S.pastEyebrow}${S.lastedLabel && deal.lasted ? ` · ${S.lastedLabel} ${deal.lasted}` : ''}`
                   : pd.publicLabel ?? S.foundByHand}
             </span>
-            <span className="v2-stamp v2-stamp--light">{qualityLabel}</span>
+            <span className="v2-stamp v2-stamp--light">{expired ? S.trophyHeader : qualityLabel}</span>
           </div>
           <div>
             <h1 className="v2-poster-name" style={{ margin: 0 }}>
               {dest.nom}
             </h1>
-            <p className="blurb">{headline}</p>
+            <p className="blurb">{expired ? S.trophyCaption : headline}</p>
           </div>
           <div className="foot">
             <div className="routebox" aria-hidden="true">
@@ -170,28 +170,26 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             <div className="pricecell">
               <div>
                 <div className="v2-price price">
-                  {eur(t.price)}
-                  {showWas && <s>{eur(t.baseline!)}</s>}
+                  {expired ? <s className="price-dead">{eur(t.price)}</s> : <>{eur(t.price)}{showWas && <s>{eur(t.baseline!)}</s>}</>}
                 </div>
-                {/* Same depth gate as the strikethrough (see Poster.tsx) */}
-                {showWas && save != null && (
-                  <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>
-                )}
+                {/* Live: same depth gate as the strikethrough (see Poster.tsx). Expired: trophy meta „sutaupė". */}
+                {expired
+                  ? (save != null && <div className="mono save">{S.savedWord} {eur(save)}</div>)
+                  : (showWas && save != null && <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>)}
                 {/* Changed deal (WP9): „Dabar nuo 124 €" / „radome už 93 €" */}
-                {t.priceLines.map((line) => (
-                  <div key={line} className="mono save">{line}</div>
-                ))}
+                {!expired && t.priceLines.map((line) => <div key={line} className="mono save">{line}</div>)}
               </div>
-              <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">
-                {booking.button} <span className="bead" aria-hidden="true" />
-              </a>
+              {/* Expired: no booking link — the CTA becomes the signup ask (DealExpired board) */}
+              {expired
+                ? <a className="cta" href="#kapote">{S.ctaSubmit} <span className="bead" aria-hidden="true" /></a>
+                : <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">{booking.button} <span className="bead" aria-hidden="true" /></a>}
             </div>
           </div>
         </div>
         <div className="mono v2-catchline">
           <span>{t.catchChip}</span>
           <span>{t.dates}</span>
-          <span>{t.airline} · {freshLabel.toLowerCase()}</span>
+          <span>{expired ? t.airline : `${t.airline} · ${freshLabel.toLowerCase()}`}</span>
         </div>
       </section>
 
