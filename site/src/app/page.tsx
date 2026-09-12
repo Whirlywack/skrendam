@@ -1,4 +1,4 @@
-import { getLiveDeals, getInspirationDeals } from '@/lib/queries';
+import { getLiveDeals, getInspirationDeals, getEditionNumber } from '@/lib/queries';
 import { splitFreeLocked } from '@/lib/scarcity';
 import { freshSource, toTicket, toPublicDeal } from '@/lib/mappers';
 import { freshInfo } from '@/lib/format';
@@ -14,7 +14,7 @@ export const revalidate = 300; // ISR: refresh every 5 min
 
 export default async function Home() {
   const now = new Date();
-  const rows = await getLiveDeals();
+  const [rows, edition] = await Promise.all([getLiveDeals(), getEditionNumber()]);
   const { free, locked } = splitFreeLocked(rows.map((r) => toTicket(r, now)));
   const past = (await getInspirationDeals(3)).map((r) => toTicket(r, now));
   const [featured = null, ...rest] = free;
@@ -36,7 +36,7 @@ export default async function Home() {
 
       {/* Hero: issue kicker → poster headline → subhead + human stamp */}
       <section className="wrap v2-hero">
-        <div className="v2-kicker">{S.issueLabel}</div>
+        <div className="v2-kicker">{S.issueLabel} {edition}</div>
         <h1 className="v2-display">
           {S.heroH1.replace(/\.$/, '')}
           <span className="bead" aria-hidden="true" />

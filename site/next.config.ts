@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
         destination: "/pigus-skrydziai-is-rygos",
         permanent: true,
       },
+      // 2026-09-12 hygiene: English content slugs → LT (SEO doc §2).
+      { source: "/collections", destination: "/rinkiniai", permanent: true },
+      { source: "/past-deals", destination: "/buvo", permanent: true },
+      { source: "/september-sun-deals", destination: "/rugsejo-saule", permanent: true },
+      { source: "/christmas-market-flights", destination: "/kaledu-muges", permanent: true },
+      { source: "/cyprus-flight-deals-from-lithuania", destination: "/kipras", permanent: true },
     ];
   },
 };

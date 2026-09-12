@@ -1,11 +1,12 @@
 import { cache } from 'react';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, count } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   publishedDeals,
   candidates,
   candidateTemplateMatches,
   dealTemplates,
+  issues,
   travelMoments,
 } from '@/db/generated/schema';
 import type { CollectionFilter } from './collections';
@@ -54,6 +55,16 @@ function dedupeById<T extends { pd: { id: number } }>(rows: T[]): T[] {
 // publishedAt ties (batch publishes, seeds) need the id tiebreaker so every
 // free/locked boundary derivation orders identically (review 08-28).
 const LIVE_ORDER = [desc(publishedDeals.publishedAt), desc(publishedDeals.id)];
+
+/** The edition the home page is assembling = sent letters + 1. Instant paid
+ *  mails are per-deal, not editions, so they never bump the number. */
+export async function getEditionNumber(): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(issues)
+    .where(and(isNotNull(issues.sentAt), inArray(issues.kind, ['paid_digest', 'free_nurture'])));
+  return Number(row?.n ?? 0) + 1;
+}
 
 export async function getLiveDeals() {
   return dedupeById(await dealBase().where(isLive()).orderBy(...LIVE_ORDER));

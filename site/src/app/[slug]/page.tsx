@@ -58,14 +58,14 @@ export default async function CollectionPage({
     <main className="v2">
       <JsonLd data={breadcrumbJsonLd([
         { name: S.navDeals, path: '/' },
-        { name: S.navCollections, path: '/collections' },
+        { name: S.navCollections, path: '/rinkiniai' },
         { name: c.label, path: `/${c.slug}` },
       ])} />
       <Masthead />
 
       <Crumb items={[
         { label: S.navDeals, href: '/' },
-        { label: S.navCollections, href: '/collections' },
+        { label: S.navCollections, href: '/rinkiniai' },
         { label: c.label },
       ]} />
 

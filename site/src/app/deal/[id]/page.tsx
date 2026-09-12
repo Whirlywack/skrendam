@@ -104,7 +104,7 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     ...(origColl ? [{ label: origColl.label, href: `/${origColl.slug}` }] : []),
     ...(destColl ? [{ label: destColl.label, href: `/${destColl.slug}` }] : []),
     ...(zoneColl ? [{ label: zoneColl.label, href: `/${zoneColl.slug}` }] : []),
-    { label: S.navAllDeals, href: '/collections' },
+    { label: S.navAllDeals, href: '/rinkiniai' },
   ];
 
   // Article description (price-free: drop%, route, dates — no € figure)

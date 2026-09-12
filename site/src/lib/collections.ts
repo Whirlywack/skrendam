@@ -42,7 +42,7 @@ export const COLLECTIONS: Collection[] = [
     filter: { kind: 'origin', iata: 'RIX' },
   },
   {
-    slug: 'september-sun-deals',
+    slug: 'rugsejo-saule',
     label: 'Rugsėjo saulė',
     scene: 'ph-sun',
     h1: 'Pigūs skrydžiai į rugsėjo saulę iš Vilniaus, Kauno ir Rygos',
@@ -50,7 +50,7 @@ export const COLLECTIONS: Collection[] = [
     filter: { kind: 'moment', slug: 'sept_shoulder' },
   },
   {
-    slug: 'christmas-market-flights',
+    slug: 'kaledu-muges',
     label: 'Kalėdų mugės',
     scene: 'ph-market',
     h1: 'Pigūs skrydžiai į Kalėdų muges iš Vilniaus, Kauno ir Rygos',
@@ -58,7 +58,7 @@ export const COLLECTIONS: Collection[] = [
     filter: { kind: 'moment', slug: 'xmas_markets' },
   },
   {
-    slug: 'cyprus-flight-deals-from-lithuania',
+    slug: 'kipras',
     label: 'Kipras iš Lietuvos',
     scene: 'ph-coast',
     h1: 'Pigūs skrydžiai į Kiprą iš Lietuvos',

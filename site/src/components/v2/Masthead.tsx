@@ -12,7 +12,7 @@ export function Masthead() {
         <Link href="/" className="v2-display logo" aria-label="Yip">yıp</Link>
         <nav className="navlinks" aria-label={S.navAria}>
           <Link href="/">{S.navDeals}</Link>
-          <Link href="/collections">{S.navCollections}</Link>
+          <Link href="/rinkiniai">{S.navCollections}</Link>
         </nav>
         <span className="v2-kicker v2-kicker--dim mid">{S.mastheadKicker}</span>
         <a href="#kapote" className="pill">

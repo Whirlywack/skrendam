@@ -1,0 +1,31 @@
+# Deep-research prompt — yip.lt site architecture, SEO/GEO, conversion (run by the founder, 2026-09-11)
+
+Paste everything below the line into a deep-research tool. Replace nothing; it is self-contained.
+
+---
+
+I run **Yip (yip.lt)**, a Lithuanian-language service that finds cheap flights from Vilnius, Kaunas and Riga, checks each find by hand, and publishes 3–5 finds a week. Free readers get an occasional letter; paid subscribers get every find the minute it is published plus a weekly digest and personal windows (school holidays, flights home for Lithuanians living abroad). We scan 169 routes daily and hold 180 days of our own price history per route, so we can say "usually €275, today €93" and "this deal lasted 36 hours". Traffic comes from TikTok first, then search. The site is being rebuilt; I need research to design its page structure, internal linking, SEO/GEO strategy and conversion flow. Audience: Lithuanians in Lithuania (Lithuanian-language search) and Lithuanians abroad (UK, Ireland, Norway, Denmark) flying home.
+
+Please research and report on the following, with sources, numbers where they exist, and explicit "unknown / no data" where not:
+
+**1. Lithuanian search demand map.** Build the keyword universe for flight deals from Lithuania in Lithuanian: head terms (pigūs skrydžiai, pigūs skrydžiai iš Vilniaus / Kauno / Rygos), route-level terms ("skrydžiai Vilnius Londonas", "pigūs bilietai į Londoną"), question terms ("kada pigiausia skristi į …", "kur keliauti lapkritį", "kur šilta spalį"), family/school-holiday terms (mokinių atostogos 2026 2027, žiemos atostogos, kelionės su vaikais), weekend (savaitgalio kelionės), ski, Christmas markets, last-minute (paskutinės minutės kelionės — note package-tour intent), and diaspora terms in Lithuanian and English ("pigūs skrydžiai į Lietuvą iš Londono", "cheap flights London to Kaunas"). For each cluster: estimated monthly volume, seasonality month by month, SERP intent (package tour vs flights vs information), and which sites currently rank in Lithuania. Which clusters can a new site realistically win in 6–12 months?
+
+**2. Competitor and SERP audit for Lithuania.** Who ranks for the clusters above (OTAs, Skyscanner/Kiwi localisations, Lithuanian deal blogs, Facebook groups, tour operators)? What page types win (route pages, blog posts, deal feeds)? What SERP features appear (AI Overviews in Lithuanian, People Also Ask, flight boxes, Discover)? What does Google's flight box do to organic clicks on route queries in Lithuania?
+
+**3. Programmatic SEO for flight route pages in 2025–2026.** Current best practice and risks after Google's helpful-content and spam updates: minimum unique content per page, how sites like Going, Jack's Flight Club, Secret Flying, Skyscanner, Kayak, Hopper structure route/destination/origin pages, how they interlink hubs (origin → destination → route → deal), what they noindex, how they handle expired deals, sitemap splitting, ISR/refresh cadence, and structured data that actually renders (Offer, FAQPage, BreadcrumbList, ItemList, Article). Any documented penalties for thin route pages.
+
+**4. GEO / AI-answer optimisation.** What is known about being cited by Google AI Overviews, ChatGPT search, Perplexity for local-language travel queries: content shape (direct answers, FAQ blocks, tables), entity consistency, llms.txt, freshness signals, and whether Lithuanian-language AI answers cite Lithuanian sources.
+
+**5. Newsletter-first flight-deal businesses: funnel and pricing benchmarks.** For Going (ex-Scott's Cheap Flights), Jack's Flight Club, Secret Flying, Dollar Flight Club, Matt's Flights, Fly4free (PL), Urlaubsguru/Urlaubspiraten (DE), Holidaypirates: pricing tiers and history, free-vs-paid content split, signup conversion rates from web and from TikTok/Instagram, double-opt-in loss rates, free→paid conversion and time-to-convert, churn, send cadence, what the free letter contains, how they show "you missed this" and scarcity honestly, referral programs, and what their landing pages look like (single CTA? social proof? lead magnets?). Which of these tactics are measurable with small lists (hundreds, not millions)?
+
+**6. Conversion research for small-audience newsletters.** Evidence-based tactics for a Lithuanian audience: lead magnets (a school-holidays calendar .ics?), edition scarcity (1 open find, rest locked), pricing page copy, founding-member offers, annual vs monthly, Stripe Payment Link friction, trust signals for a one-person brand (named curator, "checked by a human"), and what NOT to do (fake urgency, invented social proof) given Lithuanian consumer scepticism. Any data on TikTok → email conversion for travel creators in the Baltics or Poland.
+
+**7. Legal and commercial for Lithuania/EU.** GDPR consent wording for marketing email (single vs double opt-in in LT practice), List-Unsubscribe requirements (RFC 8058, Gmail/Yahoo 2024 rules), Lithuanian consumer law for recurring digital subscriptions (withdrawal, cancellation, price display), VAT on a digital subscription sold from Lithuania to LT and EU consumers, and whether "flight deal alerts" needs any travel-agent licensing (we never sell tickets; we link to airlines/Google Flights).
+
+**8. Diaspora angle.** Size and search behaviour of Lithuanians in UK/Ireland/Norway/Denmark for flights home at Christmas/Easter/summer; language they search in; communities (Facebook groups, forums) where such deals spread; whether an English or Lithuanian landing page performs better; airlines and route trends (Ryanair/Wizz cuts and adds to Kaunas/Vilnius in 2026).
+
+**9. Content calendar.** For each seasonal cluster, when the query peaks in Lithuania and how many weeks before that a page must exist to rank; which evergreen guides earn links in the Lithuanian travel niche (e.g. Kaunas airport access from Vilnius, hand-luggage rules, "kada pirkti bilietus" myths).
+
+**10. Anything I'm not asking.** Name the three biggest risks or opportunities in this plan that the questions above miss.
+
+Output format: a structured report with a one-page executive summary first, then one section per question, each with (a) findings, (b) confidence and sources, (c) concrete recommendations for yip.lt. Prefer 2024–2026 sources. Where you estimate, say so.

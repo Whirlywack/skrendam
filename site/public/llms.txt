@@ -1,0 +1,19 @@
+# Yip (yip.lt)
+
+> Žmogaus patikrinti pigūs skrydžiai iš Vilniaus, Kauno ir Rygos. Randam, patikrinam ir pasakom, kodėl verta ir koks kabliukas. Bilietą perki tiesiogiai iš aviakompanijos.
+
+Yip is a Lithuanian-language flight-deal letter for the Baltics. We scan routes from Vilnius (VNO), Kaunas (KUN) and Riga (RIX) daily, check every find by hand, and publish a few finds a week. Prices are shown as found and re-verified daily; expired finds stay online as proof, marked as past.
+
+## Pages
+- https://yip.lt/ — the current edition of finds
+- https://yip.lt/rinkiniai — finds by origin city and travel moment
+- https://yip.lt/pigus-skrydziai-is-vilniaus — cheap flights from Vilnius
+- https://yip.lt/pigus-skrydziai-is-kauno — cheap flights from Kaunas
+- https://yip.lt/pigus-skrydziai-is-rygos — cheap flights from Riga
+- https://yip.lt/buvo — past finds (expired, kept as a record)
+- https://yip.lt/privatumas — privacy
+
+## Facts
+- Language: Lithuanian. Origins: VNO, KUN, RIX. Currency: EUR.
+- We never sell tickets; every find links to the airline or Google Flights.
+- Contact: hello@yip.lt
