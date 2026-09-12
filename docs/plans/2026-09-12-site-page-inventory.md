@@ -164,6 +164,8 @@ Lithuanians type these on phones without diacritics: „kur keliauti lapkricio m
 (peak Sep–Oct 320) vs „kur keliauti lapkričio mėnesį" 10; „kur keliauti rugsejo menesi" 20
 (Aug 70) vs the diacritic form below 10. Both tools agree once the spelling matches. Google Trends
 (Lithuania, 12 months) shows all of these at index 0–2, i.e. below its reporting floor, which is
-consistent with tens-to-low-hundreds absolute volumes. Consequences: slugs are ASCII anyway and
-already match the typed form; titles and H1s must carry the correct diacritics (Google folds them,
-the reader does not); when sizing a seasonal page, always query both spellings and add them.
+consistent with tens-to-low-hundreds absolute volumes. Consequences (founder decision 2026-09-12):
+slugs are ASCII and already match the typed form; **meta titles and descriptions ship without
+diacritics too** (`format.ascii()` applied at metadata time on the collection pages), so the SERP
+snippet matches what was typed; on-page copy keeps its diacritics; when sizing a seasonal page,
+always query both spellings and add them.
