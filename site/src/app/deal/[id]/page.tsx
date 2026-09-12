@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { getDeal, getFreeWindowIds, getSimilarDeals } from '@/lib/queries';
+import { getDeal, getFreeWindowIds, getPriceChecks, getSimilarDeals } from '@/lib/queries';
 import { freshSource, toPublicDeal, toTicket } from '@/lib/mappers';
 import { priceContext } from '@/lib/priceContext';
 import { bookingCta } from '@/lib/booking';
 import { dealWhyAndCatch, ltDealHeadline } from '@/lib/dealDetail';
 import { sceneClass } from '@/lib/photos';
 import { ltCity } from '@/lib/cities-lt';
-import { eur, freshnessLabel } from '@/lib/format';
+import { eur, formatDates, freshnessLabel } from '@/lib/format';
+import { toCheckItems } from '@/lib/priceChecks';
 import { WAS_PRICE_MIN_DROP_PCT, priceFreeBlurb } from '@/lib/format-rules';
 import { destinationsCollection, originCollection, zoneCollection } from '@/lib/collections';
 import { S, curator } from '@/lib/lt';
@@ -21,6 +22,7 @@ import { DealRow } from '@/components/v2/Rows';
 import { InkBand } from '@/components/v2/InkBand';
 import { V2Footer } from '@/components/v2/V2Footer';
 import { PriceSparkline } from '@/components/PriceSparkline';
+import { CheckLine } from '@/components/v2/CheckLine';
 import { JsonLd } from '@/components/JsonLd';
 import { breadcrumbJsonLd, dealArticleJsonLd } from '@/lib/seo';
 
@@ -58,6 +60,14 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
 
   // Price context (real data — no fake sparklines)
   const stats = await priceContext(pd.origin, pd.destination, pd.tripType, deal.price, now);
+
+  // Slice 2: expired variant + the last daily checks (WP9 deal_price_checks)
+  const expired = !isLive(pd.status);
+  const checkRows = await getPriceChecks(pd.id);
+  // With no copy for a gone check yet, a line containing one would show a bare
+  // dash — hide the line until the key is filled (Global Constraints).
+  const checkItems = toCheckItems(checkRows, S.checkGone);
+  const showChecks = checkItems.length > 0 && (S.checkGone !== '' || checkRows.every((r) => r.available && r.price != null));
 
   // Why / catch columns
   const score = Math.round(Number(row.score ?? 0) * 100);
@@ -139,8 +149,10 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
           <div className="top">
             <span className="v2-kicker">
               {rank > 0
-                ? `${S.dealNoWord} Nr. ${String(rank).padStart(2, '0')} · ${S.thisWeekOf}`
-                : pd.publicLabel ?? S.foundByHand}
+                ? `${S.dealNoWord} Nr. ${String(rank).padStart(2, '0')} · ${S.thisWeekOf}${deal.state === 'changed' && S.priceRoseFlag ? ` · ${S.priceRoseFlag}` : ''}`
+                : expired
+                  ? `${S.pastEyebrow}${S.lastedLabel && deal.lasted ? ` · ${S.lastedLabel} ${deal.lasted}` : ''}`
+                  : pd.publicLabel ?? S.foundByHand}
             </span>
             <span className="v2-stamp v2-stamp--light">{qualityLabel}</span>
           </div>
@@ -200,6 +212,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               <span className="bead" aria-hidden="true" /><span>{line}</span>
             </div>
           ))}
+          {/* Slice 2 (gated): the window's cheapest date — shown once the copy key is filled */}
+          {S.windowMinLabel && pd.windowMinPrice != null && pd.windowMinDate && (
+            <div className="v2-li cav"><span className="bead" aria-hidden="true" />
+              <span>{S.windowMinLabel}: {formatDates(String(pd.windowMinDate), null)} · {eur(Number(pd.windowMinPrice))}</span></div>
+          )}
           {whyAndCatch.catch.length === 0 && (
             <div className="v2-li">
               <span className="bead" aria-hidden="true" /><span>Kabliukų nėra — švarus radinys.</span>
@@ -230,14 +247,16 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
               ? `Pigiausi ${stats.percentile} % per 90 dienų šiame maršrute.`
               : `${deal.drop} % pigiau nei įprastai šiame maršrute.`}
           </div>
-          <PriceSparkline stats={stats} todayPrice={deal.price} />
+          <PriceSparkline stats={stats} todayPrice={deal.price} dead={expired} />
+          {showChecks && <CheckLine items={checkItems} />}
           <div className="v2-kicker v2-kicker--dim method">
             {S.priceContextMethod} · {S.updatedMorning}
           </div>
         </section>
       )}
 
-      <CaptureRow source="deal" />
+      {/* No mid-page ask on an expired deal — the poster already says it is gone (reviewer finding 7) */}
+      {!expired && <CaptureRow source="deal" />}
 
       {/* Similar deals — the home page's ink-inverting rows */}
       {similarTickets.length > 0 && (
