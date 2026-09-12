@@ -4,7 +4,10 @@
 > records DNS-only), DNSSEC switched off at iv.lt 12:01, nameservers changed 12:13; the .lt registry published
 > both at 13:49 and yip.lt resolved everywhere within a minute. In practice the NS change was submitted before
 > the DS was withdrawn — harmless because the domain was already SERVFAIL, and the registry applied both
-> in one publication. **Open:** enable DNSSEC at Cloudflare and get the DS added by iv.lt ticket (§ step 5).
+> in one publication. **14:08:** DNSSEC enabled at Cloudflare — KSK tag **2371**, alg 13, DS digest type 2
+> `DC54884813E4A1435903E7F692D800940F0B002C05FF0379185EFEFB9B0F7047` (recomputed from the published DNSKEY, matches).
+> **14:10:** DS sent to iv.lt support (ticket). **Open:** confirm the DS appears at `a.tld.lt` and `dig +dnssec A yip.lt @1.1.1.1`
+> shows the `ad` flag; until then the zone is unsigned but resolves everywhere.
 
 Written 2026-09-12 from live checks and current provider docs (facts + sources in
 `.superpowers/sdd/2026-09-12-dns-migration-research.md`, exact records in
