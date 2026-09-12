@@ -22,7 +22,7 @@ export function Footer() {
           <Link href="/pigus-skrydziai-is-vilniaus">{S.fromVilnius}</Link>
           <Link href="/pigus-skrydziai-is-kauno">{S.fromKaunas}</Link>
           <Link href="/pigus-skrydziai-is-rygos">{S.fromRiga}</Link>
-          <Link href="/kaledu-muges">{S.footerXmas}</Link>
+          <Link href="/kaledines-muges-europoje">{S.footerXmas}</Link>
         </div>
 
         {/* Yip column */}

@@ -29,26 +29,26 @@ describe('collectionBySlug', () => {
     expect(collectionBySlug('cheap-flights-from-riga')).toBeUndefined();
   });
 
-  it("returns kind 'moment' for rugsejo-saule", () => {
-    expect(collectionBySlug('rugsejo-saule')?.filter.kind).toBe('moment');
+  it("returns kind 'moment' for kur-keliauti-rugsejo-menesi", () => {
+    expect(collectionBySlug('kur-keliauti-rugsejo-menesi')?.filter.kind).toBe('moment');
   });
 
-  it('uses the real DB slug for rugsejo-saule', () => {
-    expect(collectionBySlug('rugsejo-saule')?.filter).toEqual({
+  it('uses the real DB slug for kur-keliauti-rugsejo-menesi', () => {
+    expect(collectionBySlug('kur-keliauti-rugsejo-menesi')?.filter).toEqual({
       kind: 'moment',
       slug: 'sept_shoulder',
     });
   });
 
-  it('uses the real DB slug for kaledu-muges', () => {
-    expect(collectionBySlug('kaledu-muges')?.filter).toEqual({
+  it('uses the real DB slug for kaledines-muges-europoje', () => {
+    expect(collectionBySlug('kaledines-muges-europoje')?.filter).toEqual({
       kind: 'moment',
       slug: 'xmas_markets',
     });
   });
 
-  it('filters kipras to LCA/PFO, not the whole Mediterranean zone', () => {
-    expect(collectionBySlug('kipras')?.filter).toEqual({
+  it('filters pigus-skrydziai-i-kipra to LCA/PFO, not the whole Mediterranean zone', () => {
+    expect(collectionBySlug('pigus-skrydziai-i-kipra')?.filter).toEqual({
       kind: 'destinations',
       iatas: ['LCA', 'PFO'],
     });
@@ -61,8 +61,8 @@ describe('collectionBySlug', () => {
 
 describe('destinationsCollection', () => {
   it('finds the Cyprus collection from either of its airports', () => {
-    expect(destinationsCollection('LCA')?.slug).toBe('kipras');
-    expect(destinationsCollection('PFO')?.slug).toBe('kipras');
+    expect(destinationsCollection('LCA')?.slug).toBe('pigus-skrydziai-i-kipra');
+    expect(destinationsCollection('PFO')?.slug).toBe('pigus-skrydziai-i-kipra');
   });
 
   it('returns undefined for a destination no collection covers', () => {

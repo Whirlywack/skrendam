@@ -143,3 +143,20 @@ Legend: ✅ renders · ⚠ partial/wrong · ✗ missing. "Backend field" = exist
 
 Copy for every slice is a separable deliverable: strings in `lt.ts`, one deck for the founder or a
 copywriter; „kabliukas" replacement lands in the first copy pass.
+
+## 7. Slug decisions for the existing collections (DataForSEO, Lithuania, lt, pulled 2026-09-12)
+
+Rule: a slug is the Lithuanian query the page can honestly answer, in the form people type it
+(no diacritics), matching the URL pattern that already ranks for that query. Volumes are Google
+Ads monthly averages; the peak month matters more than the average for seasonal pages.
+
+| Collection (moment) | Slug | Query cluster it targets (avg/mo · peak) | Why this form |
+|---|---|---|---|
+| Kipras (destinations LCA+PFO) | `/pigus-skrydziai-i-kipra` | „skrydžiai į kiprą" 140 · Oct 210; „pigūs skrydžiai į kiprą" 30 · Sep 170; „vilnius kipras skrydis" 90; „kaunas kipras skrydis" 90; „lėktuvo bilietai į kiprą" 30 | Contains the head phrase `skrydziai-i-kipra` (Wizz `/skrydziai/kipras`, lektuvubilietai `/skrydziai-i-kipra` rank for it) plus the „pigūs" modifier, same pattern as the origin hubs. „kipras" alone (12,100) is weather/maps/people, not flights. |
+| Kalėdų mugės (xmas_markets, 20 Nov–23 Dec) | `/kaledines-muges-europoje` | „kalėdinės mugės" 170–210 · Dec 1,300; „kalėdinės mugės europoje 2025" 90 · Nov 480; „kalėdinė mugė" 110 · Dec 880; „kalėdinės kelionės" 260 · Nov 1,000 (package intent) | The term is „kalėdinės mugės", not „kalėdų mugės" (no data) and not „skrydžiai į kalėdines muges" (no data). SERP is blog listicles at `…/graziausios-kaledines-muges-europoje/`; evergreen slug, year goes in the title. Page must exist by mid-Oct (volume starts Oct). |
+| Rugsėjo saulė (sept_shoulder, 1–30 Sep) | `/kur-keliauti-rugsejo-menesi` | „kur keliauti rugsėjo mėnesį" < 10 in Ads but present in related searches; the family „kur keliauti {mėnuo} mėnesį" is the proven pattern (estravel, etours rank with exactly that slug) | The moment is September travel, so it cannot honestly wear the October query. The demand sits one month later: „kur keliauti spalio mėnesį" 70 · Sep 210, „kelionės spalį" 50 · Sep 210 — that is the `last_warm_days` moment (1–31 Oct), already in the DB, not yet a collection. **Next collection to add: `/kur-keliauti-spalio-menesi`.** |
+| Hub `/rinkiniai`, archive `/buvo` | as in the SEO doc | no search term either way („kelionių kryptys" 30, „kur keliauti" 50 are informational) | Navigation pages, not keyword pages; LT for consistency. |
+
+Not renamed: `/subscribe`, `/early-alerts` (funnel, no search intent, cookie path + ~25 refs).
+Tool note: DataForSEO Labs and Google Ads disagree on some month queries („kur keliauti lapkričio
+mėnesį" 110 vs 10); the deep research should settle which source to trust for the seasonal pages.
