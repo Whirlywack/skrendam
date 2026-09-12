@@ -5,6 +5,7 @@ import {
   publishedDeals,
   candidates,
   candidateTemplateMatches,
+  dealPriceChecks,
   dealTemplates,
   issues,
   travelMoments,
@@ -98,6 +99,16 @@ export async function getInspirationDeals(limit = INSPIRATION_LIMIT) {
 export async function getDeal(id: number) {
   const rows = await dealBase().where(eq(publishedDeals.id, id)).limit(1);
   return rows[0] ?? null;
+}
+
+/** Newest N verification checks for one deal (WP9). */
+export async function getPriceChecks(dealId: number, limit = 3) {
+  return db
+    .select({ checkedAt: dealPriceChecks.checkedAt, price: dealPriceChecks.price, available: dealPriceChecks.available })
+    .from(dealPriceChecks)
+    .where(eq(dealPriceChecks.dealId, dealId))
+    .orderBy(desc(dealPriceChecks.checkedAt))
+    .limit(limit);
 }
 
 export async function getSimilarDeals(
