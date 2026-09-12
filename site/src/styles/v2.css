@@ -329,6 +329,9 @@
 .v2-footer .bar { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
 .v2-footer .links { display: flex; gap: 24px; flex: 1; justify-content: center; font-size: 14px; font-weight: 500; color: var(--sand-600, #685B47); flex-wrap: wrap; }
 .v2-footer .legal { font-family: var(--font-mono); font-size: 11px; color: var(--sand-500); text-transform: uppercase; letter-spacing: .08em; }
+/* the phone-only „Privatumas" link: the legacy .yip-site .legal rule (site.css) sets
+   display:flex and outranks .m-only, so the desktop hide is spelled out here */
+.v2-footer a.legal { display: none; }
 
 /* ---------- mobile (HomeMobile artboard; mono floor 11px) ---------- */
 @media (max-width: 720px) {
@@ -338,6 +341,7 @@
   .v2-masthead .bar { height: 54px; gap: 12px; justify-content: space-between; }
   .v2-masthead .mid, .v2-masthead .navlinks { display: none; }
   .v2-masthead .pill { font-size: 13px; padding: 8px 14px; min-height: 44px; }
+  .v2-masthead .logo { display: inline-flex; align-items: center; min-height: 44px; } /* 44px tap target */
   .v2 .v2-hero { padding-block: 26px 18px; }
   /* with a featured deal the poster is the page — no hero above it */
   .v2-hero--has-poster { display: none; }
@@ -396,8 +400,16 @@
   .v2-ink-band .grid { grid-template-columns: 1fr; gap: 24px; }
   .v2-ink-band form .frow { flex-direction: column; }
   .v2-ink-band .sunball { width: 200px; height: 200px; right: -60px; top: -80px; }
-  .v2-footer .bar { flex-direction: column; align-items: flex-start; gap: 14px; }
-  .v2-footer .links { justify-content: flex-start; gap: 16px; flex: none; }
+  /* PR B: one 52px row — wordmark left, „Privatumas" right; the six links and the
+     copyright go (the base .v2-footer .links rule outranks .d-only, so hide it here) */
+  .v2-footer { padding: 0; }
+  .v2-footer .bar { min-height: 52px; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; }
+  .v2-footer .links { display: none; }
+  .v2-footer .legal { font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--sand-600); }
+  .v2-footer span.legal { display: none; }
+  /* 44px tap target; zero the legacy .yip-site .legal margin/padding/border that would
+     push the row past 52px */
+  .v2-footer a.legal { display: inline-flex; align-items: center; min-height: 44px; margin: 0; padding: 0; border: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
