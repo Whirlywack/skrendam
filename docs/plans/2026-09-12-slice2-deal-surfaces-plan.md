@@ -587,3 +587,54 @@ and give the `InkBand` on expired pages the class wrapper `<div className={expir
 
 - Spec coverage: verification time ✔ (T1/T2/T5), lasted ✔ (T1/T2/T5, gated), check line ✔ (T3/T4), window-min ✔ (T4, gated), changed state ✔ (existing lines + T4 flag gated + coral in T3/T4), expired page ✔ (T4 + T8), locked list ✔ (T5 + T7), mobile reduced layout ✔ (T6–T9), empty-state proof ✔ (T7). Not built on purpose: archetype-aware verdict wording (copy), sticky mobile CTA (rejected), price-changed eyebrow wording (gated).
 - Names used consistently: `verifiedTime`, `lasted`, `toCheckItems`, `getPriceChecks`, `splitLockedRows`, `CheckLine`, `MobileCapture`, classes `m-only`/`d-only`/`v2-row--more`/`v2-row--locked-n`/`v2-checkline`/`m-capture`.
+
+---
+
+### Task 10: Expired poster variant on the deal page (desktop) — belongs to PR A
+
+Added 2026-09-12 after the controller's visual check: Task 4 covered the kicker, the mid-page capture and the chart bar, but the approved DealExpired board also changes the poster itself. Reference: `docs/plans/2026-09-12-slice2-mockups-generator.py`, `deal_expired = deal_page(... poster_cls="v2-poster--dead" ...)` and `.v2-poster--dead` in its CSS.
+
+**Files:**
+- Modify: `site/src/app/deal/[id]/page.tsx` (poster hero + catch line + `dealWhyAndCatch` call)
+- Modify: `site/src/styles/v2.css`
+
+**Interfaces:**
+- Consumes: `expired` (already computed in the page from `isLive(pd.status)`), `S.trophyHeader` („Buvo. Nebėra."), `S.trophyCaption` („Kas gavo laišką — spėjo."), `S.savedWord` („sutaupė"), `S.ctaSubmit` („Noriu radinių") — all existing keys; `t.baseline`, `t.price`, `save`, `booking`, `POSTER`, `sceneClass`.
+
+- [ ] **Step 1: Poster field + stamp + blurb** — in the poster hero of `page.tsx`:
+  - `const posterField = expired ? 'v2-poster--dead' : (POSTER[sceneClass(pd.destination)] ?? 'v2-poster--sun');`
+  - stamp: `{expired ? S.trophyHeader : qualityLabel}`
+  - blurb: `{expired ? S.trophyCaption : headline}`
+
+- [ ] **Step 2: Price cell** — replace the price/save/CTA block with:
+
+```tsx
+<div className="pricecell">
+  <div>
+    <div className="v2-price price">
+      {expired ? <s className="price-dead">{eur(t.price)}</s> : <>{eur(t.price)}{showWas && <s>{eur(t.baseline!)}</s>}</>}
+    </div>
+    {expired
+      ? (save != null && <div className="mono save">{S.savedWord} {eur(save)}</div>)
+      : (showWas && save != null && <div className="mono save">{S.saveWord} {eur(save)} {S.youSaveVs}</div>)}
+    {!expired && t.priceLines.map((line) => <div key={line} className="mono save">{line}</div>)}
+  </div>
+  {expired
+    ? <a className="cta" href="#kapote">{S.ctaSubmit} <span className="bead" aria-hidden="true" /></a>
+    : <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">{booking.button} <span className="bead" aria-hidden="true" /></a>}
+</div>
+```
+
+- [ ] **Step 3: Catch line + catch column** — third catch-line span: `{expired ? t.airline : `${t.airline} · ${freshLabel.toLowerCase()}`}`; in the `dealWhyAndCatch({...})` call pass `goingFast: pd.goingFast && !expired` so „Tirpsta" never appears on an expired deal.
+
+- [ ] **Step 4: CSS** — append next to the other `.v2-poster--*` field modifiers in `v2.css`:
+
+```css
+/* expired deal: sand duotone, never the live sun/dusk/sea fields */
+.v2-poster--dead { background: linear-gradient(160deg, var(--sand-300) 0%, var(--sand-500) 55%, var(--sand-700) 100%); }
+.v2-poster .price-dead { margin-left: 0; font: inherit; opacity: .75; letter-spacing: inherit; }
+```
+
+- [ ] **Step 5: Verify** — `npx tsc --noEmit`, `npx vitest run`, `npx next build`; `npx next start -p 3103`; `curl -s http://localhost:3103/deal/3` must contain `v2-poster--dead`, `price-dead`, `Buvo. Nebėra.`, `href="#kapote"` inside the poster, and must NOT contain `Google Flights` or `Tirpsta`; `curl -s http://localhost:3103/deal/17` must be unchanged (sun/stone field, booking CTA present, no `price-dead`). `pkill -f 'next start -p 3103'`.
+
+- [ ] **Step 6: Commit** — `git commit -m "feat(site): expired deal page — sand poster, struck price, signup CTA"`.
