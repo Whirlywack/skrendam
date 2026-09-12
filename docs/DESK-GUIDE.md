@@ -4,6 +4,13 @@
 > code and docs as of main `a552209` (2026-09-11); when the two disagree, the code
 > wins and this file needs an update. Product copy is quoted in Lithuanian as the
 > site and letters show it. Canonical project context lives in `docs/PROJECT.md`.
+>
+> **Editing this file:** the desk renders it at `/guide` with a deliberately small
+> Markdown subset (`web/src/lib/markdown.ts`) — headings `#`–`###`, paragraphs,
+> `>` quotes, bullet and numbered lists **one level only**, `**bold**`,
+> `*italic*`, `` `code` ``, fenced blocks, links and simple pipe tables. A nested
+> bullet does not nest: it degrades silently into a paragraph showing its literal
+> `- text`. Anything outside the subset renders as its own source.
 
 ## 1. What this is
 
@@ -29,15 +36,17 @@ the desk and every email send happen on the laptop.
   retries up to 4× (5-minute settle) on connection-shaped failures. A daily
   checkpoint (`~/Library/Logs/skrendam/scan-checkpoint.json`) lets a retry resume
   instead of re-spending Google calls.
-- **What it does:** scans today's cohort — the ~39 core routes every day plus the
-  tail slice where `route.id % 10 == day-ordinal % 10` (`tail_rotation_days = 10`)
+- **What it does:** first, before it opens its own `scan_runs` row, marks any
+  `running` run older than 6 h as failed. Then it scans today's cohort — the ~39
+  core routes every day plus the tail slice where
+  `route.id % 10 == day-ordinal % 10` (`tail_rotation_days = 10`)
   — across every enabled template (18 in the catalogue; `home-easter` and
   `home-summer` ship disabled until their dated chores); writes `price_log`, `candidates`,
   `candidate_template_matches` (with `score_v2`, `archetype`, `demand_signals`) and
-  `content_drafts`; marks stale `running` runs older than 6 h as failed; expires
-  candidates whose `expires_at` (last seen + 14 days) has passed; expires live
-  deals whose `travel_date` or `valid_until` is behind today; purges subscribers
-  unsubscribed more than 30 days ago; then, **only on a healthy run**, re-checks
+  `content_drafts`. Then it sweeps: expires candidates whose `expires_at` (last
+  seen + 14 days) has passed; expires live deals whose `travel_date` or
+  `valid_until` is behind today; purges subscribers unsubscribed more than 30
+  days ago; and finally, **only on a healthy run**, re-checks
   every live/changed deal (§4). Counters and status land on the `scan_runs` row
   when the run finishes.
 - **How long:** the longest healthy full-network run observed is ~80 min; a run
@@ -48,9 +57,13 @@ the desk and every email send happen on the laptop.
   made), ≥ 10 calls but zero price rows, or price rows under 10 % of the previous
   run's (previous ≥ 100). Data is kept either way; `degraded` only says "don't
   trust today's picture". A run the circuit breaker stopped (5 consecutive
-  failures) is `failed`. `daily-scan.sh` exits 0 healthy / 2 degraded or aborted /
-  1 setup failure and posts a macOS notification titled "Skrendam scan OK",
-  "Skrendam scan DEGRADED" or "Skrendam scan FAILED" with the summary line.
+  failures) is stamped `failed` in the database — but it still exits 2, so the
+  notification says DEGRADED. `daily-scan.sh` exits 0 healthy / 2 degraded or
+  aborted / 1 setup failure and posts a macOS notification titled "Skrendam scan
+  OK", "Skrendam scan DEGRADED" or "Skrendam scan FAILED" with the summary line.
+  "Skrendam scan FAILED" therefore means exit 1 (a crash or a setup problem such
+  as a missing database URL); the watchdog is what reports an aborted run, as
+  "last scan failed".
 - **The rules that keep it healthy:** the Mac must be on AC for the scheduled wake
   (clamshell needs AC + external display); ProtonVPN auto-connect must stay off —
   a VPN exit IP produces ~100 % empty calendar answers and breaks Neon DNS, which
@@ -85,13 +98,15 @@ the desk and every email send happen on the laptop.
 | Publish, Hold, Dismiss, Schedule, Reject, Save copy, Expire, Republish, Update live deal, plan flip, Assemble, Send | everywhere | none — database only |
 | **Recheck** (Composer) / **Recheck price** (Today card) | Composer, Today | 1 flights search per candidate, via the worker |
 | **Recheck live deals** | Today | 1 flights search per live/changed deal, via the worker |
-| **Scan today's cohort** | Today | a full cohort pass (hundreds of calls — the same load as the 06:00 scan; never press it after a healthy morning run) |
+| **Scan today's cohort** | Today | a full cohort pass (hundreds of calls — the same load as the 06:00 scan; never press it after a healthy morning run, **and never while the pulse bar says a scan is running**: nothing stops you — the button only greys out while it is queuing — and the worker's pass carries no checkpoint, so it shares the session and spends every call again) |
 
 The three Google-calling buttons only **queue** a `scan_requests` row (the pulse bar
 shows "N queued"). Nothing happens until `uv run skrendam worker` is running on the
 laptop — it polls every 15 s, executes requests oldest first, and records the
-outcome on the row. `scripts/status.sh` shows whether the worker is up ("only
-needed for admin buttons").
+outcome on the row. It takes **at most 5 requests per poll**, so "Recheck live
+deals" across a dozen deals needs several polls: a queue count that drains a few
+at a time is normal, not a stuck worker. `scripts/status.sh` shows whether the
+worker is up ("only needed for admin buttons").
 
 ## 3. Pages
 
@@ -258,9 +273,11 @@ is `expired` or its travel date is before today.
   destination is not tiered great.
 - Archetype precedence **date > rare > destination**: date = both legs inside a
   `peak_windows` row sharing a persona code and fare ≤ 60 % of that window's
-  typical price; rare = possible error fare / error-fare score / discount ≥ 60 %;
-  destination = saving ≥ €60 direct (€150 with stops) and discount ≥ 40 % and
-  demand tier A/B. A commodity fare gets none.
+  typical price (of the route's usual price when the window holds under 10 price
+  points — `WINDOW_TYPICAL_MIN_POINTS`); rare = possible error fare / error-fare
+  score / discount ≥ 60 %; destination = saving ≥ €60 direct (€150 with stops)
+  and discount ≥ 40 % and demand tier A/B, and the template's
+  `min_departure_dates` met (or unset). A commodity fare gets none.
 - Launch templates carry `priority = 100`; Review's default view and the top ten
   are limited to them. `TODAY_N = 10`.
 
@@ -269,7 +286,7 @@ is `expired` or its travel date is before today.
 | State | Site | Meaning |
 |---|---|---|
 | `live` | published price; „Geras/Retas radinys"; „Tikrinta prieš …" from `verified_at`; top 3 newest shown in full, the rest locked „kaina — laiške" | last real answer within tolerance of the published price |
-| `changed` | current price with „Dabar nuo €124" / „radome už €93"; discount recomputed against the shown price; still counts toward the free window | still available and still a deal, but > 10 % above the published price |
+| `changed` | current price with „Dabar nuo 124 €" / „radome už 93 €"; discount recomputed against the shown price; still counts toward the free window | still available and still a deal, but > 10 % above the published price |
 | `expired` | gone from the live list; shown in `/past-deals` | date passed, gate failed, two missing days, or Expire |
 
 Verification rules (`skrendam/verification.py`, run by the 06:00 scan after the
@@ -291,10 +308,13 @@ verification calls and zero writes):
   Failing the gate → `expired`. Exact itinerary gone but the day's minimum still
   within tolerance → `live`; above tolerance but clearing the gate → `changed`
   with the window minimum as the sample.
-- **An empty answer never changes status.** It stamps `unverified_since` and, on a
-  healthy run, `missed_checks += 1`; **two consecutive missing days**
-  (`MISSED_CHECKS_TO_EXPIRE = 2`) expire the deal. Republish, Update live deal and
-  any real price reset the counter.
+- **An empty answer never changes status.** In the 06:00 step it stamps
+  `unverified_since` and, on a healthy run, `missed_checks += 1`; **two
+  consecutive missing days** (`MISSED_CHECKS_TO_EXPIRE = 2`) expire the deal.
+  An empty **manual** Recheck stamps `unverified_since` only — no check row, no
+  transition, no counter bump — so **pressing Recheck can never expire a deal**;
+  expire a dead one by hand on Live. Republish, Update live deal and any real
+  price reset the counter.
 - Every check writes a `deal_price_checks` row (`source` = `calendar` /
   `flights` / `manual`). The desk's **Recheck** goes through the same
   `record_check` and `transition`, so a hand recheck can move a deal to `changed`
@@ -345,7 +365,7 @@ verification calls and zero writes):
 | `http_429s` | 0 — any 429 means the session is being punished | Scan health "429s"; run summary |
 | Google answered | ~96–100 % of searches on a cold single pass from a residential IP | Today verdict line; `health.metrics` |
 | candidates / matches per run | 2026-09-03: 152 candidates on the new template set | Today ("N fresh deals"), Scan health, `scripts/status.sh` "found" |
-| `deals_verified / deals_changed / deals_expired / verify_calls / deals_verify_aborted` | verified = number of live deals (calendar hits are free), `verify_calls ≤ 20`, aborted 0 | end-of-run line in `daily-scan.log`; `scan_runs.health.metrics`; Today's "N changed · M expired" |
+| `deals_verified / deals_changed / deals_expired / verify_calls / deals_verify_aborted` | verified = number of live deals (calendar hits are free), `verify_calls ≤ 20`, aborted 0 | the `scan complete:` line in `daily-scan.log` carries verified/changed/expired only; `verify_calls` and `deals_verify_aborted` live in `scan_runs.health.metrics`; Today's "N changed · M expired" |
 | live deals on the site | more than 0, ideally ≥ 12 across ≥ 3 moments | Live tab count; `status.sh` "published" |
 | queue depth | a morning's work, not a wall | Review counts; `status.sh` "to review" |
 | worker | running when you plan to press Recheck | `status.sh` "worker" |
@@ -372,6 +392,11 @@ queue, published (with unverified count) and subscribers.
 - **After ~8 sent letters:** re-tune the demand constants by hand from the Letter
   stats pages (commodity cap, date-fit multipliers, tier weights, cadence — spec
   `docs/plans/2026-09-10-demand-layer-launch-spec.md` §6). Nothing auto-adjusts.
+- **Open, waiting on a word:** the founder wants „kabliukas" renamed (2026-09-11)
+  but has not picked the replacement, so nothing has changed — the Composer's
+  Body tab and the site still say it. The decision, and the four site files to
+  sweep once the word is chosen, are recorded under "Open decisions" in
+  `docs/PROJECT.md` §7.
 - **Email go-live:** work through the first-send checklist in
   `docs/handoffs/2026-09-11-wp6-email-streams.md` (Resend domain + SPF/DKIM/DMARC,
   keys, Stripe Payment Link, test sends to Gmail/Apple Mail/Outlook, the
@@ -422,12 +447,16 @@ queue, published (with unverified count) and subscribers.
 
 **Env files (names only, all gitignored):**
 
-- `web/.env.local` — `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`,
-  `RESEND_API_KEY`, `YIP_FROM_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `PAYMENT_LINK_URL`
-  (template: `web/.env.example`).
-- `site/.env.local` — `DATABASE_URL`, `RESEND_API_KEY`, `YIP_FROM_EMAIL`,
-  `NEXT_PUBLIC_SITE_URL`, `CURATOR_NAME` (template: `site/.env.example`; the same
-  values live on Vercel).
+- `web/.env.local` — `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `AUTH_SECRET`,
+  `AUTH_TRUST_HOST`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `E2E_ADMIN_PASSWORD`,
+  `RESEND_API_KEY`, `YIP_FROM_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `PAYMENT_LINK_URL`.
+  Rebuild this file from `web/.env.example`, not from this list — without
+  `AUTH_SECRET` the desk cannot log in at all, and `drizzle-kit pull` needs the
+  unpooled URL.
+- `site/.env.local` — `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `RESEND_API_KEY`,
+  `YIP_FROM_EMAIL`, `NEXT_PUBLIC_SITE_URL`, `CURATOR_NAME` (template:
+  `site/.env.example`, which does not list `CURATOR_NAME` — only `src/lib/lt.ts`
+  reads it; the same values live on Vercel).
 - The scanner reads `SKRENDAM_*` variables (`SKRENDAM_DATABASE_URL`,
   `SKRENDAM_TAIL_ROTATION_DAYS`, …); when `SKRENDAM_DATABASE_URL` is unset,
   `daily-scan.sh` and `status.sh` reuse `DATABASE_URL` from `web/.env.local`.
