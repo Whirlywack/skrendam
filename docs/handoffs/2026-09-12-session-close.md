@@ -2,21 +2,25 @@
 
 You are picking up Yip/Skrendam with no memory of the last three days. Read §0 and §1, then act.
 
-## 0. PRIORITY (founder, 2026-09-12; order refined the same day): frontend first — after email is switched on
-The backend is done (every work package of the launch spec is merged). The order that follows from the spec's
-own decision ("the paid stream is the product, the site captures leads"):
+## 0. PRIORITY (founder, 2026-09-12): the funnel order — TikTok → site → free list → paid
+The backend is done (every work package of the launch spec is merged). There are **0 subscribers** today, so
+nothing about email streams is urgent; what is urgent is the top of the funnel and the page it lands on.
 
-- **Step 0 — switch email on (founder, 1–2 h, this week).** `RESEND_API_KEY`, `YIP_FROM_EMAIL`,
-  `NEXT_PUBLIC_SITE_URL`, `PAYMENT_LINK_URL` into `web/.env.local`; Stripe Payment Link; test sends to
-  Gmail/Apple Mail/Outlook; `scripts/2026-09-12_founding_interest_backfill.sql`. Blocking chores for this:
-  `List-Unsubscribe-Post` header (RFC 8058) and the iv.lt DS ticket. Then **let the machine run a week**
-  (first real verification pass, first instant mail, first Thursday digest) — bugs are cheapest here.
-- **In parallel:** the founder runs the deep-research prompt; brief a Lithuanian copywriter (see item 3).
-- **Step 1 — the frontend / site redo (`site/`)**, in two phases: (a) polish so the site *shows* the backend
-  (mostly wired already — see item 1); (b) the SEO page architecture once the research is in, built in
-  slices, **route pages first** (they compound with time). Chores and backlog after, unless they block the site.
-- **Reality check:** the site redo pays off only when TikTok traffic arrives; the top of the funnel is the
-  founder's (the desk drafts a TikTok hook per deal).
+1. **TikTok channel (founder, now).** Open it and post deals; the desk drafts a TikTok hook per deal
+   (Composer → TikTok hook tab). Traffic comes from here first.
+2. **The site — engineering priority #1, starting now.** It is where TikTok traffic lands and where the
+   free list is captured. Two phases: (a) immediately, polish so the site *shows* what the backend produces
+   and converts (found vs current price, verified-ago, the catch line, the edition, the signup) — with real-data
+   mockups and founder sign-off; (b) the SEO page architecture (§0.1) once the deep-research results are in,
+   built in slices, route pages first. Chores only if they block the site.
+3. **Confirmation mail before the first post (founder, ~30 min).** Put `RESEND_API_KEY` (+ `YIP_FROM_EMAIL`,
+   `NEXT_PUBLIC_SITE_URL`) into `site/` on Vercel and `web/.env.local` so signups get a real double-opt-in
+   email; without the key the site silently falls back to single opt-in. That is the only email piece
+   needed before subscribers exist.
+4. **When the free list has people:** nurture letters from the Letters page; Payment Link + paid tier; the
+   Thursday digest for paid subscribers. Not before.
+- **In parallel:** the founder runs the deep-research prompt; a Lithuanian copywriter is briefed (item 3
+  below); iv.lt adds the Cloudflare DS (ticket sent).
 
 Concretely for the site:
 
