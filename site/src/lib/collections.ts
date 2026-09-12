@@ -43,26 +43,31 @@ export const COLLECTIONS: Collection[] = [
   },
   {
     slug: 'kur-keliauti-rugsejo-menesi',
-    label: 'Rugsėjo saulė',
+    label: 'Kur keliauti rugsėjį',
     scene: 'ph-sun',
-    h1: 'Pigūs skrydžiai į rugsėjo saulę iš Vilniaus, Kauno ir Rygos',
-    promise: 'Vėlyvos vasaros šiluma, mažiau minios, mažesnės kainos — patikrinta žmogaus.',
+    // Title/H1 carry the target query („kur keliauti rugsėjo mėnesį"); the
+    // origins move to the promise so the title stays under ~60 chars.
+    h1: 'Kur keliauti rugsėjo mėnesį? Pigūs skrydžiai į saulę',
+    promise:
+      'Dar šilta, mažiau minios, mažesnės kainos. Radiniai iš Vilniaus, Kauno ir Rygos — patikrinti žmogaus.',
     filter: { kind: 'moment', slug: 'sept_shoulder' },
   },
   {
     slug: 'kaledines-muges-europoje',
-    label: 'Kalėdų mugės',
+    label: 'Kalėdinės mugės',
     scene: 'ph-market',
-    h1: 'Pigūs skrydžiai į Kalėdų muges iš Vilniaus, Kauno ir Rygos',
-    promise: 'Savaitgalis prie karšto vyno geriausiose Europos mugėse.',
+    // The term people type is „kalėdinės mugės (europoje)", not „Kalėdų mugės".
+    h1: 'Kalėdinės mugės Europoje: pigūs skrydžiai iš Vilniaus, Kauno ir Rygos',
+    promise: 'Savaitgalis prie karšto vyno geriausiose Europos mugėse. Radiniai patikrinti žmogaus.',
     filter: { kind: 'moment', slug: 'xmas_markets' },
   },
   {
     slug: 'pigus-skrydziai-i-kipra',
-    label: 'Kipras iš Lietuvos',
+    label: 'Kipras',
     scene: 'ph-coast',
-    h1: 'Pigūs skrydžiai į Kiprą iš Lietuvos',
-    promise: 'Šiltos jūros Kipras iš Vilniaus ir Kauno.',
+    // „skrydžiai į kiprą" + „vilnius kipras skrydis" / „kaunas kipras skrydis".
+    h1: 'Pigūs skrydžiai į Kiprą iš Vilniaus ir Kauno',
+    promise: 'Larnaka ir Pafosas, kai kaina tikrai gera. Radiniai patikrinti žmogaus.',
     filter: { kind: 'destinations', iatas: ['LCA', 'PFO'] },
   },
 ];

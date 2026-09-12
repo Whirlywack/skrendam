@@ -114,7 +114,7 @@ export const S = {
   footerLead:
     'Atrinkti pigūs skrydžiai iš Vilniaus, Kauno ir Rygos. ' +
     'Randam, patikrinam ir pasakom, koks kabliukas.',
-  footerXmas: 'Kalėdų mugės',
+  footerXmas: 'Kalėdinės mugės',
   footerEarly: 'Skubios žinutės',
   footerContact: 'Rašyk mums',
   footerPrivacy: 'Privatumas',
