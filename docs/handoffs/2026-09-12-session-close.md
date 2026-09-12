@@ -1,6 +1,62 @@
 # Handoff — 2026-09-12 session close (for a fresh context window)
 
-You are picking up Yip/Skrendam with no memory of the last three days. Read in this order, then act.
+You are picking up Yip/Skrendam with no memory of the last three days. Read §0 and §1, then act.
+
+## 0. PRIORITY (founder, 2026-09-12): the frontend comes first
+The backend is done (every work package of the launch spec is merged). **The next block of work is the public
+site (`site/`)**: it must reflect what the backend now produces, and the new pages must exist. Chores and
+backlog items come after, unless they block the site. Concretely:
+
+1. **Make yip.lt reflect the backend.** Deals carry `score_v2`, archetype (date / rare / destination), the peak
+   window, family saving, verified-at, `current_price` and the `live / changed / expired` states, price-check
+   history, "lasted N hours" on expired deals. The site already reads most of these fields (mappers/queries);
+   the redesign should *show* them honestly (found price vs current price, verified-ago stamp, the catch line).
+2. **Build the new pages + interlinking** per the SEO architecture (§0.1 below, full text in
+   `docs/research/2026-09-11-site-sitemap-seo-architecture.md`).
+3. **Copy:** Lithuanian, honest, the `lt.ts` voice (tu, lowercase spoken verbs, „radinys"; banned: akcija,
+   superkaina, nepraleisk progos!, „skenuoti"). AI drafts first; if the Lithuanian does not read natively, the
+   founder hires a human copywriter — plan the copy as a separable deliverable (strings in `lt.ts`, one deck).
+   The word „kabliukas" is to be replaced during the copy pass (open decision in PROJECT.md).
+4. **Process for design work (hard rule):** mockups with REAL data states (1 deal, changed deal, empty edition)
+   → founder sign-off → build. Use the `yip-design-system` skill for all UI/brand work. No design build
+   without the mockup sign-off (`skrendam-mockup-signoff-rule`).
+5. **Research input first:** the founder runs `docs/research/2026-09-11-deep-research-prompt.md` in a
+   deep-research tool; its results (keyword universe with seasonality, competitor/SERP audit for Lithuania,
+   programmatic-page practice after Google's 2025 updates, AI-answer citation behaviour, newsletter-business
+   funnel/pricing benchmarks, small-list conversion evidence, LT/EU legal + VAT for a paid subscription,
+   the diaspora audience, a content calendar) decide the exact pages, slugs and titles. The August keyword
+   sample in `docs/research/2026-08-29-lt-keyword-volumes.md` is NOT a rule — treat it as a first survey.
+
+### 0.1 The SEO / site architecture, in brief (do not lose this)
+- **Concept:** Yip's unfair asset is its own price history + a human verdict per Baltic route. Every page shows
+  that asset (live find, „įprastai €X", how long deals last, human-checked stamp) and funnels to one action:
+  the free letter. Programmatic pages carry the SEO weight; the letter carries the money.
+- **Page layers:** (A) core — home edition (1 open + 2 teasers + locked rest), `/deal/[id]`, past-deals archive,
+  three origin hubs (own the head terms), funnel/legal pages; (B) **programmatic** — a route page per scanned
+  route (`/skrydziai/vilnius-londonas`: live finds, 180-day price chart, „įprastai €X, žemiausia per 90 d.",
+  cheapest months, airlines, direct vs stops, ground hint, last expired finds with „išbuvo N val.", FAQ), a
+  destination page per city (`/kryptys/londonas`), flights-home pages (`/namo/is-londono`), three airport
+  pages; rule: a programmatic page exists only with ≥ 14 scan-days of history (thin pages are a liability),
+  regenerated daily; (C) **moment collections as real pages** — weekend trips, „kur keliauti lapkritį",
+  Christmas markets, ski, family, a school-holidays page with a `.ics` download as the lead magnet, seasonal
+  sun/Easter/summer, last-minute (framed as flights, not packages); (D) trust/content — about (the curator is
+  the brand), how we work, **newsletter archive** (every sent letter becomes a page), quarterly price index
+  from `price_log`, paid-plan page, FAQ with schema; (E) later — Latvian layer, English diaspora landing.
+- **Interlinking:** three hubs (origin, destination, moment); deal pages are leaves linking UP to all three
+  plus sideways to 3 more finds; breadcrumbs with schema; split sitemaps (core/routes/destinations/deals/
+  letters); expired deals stay 200 + noindex + link to their route page so old TikTok links still convert;
+  footer rotates top routes by season; schema: Organization, BreadcrumbList, ItemList, Offer (validThrough),
+  FAQPage, Article.
+- **Conversion:** one primary action site-wide (the free letter); paid offered after confirm and in letters,
+  never cold; route/destination pages capture a route-interest pref („gauk, kai nukris žemiau €X") without
+  new scanning; proof blocks use real data only (price chart, „išbuvo 36 val.", booked counts from
+  `deal_events`, „Patikrino žmogus"); edition scarcity stays; TikTok landing `/is-tiktok` with the video id in
+  `utm_content`; the school-holiday `.ics` as lead magnet delivered after double opt-in.
+- **Angles not to forget:** GEO/AI answers (FAQ phrasing, entity consistency, `llms.txt`, one-sentence
+  answers on route pages); Google Discover via the letter archive as `Article`; seasonal pages must exist
+  6–8 weeks before the query peaks (Sep: „kur keliauti lapkritį"; Oct: Christmas markets; Nov: ski; Jan:
+  žiemos atostogos); diaspora searches in LT and EN; own the brand SERP („yip skrydžiai"); legal/VAT before
+  paid goes live.
 
 ## 1. Read first (10 minutes)
 1. `docs/PROJECT.md` — canonical context: what the product is, the pipeline, ops truths, process rules, queue.
@@ -37,11 +93,8 @@ You are picking up Yip/Skrendam with no memory of the last three days. Read in t
 - Routine: publish from Review; Thursday digest and 10-day nurture are a Send button on Letters; keep the VPN
   auto-connect OFF and the laptop on AC with the lid open overnight.
 
-## 4. Open items — engineering (do when asked, in this order of value)
-1. **Site redo** — the next big block, now unblocked (backend done). Inputs: the deep-research results +
-   `docs/research/2026-09-11-site-sitemap-seo-architecture.md` (page inventory, interlinking model, conversion
-   architecture, GEO angles). Hard rule: mockups with real data and founder sign-off before any design build
-   (`skrendam-mockup-signoff-rule`). Copy is the founder's; the keyword sample is not a rule.
+## 4. Open items — engineering (after the frontend, unless blocking it)
+1. **Site redo — see §0.** Everything else below waits for it unless it blocks the site.
 2. **Desk round two** from the browser journey review (`.superpowers/sdd/2026-09-11-desk-journey-review.md` if
    present; else PROJECT.md queue): draft-headline baseline mismatch, empty TikTok/Body placeholders, duplicate
    chip labels for shared moment names, three disagreeing "today" counts, engine stats leaking into prose,
@@ -73,4 +126,5 @@ June: refresh Lithuanian school-holiday dates; after ~8 letters: re-tune the dem
 ## 7. First 15 minutes of the next session
 1. `bash scripts/status.sh`; if the scan is degraded, check the VPN and the wake log before anything else.
 2. `dig DS yip.lt @a.tld.lt` — has iv.lt added the DS? If yes, confirm the `ad` flag and close the runbook item.
-3. Ask the founder which of §4 to start, or whether the deep-research results are in for the site redo.
+3. Ask whether the deep-research results are in. Then start the **site redo (§0)**: page inventory from §0.1 +
+   research → mockups with real data → founder sign-off → build; copy as a separable deliverable.
