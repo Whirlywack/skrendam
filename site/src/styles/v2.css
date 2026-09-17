@@ -96,6 +96,11 @@
 .v2-poster--dusk { background: var(--poster-dusk); }
 .v2-poster--sea { background: var(--poster-sea); }
 .v2-poster--stone { background: var(--poster-stone); }
+/* expired deal: sand duotone, never the live sun/dusk/sea fields */
+.v2-poster--dead { background: linear-gradient(160deg, var(--sand-300) 0%, var(--sand-500) 55%, var(--sand-700) 100%); }
+/* (0,3,1): must out-rank `.v2-poster .price s` (0,2,1) and its mobile
+   font-size override, or the struck price shrinks to the was-price size */
+.v2-poster .price s.price-dead { margin-left: 0; font: inherit; opacity: .75; letter-spacing: inherit; }
 
 .v2-catchline {
   display: flex; gap: 22px; flex-wrap: wrap; padding: 14px 6px 0;
@@ -170,6 +175,12 @@
 }
 .v2-row--locked .v2-row-price .bead { width: 7px; height: 7px; }
 .v2-row--locked:hover .v2-row-price { color: var(--v2-amber, #F5A623); }
+/* collapsed „+ dar N" row: the name is a count, not a city — dimmed; the
+   d-only / m-only spans carry the desktop vs mobile count (PR B flips them) */
+.v2-row--more .v2-row-name { color: var(--sand-600, #685B47); }
+.v2-row--more:hover .v2-row-name { color: var(--v2-paper); } /* ink hover: same lift as the dead rows */
+.d-only { display: inline; }
+.m-only { display: none; }
 .v2-footnote { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-500); padding: 14px 8px 0; }
 .v2-footnote a { color: var(--accent, #0F7C68); }
 
@@ -202,6 +213,16 @@
 .v2-spark .lbls { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 12px;
   font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--sand-500); }
 .v2-spark .lbls b { color: var(--v2-ink); }
+
+/* slice 2: the last checks as one mono line (no chips — paper-first) */
+.v2-checkline { display: flex; flex-wrap: wrap; margin-top: 14px; font-family: var(--font-mono);
+  font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-500); }
+.v2-checkline span { padding-right: 18px; margin-right: 18px; border-right: 1px solid var(--line); }
+.v2-checkline span:last-child { border: 0; }
+.v2-checkline b { color: var(--v2-ink); font-weight: 700; }
+.v2-checkline .up b { color: #B53017; }
+/* an expired deal's chart bar wears the strike coral, never live amber */
+.v2-spark .bars i.today.dead { background: #B53017; }
 
 /* curator pull-quote — the design system's centered bead-mark pattern
    (screens/v2-home.html .quote), not a side-tab border */
