@@ -92,6 +92,9 @@
 }
 .v2-poster .cta:hover { transform: scale(1.04); color: var(--v2-ink); }
 .v2-poster .cta .bead { width: 9px; height: 9px; }
+/* the expired poster carries two CTAs (desktop → #kapote, mobile → #kapote-m):
+   the utilities' !important hides cover both directions; the mobile block only
+   spells out the SHOW (`.cta.m-only { display: inline-flex }`) */
 .v2-poster--sun { background: var(--poster-sun); }
 .v2-poster--dusk { background: var(--poster-dusk); }
 .v2-poster--sea { background: var(--poster-sea); }
@@ -179,8 +182,21 @@
    d-only / m-only spans carry the desktop vs mobile count (PR B flips them) */
 .v2-row--more .v2-row-name { color: var(--sand-600, #685B47); }
 .v2-row--more:hover .v2-row-name { color: var(--v2-paper); } /* ink hover: same lift as the dead rows */
-.d-only { display: inline; }
-.m-only { display: none; }
+/* `v2-row--more-m`: the collapsed row when nothing is collapsed (1–4 locked) —
+   desktop already lists every locked deal as a row; phones hide those rows and
+   need this one (0,2,0 so it beats the system's `.v2-row { display: grid }`) */
+.v2-rows .v2-row--more-m { display: none; }
+/* .d-only / .m-only: the HIDE direction is authoritative (!important) so no
+   component rule — `.v2-masthead .navlinks { display: flex }`, `.v2-footer .links`,
+   `.v2-poster .cta`, the legacy `.yip-site .legal` — can bring an element back on
+   the wrong side; the SHOW direction stays a normal declaration so a component
+   can pick its display (inline-flex for the CTA, pill and „Privatumas"). The
+   desktop hide lives in the exact complement of the mobile block: an unscoped
+   `.m-only { display: none !important }` would win at every width. `.d-only`
+   needs no base rule — elements keep their natural display. */
+@media not all and (max-width: 720px) {
+  .m-only { display: none !important; }
+}
 .v2-footnote { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--sand-500); padding: 14px 8px 0; }
 .v2-footnote a { color: var(--accent, #0F7C68); }
 
@@ -325,41 +341,95 @@
 .v2-footer .bar { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
 .v2-footer .links { display: flex; gap: 24px; flex: 1; justify-content: center; font-size: 14px; font-weight: 500; color: var(--sand-600, #685B47); flex-wrap: wrap; }
 .v2-footer .legal { font-family: var(--font-mono); font-size: 11px; color: var(--sand-500); text-transform: uppercase; letter-spacing: .08em; }
+/* the phone-only „Privatumas" link (a.legal.m-only): the legacy .yip-site .legal
+   rule (site.css) sets display:flex, but the !important .m-only hide outranks it */
 
 /* ---------- mobile (HomeMobile artboard; mono floor 11px) ---------- */
 @media (max-width: 720px) {
   .v2 .wrap { padding-inline: 16px; }
-  .v2-masthead .bar { height: 54px; gap: 12px; }
+  /* nav links are d-only (hidden by the !important utility): logo left, pill
+     right, both tappable */
+  .v2-masthead .bar { height: 54px; gap: 12px; justify-content: space-between; }
   .v2-masthead .mid { display: none; }
-  .v2-masthead .navlinks { gap: 12px; font-size: 11px; letter-spacing: .1em; flex: 1; }
-  .v2-masthead .pill { font-size: 13px; padding: 8px 14px; }
+  .v2-masthead .pill { font-size: 13px; padding: 8px 14px; min-height: 44px; }
+  /* the expired deal page carries two pills (desktop → #kapote, mobile → #kapote-m);
+     `.v2-masthead .pill` outranks the utilities, so the SHOW is spelled out here */
+  .v2-masthead .pill.m-only { display: inline-flex; }
+  .v2-masthead .logo { display: inline-flex; align-items: center; min-height: 44px; } /* 44px tap target */
   .v2 .v2-hero { padding-block: 26px 18px; }
+  /* with a featured deal the poster is the page — no hero above it, but the h1
+     stays in the accessibility tree (visually-hidden pattern, not display:none);
+     `.v2 .` so it outranks the `.v2 .wrap` / `.v2 .v2-hero` padding and margin */
+  .v2 .v2-hero--has-poster {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   .v2-hero .sub-row { margin-top: 12px; gap: 10px; }
   .v2-hero .lead { font-size: 13.5px; }
   .v2 .v2-stamp { font-size: 11px; letter-spacing: .1em; }
-  .v2-poster { min-height: 400px; padding: 20px 18px; border-radius: 22px; gap: 14px; }
+  /* PR B: phones get the reduced layout — the poster carries dates, airline and the
+     human stamp (.facts), the buy-direct line sits under the button (.trust), and the
+     catch line under the poster goes; .m-only / .d-only flip here (the hide is
+     !important — see the base note; block is only the default show, components override it) */
+  .m-only { display: block; } .d-only { display: none !important; }
+  .v2-poster { min-height: 0; padding: 20px 18px; border-radius: 22px; gap: 18px; }
+  /* the stamp is a seal — one line; the kicker wraps: „Nr. 01 iš 12 · šią savaitę" is
+     already wider than the 322px row at 390, nowrap pushed the stamp off the poster */
+  .v2-poster .v2-stamp { white-space: nowrap; }
   .v2-poster .blurb { font-size: 13.5px; }
-  .v2-poster .cta { font-size: 14px; padding: 13px 18px; border-radius: 12px; }
+  .v2-poster .facts { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: rgba(255,255,255,.92); margin-top: 10px; }
+  .v2-poster .pricecell { flex-direction: column; align-items: stretch; gap: 14px; width: 100%; }
+  /* border-box: the site has no global reset, so width:100% + padding would overflow the poster */
+  .v2-poster .cta { font-size: 14px; padding: 13px 18px; border-radius: 12px;
+    width: 100%; box-sizing: border-box; justify-content: center; min-height: 48px; }
+  .v2-poster .cta.m-only { display: inline-flex; }
+  .v2-poster .trust { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; color: rgba(255,255,255,.8); text-align: center; }
   .v2-poster .price s { font-size: 14px; }
-  .v2-catchline { gap: 14px; font-size: 11px; }
+  .v2-catchline { display: none; }
   .v2 .v2-sec, .v2 .v2-capture { padding-block: 32px 8px; }
   .v2-capture .inner { flex-direction: column; align-items: stretch; gap: 14px; }
   .v2-capture form { max-width: none; }
-  .v2 .v2-row { grid-template-columns: auto 1fr auto; gap: 4px 14px; padding: 16px 4px; }
-  .v2 .v2-row .no { display: none; }
-  .v2 .v2-row .v2-row-meta { grid-column: 1 / -1; font-size: 11px; }
-  .v2 .v2-row .v2-row-price { justify-self: end; }
-  /* touch has no hover — live rows carry a visible bead affordance */
-  a.v2-row .v2-row-name::after {
-    content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-    background: var(--v2-amber); margin-left: 8px; vertical-align: 6px;
-  }
-  .v2-ink-band { padding: 44px 0; margin-top: 32px; }
+  /* PR B: the stacked form right under an expired poster (DealExpiredMobile board) */
+  .m-capture { padding-block: 20px 0; }
+  .m-capture form { display: flex; flex-direction: column; gap: 10px; }
+  .m-capture input[type="email"] { font-size: 16px; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--sand-300); background: #fff; color: var(--v2-ink); font-family: inherit; min-height: 48px; }
+  .m-capture input[type="email"]:focus { outline: 2px solid var(--v2-amber); outline-offset: 1px; }
+  .m-capture .btn { font-weight: 700; font-size: 16px; padding: 14px 22px; border-radius: 12px; background: var(--v2-amber); color: var(--v2-ink); border: 0; font-family: inherit; min-height: 48px; }
+  .m-capture .fine { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sand-500); margin-top: 10px; }
+  .m-capture .ok { font-weight: 700; font-size: 16px; }
+  .m-capture [role="alert"] { display: block; color: var(--coral-600, #B3462E); font-size: 13px; margin-top: 8px; }
+  #kapote-m { scroll-margin-top: 70px; }
+  /* rows are taps: name + price on one line, meta under (MainMobile board);
+     the № column goes, the shown locked rows collapse into the one „+ dar N" row
+     (which renders for any locked count — `--more-m` when nothing is collapsed),
+     the section kicker goes. (0,2,0): independent of the poster-bead import order */
+  .v2-rows .v2-row--locked-n { display: none; }
+  .v2-rows .v2-row--more-m { display: grid; }
+  .v2-rows .v2-row { grid-template-columns: 1fr auto; grid-template-areas: "name price" "meta meta";
+    gap: 6px 14px; padding: 16px 4px; min-height: 44px; }
+  .v2-rows .v2-row .no { display: none; }
+  .v2-rows .v2-row-name { grid-area: name; }
+  .v2-rows .v2-row-price { grid-area: price; justify-self: end; white-space: nowrap; }
+  .v2-rows .v2-row-meta { grid-area: meta; font-size: 11px; }
+  /* the collapsed „+ dar N radiniai" label is a phrase, not a city — the board
+     sets it a size down so it stays on one line beside the price chip */
+  .v2-row--more .v2-row-name { font-size: clamp(22px, 6vw, 28px); }
+  .v2-sec .head .v2-kicker { display: none; }
+  .v2-ink-band { margin-top: 28px; padding: 44px 0; }
   .v2-ink-band .grid { grid-template-columns: 1fr; gap: 24px; }
   .v2-ink-band form .frow { flex-direction: column; }
   .v2-ink-band .sunball { width: 200px; height: 200px; right: -60px; top: -80px; }
-  .v2-footer .bar { flex-direction: column; align-items: flex-start; gap: 14px; }
-  .v2-footer .links { justify-content: flex-start; gap: 16px; flex: none; }
+  /* PR B: one 52px row — wordmark left, „Privatumas" right; the six links (d-only,
+     hidden by the !important utility) and the copyright go */
+  .v2-footer { padding: 0; }
+  .v2-footer .bar { min-height: 52px; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; }
+  .v2-footer .legal { font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--sand-600); }
+  .v2-footer span.legal { display: none; }
+  /* 44px tap target; zero the legacy .yip-site .legal margin/padding/border that would
+     push the row past 52px */
+  .v2-footer a.legal { display: inline-flex; align-items: center; min-height: 44px; margin: 0; padding: 0; border: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

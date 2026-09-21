@@ -22,6 +22,13 @@ describe('splitLockedRows', () => {
     expect(splitLockedRows([4, 5])).toEqual({ shown: [4, 5], collapsed: [] });
   });
 
+  it('1–4 locked: everything shown, nothing collapsed — the phone „+ dar N" row must still render', () => {
+    // LiveIndex hides the shown rows on mobile and shows only the collapsed row,
+    // so an empty `collapsed` here is exactly the case that needs `v2-row--more-m`.
+    expect(splitLockedRows([4])).toEqual({ shown: [4], collapsed: [] });
+    expect(splitLockedRows([4, 5, 6, 7])).toEqual({ shown: [4, 5, 6, 7], collapsed: [] });
+  });
+
   it('exposes the desktop count and honours an explicit width', () => {
     expect(LOCKED_SHOWN).toBe(4);
     expect(splitLockedRows([])).toEqual({ shown: [], collapsed: [] });

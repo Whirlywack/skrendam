@@ -653,3 +653,15 @@ Added 2026-09-12 after the controller's visual check: Task 4 covered the kicker,
 10. `going_fast` is a live-only signal in `toTicket` / `toPublicDeal` (a dead row never says „Tirpsta").
 
 Follow-up — engine: stamp `verified_at`/`checked_at` per check, not with the run start `now` (skrendam/verification.py:225) — separate PR; re-enable the hero clock after.
+
+## PR B post-review fixes (2026-09-12)
+
+1. `LiveIndex` renders the collapsed „+ dar N" row for any locked count ≥ 1 — `v2-row--more-m` (mobile-only) when nothing is collapsed, with an empty № instead of a nonsense range; phones no longer lose every locked destination when 1–4 deals are locked.
+2. `Masthead` takes `mobileCtaHref`; the expired deal page passes `#kapote-m` so the pill has a visible target on phones (a `pill d-only` / `pill m-only` pair, one pill everywhere else).
+3. `.d-only` / `.m-only`: the hide direction is `!important` (`.m-only` hidden in the exact complement of the mobile media query, `.d-only` hidden inside it); the five hide-only component overrides (poster CTA ×2, masthead nav, footer links, footer `a.legal`) are gone; the base `.d-only { display: inline }` is gone; the locked-row hide is `.v2-rows .v2-row--locked-n` (0,2,0), independent of import order.
+4. The mobile empty-home section renders only when `past.length > 0` — no link to an empty archive.
+5. `TrophyRow({ t, href })` extracted from `TrophyCase`; the mobile empty home uses it (as a Link) instead of `rowMeta` on a dead row.
+6. `MobileCapture`'s `source` is required; the unused `deal-mobile` source is out of `SUBSCRIBE_SOURCES`.
+7. `.v2-hero--has-poster` is visually hidden on mobile (sr-only pattern), keeping the home's h1 in the accessibility tree and for search engines.
+
+Plan defects recorded: Task 7 never stated the `locked ≤ 4` mobile case; Task 8 left the masthead pill pointing at a hidden anchor on expired mobile; Task 7 used `rowMeta` on a dead row; Task 6 placed the facts line inside an `aria-hidden` box (repaired in its fix round).

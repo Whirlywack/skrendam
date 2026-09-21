@@ -46,6 +46,9 @@ export const SUBSCRIBE_SOURCES = [
   'subscribe',
   'collection',
   'deal',
+  // PR B mobile deal page: the expired page's stacked form (MobileCapture);
+  // cleanSource rewrites anything not listed here to 'site'.
+  'deal-expired-mobile',
   'past',
   'early',
   'site',

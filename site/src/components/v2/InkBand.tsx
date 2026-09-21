@@ -1,25 +1,12 @@
 'use client';
-import { useState, useTransition } from 'react';
-import { subscribeAction } from '@/app/subscribe-action';
 import { TrackingFields } from '@/components/TrackingFields';
+import { useSubscribeForm } from '@/components/v2/useSubscribeForm';
 import { S } from '@/lib/lt';
 
 /** The ink signup band — the page's one conversion, fed directly by the trophy case above it.
  *  `source` is the signup attribution written with the subscriber ('home' | 'deal' | …). */
 export function InkBand({ source = 'home' }: { source?: string }) {
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    start(async () => {
-      const res = await subscribeAction(data);
-      if (res && res.ok) { setDone(true); setError(null); }
-      else if (res && !res.ok) setError(res.error ?? S.genericError);
-    });
-  }
+  const { done, error, pending, onSubmit } = useSubscribeForm();
 
   return (
     <section className="v2-ink-band" id="kapote">

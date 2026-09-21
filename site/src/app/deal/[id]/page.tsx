@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getDeal, getFreeWindowIds, getPriceChecks, getSimilarDeals } from '@/lib/queries';
 import { freshSource, toPublicDeal, toTicket } from '@/lib/mappers';
@@ -17,6 +18,7 @@ import { Masthead } from '@/components/v2/Masthead';
 import { Crumb } from '@/components/v2/Crumb';
 import { POSTER } from '@/components/v2/Poster';
 import { CaptureRow } from '@/components/v2/CaptureRow';
+import { MobileCapture } from '@/components/v2/MobileCapture';
 import { LinkBand } from '@/components/v2/LinkBand';
 import { DealRow } from '@/components/v2/Rows';
 import { InkBand } from '@/components/v2/InkBand';
@@ -136,13 +138,19 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         description: articleDescription,
         datePublished: pd.publishedAt,
       })} />
-      <Masthead />
+      {/* Expired on mobile the ink band (#kapote) is cut, so the pill targets the stacked form */}
+      <Masthead mobileCtaHref={expired ? '#kapote-m' : undefined} />
 
-      <Crumb items={[
-        { label: S.navDeals, href: '/' },
-        ...(origColl ? [{ label: origColl.label, href: `/${origColl.slug}` }] : []),
-        { label: deal.destination },
-      ]} />
+      {/* Mobile (PR B): the poster is the page — the crumb, columns, curator quote,
+          price story, mid-page capture, similar rows and link band are desktop-only
+          (founder 09-12, DealLiveMobile / DealExpiredMobile boards) */}
+      <div className="d-only">
+        <Crumb items={[
+          { label: S.navDeals, href: '/' },
+          ...(origColl ? [{ label: origColl.label, href: `/${origColl.slug}` }] : []),
+          { label: deal.destination },
+        ]} />
+      </div>
 
       {/* Poster hero — the home poster atom; the CTA is the booking action on a live deal, the signup ask on an expired one */}
       <section className="wrap" style={{ paddingTop: 14 }}>
@@ -164,9 +172,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             <p className="blurb">{expired ? S.trophyCaption : headline}</p>
           </div>
           <div className="foot">
-            <div className="routebox" aria-hidden="true">
-              <div className="mono ends"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
-              <div className="bead-route"><span className="track" /><span className="bead" /></div>
+            <div className="routebox">
+              <div className="mono ends" aria-hidden="true"><span>{o}</span><span>{t.legs.toUpperCase()}</span><span>{d}</span></div>
+              <div className="bead-route" aria-hidden="true"><span className="track" /><span className="bead" /></div>
+              {/* Mobile (PR B): essentials inside the poster; an expired deal carries no human stamp */}
+              <div className="facts m-only">{expired ? `${t.dates} · ${t.airline}` : `${t.dates} · ${t.airline} · ${S.humanStamp}`}</div>
             </div>
             <div className="pricecell">
               <div>
@@ -180,10 +190,17 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                 {/* Changed deal (WP9): „Dabar nuo 124 €" / „radome už 93 €" */}
                 {!expired && t.priceLines.map((line) => <div key={line} className="mono save">{line}</div>)}
               </div>
-              {/* Expired: no booking link — the CTA becomes the signup ask (DealExpired board) */}
+              {/* Expired: no booking link — the CTA becomes the signup ask (DealExpired board).
+                  Desktop targets the ink band (#kapote); mobile targets the stacked form
+                  right under the poster (#kapote-m) — the ink band is cut there. */}
               {expired
-                ? <a className="cta" href="#kapote">{S.ctaSubmit} <span className="bead" aria-hidden="true" /></a>
+                ? <>
+                    <a className="cta d-only" href="#kapote">{S.ctaSubmit} <span className="bead" aria-hidden="true" /></a>
+                    <a className="cta m-only" href="#kapote-m">{S.ctaSubmit} <span className="bead" aria-hidden="true" /></a>
+                  </>
                 : <a className="cta" href={booking.url} target="_blank" rel="noopener noreferrer">{booking.button} <span className="bead" aria-hidden="true" /></a>}
+              {/* Mobile (PR B): buy-direct trust line under the booking button; none on an expired deal (the CTA is the signup) */}
+              {!expired && <div className="trust m-only">{S.trustDirect}</div>}
             </div>
           </div>
         </div>
@@ -194,90 +211,109 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         </div>
       </section>
 
-      {/* Why / catch — bead-bullet editorial columns */}
-      <section className="wrap v2-cols">
-        <div>
-          <h3 className="good">Kodėl verta</h3>
-          {whyAndCatch.why.map((line, i) => (
-            <div key={i} className="v2-li">
-              <span className="bead" aria-hidden="true" /><span>{line}</span>
-            </div>
-          ))}
-        </div>
-        <div>
-          <h3 className="cav">Kabliukas</h3>
-          {whyAndCatch.catch.map((line, i) => (
-            <div key={i} className="v2-li cav">
-              <span className="bead" aria-hidden="true" /><span>{line}</span>
-            </div>
-          ))}
-          {/* Slice 2 (gated): the window's cheapest date — shown once the copy key is filled */}
-          {S.windowMinLabel && pd.windowMinPrice != null && pd.windowMinDate && (
-            <div className="v2-li cav"><span className="bead" aria-hidden="true" />
-              <span>{S.windowMinLabel}: {formatDates(String(pd.windowMinDate), null)} · {eur(Number(pd.windowMinPrice))}</span></div>
-          )}
-          {whyAndCatch.catch.length === 0 && (
-            <div className="v2-li">
-              <span className="bead" aria-hidden="true" /><span>Kabliukų nėra — švarus radinys.</span>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Curator's note */}
-      {pd.body && (
-        <section className="wrap">
-          <div className="v2-curator">
-            <div className="mark" aria-hidden="true" />
-            <div className="txt">„{pd.body}“</div>
-            <div className="sig">— {curator().sig}</div>
-          </div>
-        </section>
+      {/* Expired on mobile (DealExpiredMobile board): the „Dar spėji" tap back to the
+          live deals, then the form right under the poster — the ink band is cut. */}
+      {expired && (
+        <>
+          <section className="wrap v2-sec m-only m-rows"><div className="v2-rows">
+            <Link href="/" className="v2-row v2-row--more"><span className="no" /><span className="v2-row-name">{S.liveHeader}</span><span className="v2-row-meta">{S.navAllDeals}</span><span className="v2-row-price" aria-hidden="true">→</span></Link>
+          </div></section>
+          <MobileCapture source="deal-expired-mobile" />
+        </>
       )}
 
-      {/* Price context — one plain-language claim + the real sparkline when history exists */}
-      {/* One integrated price story: kicker → price-free claim → bars → method.
-          The € figure already dominates the poster — never repeated here.
-          Expired: the whole section is hidden — the page speaks in the past
-          tense only in the poster (controller ruling, PR #56 review; the
-          approved board still had the chart — this deviates deliberately).
-          `|| showChecks` lets a fresh route with checks but no history show its line. */}
-      {!expired && (stats.hasHistory || deal.drop > 0 || showChecks) && (
-        <section className="wrap v2-context">
-          <div className="v2-kicker v2-kicker--dim">{S.priceContextH}</div>
-          <div className="big">
-            {stats.hasHistory
-              ? `Pigiausi ${stats.percentile} % per 90 dienų šiame maršrute.`
-              : `${deal.drop} % pigiau nei įprastai šiame maršrute.`}
-          </div>
-          <PriceSparkline stats={stats} todayPrice={deal.price} dead={expired} />
-          {showChecks && <CheckLine items={checkItems} />}
-          <div className="v2-kicker v2-kicker--dim method">
-            {S.priceContextMethod} · {S.updatedMorning}
-          </div>
-        </section>
-      )}
+      {/* Desktop-only from here to the link band (see the crumb note above) */}
+      <div className="d-only">
 
-      {/* No mid-page ask on an expired deal — the poster already says it is gone (reviewer finding 7) */}
-      {!expired && <CaptureRow source="deal" />}
-
-      {/* Similar deals — the home page's ink-inverting rows */}
-      {similarTickets.length > 0 && (
-        <section className="wrap v2-sec">
-          <div className="head">
-            <h2 className="v2-display">{S.similarHeader}<span className="bead bead--live" aria-hidden="true" /></h2>
-          </div>
-          <div className="v2-rows">
-            {similarTickets.map((s, i) => (
-              <DealRow key={s.id} t={s} no={`Nr. ${String(i + 1).padStart(2, '0')}`} />
+        {/* Why / catch — bead-bullet editorial columns */}
+        <section className="wrap v2-cols">
+          <div>
+            <h3 className="good">Kodėl verta</h3>
+            {whyAndCatch.why.map((line, i) => (
+              <div key={i} className="v2-li">
+                <span className="bead" aria-hidden="true" /><span>{line}</span>
+              </div>
             ))}
           </div>
+          <div>
+            <h3 className="cav">Kabliukas</h3>
+            {whyAndCatch.catch.map((line, i) => (
+              <div key={i} className="v2-li cav">
+                <span className="bead" aria-hidden="true" /><span>{line}</span>
+              </div>
+            ))}
+            {/* Slice 2 (gated): the window's cheapest date — shown once the copy key is filled */}
+            {S.windowMinLabel && pd.windowMinPrice != null && pd.windowMinDate && (
+              <div className="v2-li cav"><span className="bead" aria-hidden="true" />
+                <span>{S.windowMinLabel}: {formatDates(String(pd.windowMinDate), null)} · {eur(Number(pd.windowMinPrice))}</span></div>
+            )}
+            {whyAndCatch.catch.length === 0 && (
+              <div className="v2-li">
+                <span className="bead" aria-hidden="true" /><span>Kabliukų nėra — švarus radinys.</span>
+              </div>
+            )}
+          </div>
         </section>
-      )}
 
-      <LinkBand links={bandLinks} />
+        {/* Curator's note */}
+        {pd.body && (
+          <section className="wrap">
+            <div className="v2-curator">
+              <div className="mark" aria-hidden="true" />
+              <div className="txt">„{pd.body}“</div>
+              <div className="sig">— {curator().sig}</div>
+            </div>
+          </section>
+        )}
 
-      <InkBand source="deal" />
+        {/* Price context — one plain-language claim + the real sparkline when history exists */}
+        {/* One integrated price story: kicker → price-free claim → bars → method.
+            The € figure already dominates the poster — never repeated here.
+            Expired: the whole section is hidden — the page speaks in the past
+            tense only in the poster (controller ruling, PR #56 review; the
+            approved board still had the chart — this deviates deliberately).
+            `|| showChecks` lets a fresh route with checks but no history show its line. */}
+        {!expired && (stats.hasHistory || deal.drop > 0 || showChecks) && (
+          <section className="wrap v2-context">
+            <div className="v2-kicker v2-kicker--dim">{S.priceContextH}</div>
+            <div className="big">
+              {stats.hasHistory
+                ? `Pigiausi ${stats.percentile} % per 90 dienų šiame maršrute.`
+                : `${deal.drop} % pigiau nei įprastai šiame maršrute.`}
+            </div>
+            <PriceSparkline stats={stats} todayPrice={deal.price} dead={expired} />
+            {showChecks && <CheckLine items={checkItems} />}
+            <div className="v2-kicker v2-kicker--dim method">
+              {S.priceContextMethod} · {S.updatedMorning}
+            </div>
+          </section>
+        )}
+
+        {/* No mid-page ask on an expired deal — the poster already says it is gone (reviewer finding 7) */}
+        {!expired && <CaptureRow source="deal" />}
+
+        {/* Similar deals — the home page's ink-inverting rows */}
+        {similarTickets.length > 0 && (
+          <section className="wrap v2-sec">
+            <div className="head">
+              <h2 className="v2-display">{S.similarHeader}<span className="bead bead--live" aria-hidden="true" /></h2>
+            </div>
+            <div className="v2-rows">
+              {similarTickets.map((s, i) => (
+                <DealRow key={s.id} t={s} no={`Nr. ${String(i + 1).padStart(2, '0')}`} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <LinkBand links={bandLinks} />
+
+      </div>
+
+      {/* Expired on mobile the ask already sits under the poster (MobileCapture) — no second band */}
+      <div className={expired ? 'd-only' : undefined}>
+        <InkBand source="deal" />
+      </div>
       <V2Footer />
     </main>
   );
