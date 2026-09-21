@@ -20,6 +20,7 @@ MIN_TOTAL_SAMPLE = 5  # ...given at least this many calls total
 NO_DATA_MIN_CALLS = 10  # degraded when >= this many api calls produced exactly 0 price rows
 CLIFF_PRIOR_MIN_ROWS = 100  # cliff fires only when the prior run logged at least this many rows
 CLIFF_FRACTION = 0.10  # ...and this run logged under this fraction of it
+GATED = "gated"  # error_kind on an "empty" record that was really Google's error envelope
 ERROR_DETAIL_CAP = 20  # at most this many error records are persisted in the JSON
 _ERROR_MSG_MAX = 300
 
@@ -185,6 +186,8 @@ def assess(log: CallLog, price_rows: int, prior_price_rows: int | None = None) -
         "calendar_empty": cal_empty,
         "flights_calls": log.count("flights"),
         "flights_empty": log.count("flights", "empty"),
+        # subset of the *_empty counts above: empties Google explicitly declined to serve
+        "gated_calls": sum(1 for r in log.records if r.error_kind == GATED),
         "error_calls": len(log.errors),
         "price_rows": price_rows,
         "prior_price_rows": prior_price_rows,

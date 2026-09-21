@@ -18,6 +18,7 @@ from fli.search._concurrency import parallel_map
 from fli.search._urls import with_locale_params
 from fli.search._wire import parse_first_wrb_payload
 from fli.search.client import get_client
+from fli.search.exceptions import SearchRejectedError
 
 logger = logging.getLogger(__name__)
 
@@ -90,17 +91,25 @@ class SearchDates:
         # matched ``current_from``.
         chunk_filters = self._build_chunk_filters(filters, from_date, to_date)
 
-        chunk_results = parallel_map(
-            lambda cf: self._search_chunk(
-                cf, currency=currency, language=language, country=country
-            ),
-            chunk_filters,
-        )
+        # Yip patch: a chunk Google declined (error envelope) must not discard the
+        # chunks that did load. The rejection surfaces only when nothing loaded at all.
+        rejections: list[SearchRejectedError] = []
+
+        def _chunk(cf: DateSearchFilters) -> list[DatePrice] | None:
+            try:
+                return self._search_chunk(cf, currency=currency, language=language, country=country)
+            except SearchRejectedError as exc:
+                rejections.append(exc)
+                return None
+
+        chunk_results = parallel_map(_chunk, chunk_filters)
 
         all_results: list[DatePrice] = []
         for r in chunk_results:
             if r:
                 all_results.extend(r)
+        if not all_results and rejections:
+            raise rejections[0]
         return all_results if all_results else None
 
     def _build_chunk_filters(

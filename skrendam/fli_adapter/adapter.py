@@ -11,7 +11,12 @@ import logging
 from collections.abc import Callable
 from datetime import date
 
-from fli.search.exceptions import SearchConnectionError, SearchHTTPError, SearchTimeoutError
+from fli.search.exceptions import (
+    SearchConnectionError,
+    SearchHTTPError,
+    SearchRejectedError,
+    SearchTimeoutError,
+)
 from skrendam.fli_adapter.errors import (
     ConnectionError_,
     ParseError,
@@ -19,7 +24,7 @@ from skrendam.fli_adapter.errors import (
     ScanError,
     TimeoutError_,
 )
-from skrendam.fli_adapter.health import CallLog
+from skrendam.fli_adapter.health import GATED, CallLog
 from skrendam.scanning.types import CalendarPoint, FareItinerary, SearchSpec
 
 _log = logging.getLogger(__name__)
@@ -109,8 +114,14 @@ class FliAdapter:
         route = f"{spec.origin}-{spec.destination}"
         self._pace()
         self.api_calls += 1
+        gated = None
         try:
-            rows = self._backend.search_calendar(spec)
+            try:
+                rows = self._backend.search_calendar(spec)
+            except SearchRejectedError as exc:
+                # Gated by Google (HTTP-200 error envelope). Still an "empty" for the health
+                # ratios and the breaker — only the tag is new, so gating is countable.
+                rows, gated = [], str(exc)
             if len(rows) > MAX_ROWS_PER_CALL:
                 _log.warning(
                     "calendar %s returned %d rows; truncating to %d",
@@ -142,7 +153,13 @@ class FliAdapter:
             )
             raise err from exc
         self.call_log.record(
-            "calendar", route, spec.trip_type, "data" if points else "empty", rows=len(points)
+            "calendar",
+            route,
+            spec.trip_type,
+            "data" if points else "empty",
+            rows=len(points),
+            error_kind=GATED if gated else None,
+            error_msg=gated,
         )
         self._cache[key] = points
         return points
@@ -173,8 +190,14 @@ class FliAdapter:
         trip_type = "roundtrip" if return_date is not None else "oneway"
         self._pace()
         self.api_calls += 1
+        gated = None
         try:
-            raw = self._backend.search_flights(origin, destination, travel_date, return_date, cabin)
+            try:
+                raw = self._backend.search_flights(
+                    origin, destination, travel_date, return_date, cabin
+                )
+            except SearchRejectedError as exc:  # gated — see search_calendar
+                raw, gated = [], str(exc)
             if len(raw) > MAX_ROWS_PER_CALL:
                 _log.warning(
                     "flights %s returned %d fares; truncating to %d",
@@ -183,7 +206,9 @@ class FliAdapter:
                     MAX_ROWS_PER_CALL,
                 )
                 raw = raw[:MAX_ROWS_PER_CALL]
-            fares = [self._to_itinerary(r) for r in raw]
+            # Google lists some itineraries (Ryanair, mostly) with no price; one of those
+            # must not fail the whole call — 5 in a row used to trip the breaker.
+            fares = [self._to_itinerary(r) for r in raw if r.get("price") is not None]
         except ScanError as err:  # e.g. ParseError from _to_itinerary
             self.call_log.record(
                 "flights",
@@ -206,7 +231,13 @@ class FliAdapter:
             )
             raise err from exc
         self.call_log.record(
-            "flights", route, trip_type, "data" if fares else "empty", rows=len(fares)
+            "flights",
+            route,
+            trip_type,
+            "data" if fares else "empty",
+            rows=len(fares),
+            error_kind=GATED if gated else None,
+            error_msg=gated,
         )
         self._flights_cache[key] = fares
         return fares

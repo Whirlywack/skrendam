@@ -197,3 +197,35 @@ def test_search_flights_error_is_not_cached():
 
     assert len(calls) == 2  # backend was called again — error was not cached
     assert fares[0].price == 42.0
+
+
+def test_priceless_itinerary_is_skipped_not_a_parse_error():
+    # Google lists some fares with no price; one must not fail the whole call.
+    class _Backend(FakeBackend):
+        def search_flights(self, *a):
+            good = super().search_flights(*a)[0]
+            return [{**good, "price": None}, good]
+
+    adapter = FliAdapter(_Backend(), pace=lambda: None)
+    fares = adapter.search_flights("VNO", "BGY", date(2026, 7, 29), None, "ECONOMY")
+    assert [f.price for f in fares] == [30.0]
+    assert adapter.call_log.records[-1].outcome == "data"
+
+
+def test_google_rejection_is_an_empty_tagged_gated():
+    from fli.search.exceptions import SearchRejectedError
+    from skrendam.fli_adapter.health import GATED, assess
+
+    class _Backend(FakeBackend):
+        def search_calendar(self, spec):
+            raise SearchRejectedError(13)
+
+        def search_flights(self, *a):
+            raise SearchRejectedError(13)
+
+    adapter = FliAdapter(_Backend(), pace=lambda: None)
+    assert adapter.search_calendar(_spec()) == []
+    assert adapter.search_flights("VNO", "BCN", date(2026, 7, 29), None, "ECONOMY") == []
+    assert [(r.outcome, r.error_kind) for r in adapter.call_log.records] == [("empty", GATED)] * 2
+    assert adapter.call_log.errors == []  # not an error: breaker and error ratio unchanged
+    assert assess(adapter.call_log, price_rows=0).metrics["gated_calls"] == 2

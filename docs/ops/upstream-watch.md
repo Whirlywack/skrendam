@@ -23,5 +23,8 @@ upstream's `client.get()` does not pass). The watch keeps the cost of vendoring 
 
 ## When the agent flags a decoder change
 
-Cherry-pick upstream commits onto `fli/` in a feature branch, run `uv run pytest -q
---ignore=tests/search` plus one live probe, and ship through the normal PR gate.
+Port upstream commits onto `fli/` in a feature branch (the vendored copy shares no git
+history with upstream, so it is a file-level port, not `git cherry-pick`), run `uv run pytest -q`
+(tests/search is skipped by default), and ship through the normal PR gate. **No live probe** —
+interactive probes heat BotGuard for the daily scan; the next 06:00 run's health JSON is the
+verification.
